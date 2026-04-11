@@ -2,21 +2,68 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
+from typing import Mapping
+
+
+_RESET = "\033[0m"
+_STYLES = {
+    "prompt": "\033[1;36m",
+    "error": "\033[1;31m",
+    "info": "\033[1;37m",
+    "hint": "\033[2;37m",
+}
+
+
+def color_enabled(*, stream_isatty: bool, env: Mapping[str, str] | None = None) -> bool:
+    current_env = os.environ if env is None else env
+    if not stream_isatty:
+        return False
+    if "NO_COLOR" in current_env:
+        return False
+    return current_env.get("TERM", "") not in {"", "dumb"}
+
+
+def format_prompt_text(prompt: str, *, use_color: bool) -> str:
+    return _styled(f"[cmd] {prompt}", style="prompt", use_color=use_color)
+
+
+def format_error_text(message: str, *, use_color: bool) -> str:
+    return _styled(f"[error] {message}", style="error", use_color=use_color)
+
+
+def format_info_text(message: str, *, use_color: bool) -> str:
+    return _styled(f"[jeff] {message}", style="info", use_color=use_color)
+
+
+def format_hint_text(message: str, *, use_color: bool) -> str:
+    return _styled(f"[hint] {message}", style="hint", use_color=use_color)
+
+
+def _styled(text: str, *, style: str, use_color: bool) -> str:
+    if not use_color:
+        return text
+    return f"{_STYLES[style]}{text}{_RESET}"
 
 
 def render_scope(payload: dict[str, Any]) -> str:
     session = payload["session"]
-    return "\n".join(
-        [
-            "[session] scope",
-            f"project_id={session['project_id'] or '-'}",
-            f"work_unit_id={session['work_unit_id'] or '-'}",
-            f"run_id={session['run_id'] or '-'}",
-            f"output_mode={session['output_mode']}",
-            f"json_output={session['json_output']}",
-        ]
-    )
+    lines = [
+        "[session] scope",
+        f"project_id={session['project_id'] or '-'}",
+        f"work_unit_id={session['work_unit_id'] or '-'}",
+        f"run_id={session['run_id'] or '-'}",
+        f"output_mode={session['output_mode']}",
+        f"json_output={session['json_output']}",
+    ]
+    if session["project_id"] is None:
+        lines.append("[hint] next=/project list then /project use <project_id>")
+    elif session["work_unit_id"] is None:
+        lines.append("[hint] next=/work list then /work use <work_unit_id>")
+    elif session["run_id"] is None:
+        lines.append("[hint] next=/run list then /run use <run_id>")
+    return "\n".join(lines)
 
 
 def render_project_list(payload: dict[str, Any]) -> str:
@@ -35,6 +82,19 @@ def render_work_unit_list(payload: dict[str, Any]) -> str:
             f"- {work_unit['work_unit_id']} objective={work_unit['objective']} "
             f"lifecycle={work_unit['work_unit_lifecycle_state']}"
         )
+    return "\n".join(lines)
+
+
+def render_run_list(payload: dict[str, Any]) -> str:
+    lines = [
+        f"[truth] runs project_id={payload['truth']['project_id']} work_unit_id={payload['truth']['work_unit_id']}"
+    ]
+    runs = payload["truth"]["runs"]
+    if not runs:
+        lines.append("- none")
+    for run in runs:
+        lines.append(f"- {run['run_id']} lifecycle={run['run_lifecycle_state']}")
+    lines.append("[hint] use /run use <run_id> to select a current run")
     return "\n".join(lines)
 
 
@@ -118,11 +178,26 @@ def render_request_receipt(payload: dict[str, Any]) -> str:
 def render_help() -> str:
     return "\n".join(
         [
+            "Jeff CLI is command-driven.",
+            "Use slash commands like /help or /project list.",
+            "Plain text like 'hello' is not a supported command.",
+            "Normal flow:",
+            "1. /project list",
+            "2. /project use <project_id>",
+            "3. /work list",
+            "4. /work use <work_unit_id>",
+            "5. /run list",
+            "6. /run use <run_id>",
+            "7. /inspect",
+            "8. /trace [run_id] or /lifecycle [run_id]",
+            "Current startup uses explicit in-memory demo state only.",
+            "",
             "Commands:",
             "/project list",
             "/project use <project_id>",
             "/work list",
             "/work use <work_unit_id>",
+            "/run list",
             "/run use <run_id>",
             "/scope show",
             "/scope clear",

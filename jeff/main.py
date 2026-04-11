@@ -93,13 +93,19 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _run_interactive(cli) -> int:
-    print("Jeff v1 interactive shell")
-    print("Startup bootstrapped an explicit in-memory demo workspace with no persistence.")
-    print("Use /help for commands. Type 'exit' or 'quit' to leave.")
+    from jeff.interface.render import color_enabled, format_error_text, format_hint_text, format_info_text, format_prompt_text
+
+    use_stdout_color = color_enabled(stream_isatty=sys.stdout.isatty())
+    use_stderr_color = color_enabled(stream_isatty=sys.stderr.isatty())
+
+    print(format_info_text("Jeff v1 interactive shell", use_color=use_stdout_color))
+    print(format_info_text("Startup bootstrapped an explicit in-memory demo workspace with no persistence.", use_color=use_stdout_color))
+    print(format_hint_text("This shell is command-driven. Use slash commands like /help or /project list.", use_color=use_stdout_color))
+    print(format_hint_text("Plain text is not a supported command surface. Type 'exit' or 'quit' to leave.", use_color=use_stdout_color))
 
     while True:
         try:
-            command_line = input(f"{cli.prompt} ")
+            command_line = input(f"{format_prompt_text(cli.prompt, use_color=use_stdout_color)} ")
         except EOFError:
             print()
             return 0
@@ -116,12 +122,14 @@ def _run_interactive(cli) -> int:
         try:
             output = cli.run_one_shot(normalized)
         except Exception as exc:
-            print(f"error: {exc}", file=sys.stderr)
+            print(format_error_text(str(exc), use_color=use_stderr_color), file=sys.stderr)
             continue
         if output:
             print(output)
 
 
 def _print_error(message: str) -> int:
-    print(f"error: {message}", file=sys.stderr)
+    from jeff.interface.render import color_enabled, format_error_text
+
+    print(format_error_text(message, use_color=color_enabled(stream_isatty=sys.stderr.isatty())), file=sys.stderr)
     return 2

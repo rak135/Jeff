@@ -57,6 +57,23 @@ def work_unit_list_json(project: Project) -> dict[str, Any]:
     }
 
 
+def run_list_json(project: Project, work_unit: WorkUnit) -> dict[str, Any]:
+    return {
+        "view": "run_list",
+        "truth": {
+            "project_id": str(project.project_id),
+            "work_unit_id": str(work_unit.work_unit_id),
+            "runs": [
+                {
+                    "run_id": str(run.run_id),
+                    "run_lifecycle_state": run.run_lifecycle_state,
+                }
+                for run in work_unit.runs.values()
+            ],
+        },
+    }
+
+
 def run_show_json(
     *,
     project: Project,

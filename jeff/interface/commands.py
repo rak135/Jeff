@@ -15,6 +15,7 @@ from .json_views import (
     lifecycle_json,
     project_list_json,
     request_receipt_json,
+    run_list_json,
     run_show_json,
     session_scope_json,
     trace_json,
@@ -25,6 +26,7 @@ from .render import (
     render_lifecycle,
     render_project_list,
     render_request_receipt,
+    render_run_list,
     render_run_show,
     render_scope,
     render_trace,
@@ -85,7 +87,10 @@ def execute_command(
         result = _request_command(tokens=tokens, session=session, context=context)
         return _apply_json_mode(result, json_output=json_output)
 
-    raise ValueError(f"unsupported command: {' '.join(tokens)}")
+    raise ValueError(
+        f"unsupported command: {' '.join(tokens)}. "
+        "Jeff CLI is command-driven; use /help to see supported slash commands."
+    )
 
 
 def _parse(command_line: str) -> list[str]:
@@ -136,10 +141,15 @@ def _work_command(*, tokens: list[str], session: CliSession, context: InterfaceC
 
 
 def _run_command(*, tokens: list[str], session: CliSession, context: InterfaceContext) -> CommandResult:
-    if len(tokens) != 3 or tokens[1] != "use":
-        raise ValueError("run command must be 'run use <run_id>'")
     project = _require_scoped_project(session, context)
     work_unit = _require_scoped_work_unit(session, project)
+    if len(tokens) < 2:
+        raise ValueError("run command must be 'run list' or 'run use <run_id>'")
+    if tokens[1] == "list" and len(tokens) == 2:
+        payload = run_list_json(project, work_unit)
+        return CommandResult(session=session, text=render_run_list(payload), json_payload=payload)
+    if len(tokens) != 3 or tokens[1] != "use":
+        raise ValueError("run command must be 'run list' or 'run use <run_id>'")
     run = _get_run(work_unit, tokens[2])
     next_session = session.with_scope(
         project_id=str(project.project_id),
@@ -183,7 +193,7 @@ def _json_command(*, tokens: list[str], session: CliSession) -> CommandResult:
 
 
 def _show_command(*, tokens: list[str], session: CliSession, context: InterfaceContext) -> CommandResult:
-    run = _resolve_run_from_tokens(tokens=tokens, session=session, context=context)
+    run = _resolve_run_from_tokens(tokens=tokens, session=session, context=context, command_name=tokens[0])
     project = _require_project_for_run(context, run.project_id)
     work_unit = project.work_units[run.work_unit_id]
     flow_run = context.flow_runs.get(str(run.run_id))
@@ -192,14 +202,14 @@ def _show_command(*, tokens: list[str], session: CliSession, context: InterfaceC
 
 
 def _trace_command(*, tokens: list[str], session: CliSession, context: InterfaceContext) -> CommandResult:
-    run = _resolve_run_from_tokens(tokens=tokens, session=session, context=context)
+    run = _resolve_run_from_tokens(tokens=tokens, session=session, context=context, command_name=tokens[0])
     flow_run = _require_flow_run(context, str(run.run_id))
     payload = trace_json(flow_run)
     return CommandResult(session=session, text=render_trace(payload), json_payload=payload)
 
 
 def _lifecycle_command(*, tokens: list[str], session: CliSession, context: InterfaceContext) -> CommandResult:
-    run = _resolve_run_from_tokens(tokens=tokens, session=session, context=context)
+    run = _resolve_run_from_tokens(tokens=tokens, session=session, context=context, command_name=tokens[0])
     flow_run = _require_flow_run(context, str(run.run_id))
     payload = lifecycle_json(flow_run)
     return CommandResult(session=session, text=render_lifecycle(payload), json_payload=payload)
@@ -207,7 +217,7 @@ def _lifecycle_command(*, tokens: list[str], session: CliSession, context: Inter
 
 def _request_command(*, tokens: list[str], session: CliSession, context: InterfaceContext) -> CommandResult:
     request_type = tokens[0]
-    target_run = _resolve_run_from_tokens(tokens=tokens, session=session, context=context)
+    target_run = _resolve_run_from_tokens(tokens=tokens, session=session, context=context, command_name=tokens[0])
     flow_run = _require_flow_run(context, str(target_run.run_id))
     routed_outcome = None if flow_run.routing_decision is None else flow_run.routing_decision.routed_outcome
 
@@ -256,12 +266,17 @@ def _get_project(context: InterfaceContext, project_id: str) -> Project:
     try:
         return context.state.projects[project_id]
     except KeyError as exc:
-        raise ValueError(f"unknown project_id: {project_id}") from exc
+        raise ValueError(
+            f"unknown project_id: {project_id}. Use /project list to discover valid project_id values."
+        ) from exc
 
 
 def _require_scoped_project(session: CliSession, context: InterfaceContext) -> Project:
     if session.scope.project_id is None:
-        raise ValueError("current session scope has no project_id")
+        raise ValueError(
+            "current session scope has no project_id. "
+            "Use /project list, then /project use <project_id>."
+        )
     return _get_project(context, session.scope.project_id)
 
 
@@ -269,12 +284,17 @@ def _get_work_unit(project: Project, work_unit_id: str) -> WorkUnit:
     try:
         return project.work_units[work_unit_id]
     except KeyError as exc:
-        raise ValueError(f"unknown work_unit_id: {work_unit_id}") from exc
+        raise ValueError(
+            f"unknown work_unit_id: {work_unit_id}. Use /work list to discover valid work_unit_id values."
+        ) from exc
 
 
 def _require_scoped_work_unit(session: CliSession, project: Project) -> WorkUnit:
     if session.scope.work_unit_id is None:
-        raise ValueError("current session scope has no work_unit_id")
+        raise ValueError(
+            "current session scope has no work_unit_id. "
+            "Use /work list, then /work use <work_unit_id>."
+        )
     return _get_work_unit(project, session.scope.work_unit_id)
 
 
@@ -282,13 +302,21 @@ def _get_run(work_unit: WorkUnit, run_id: str) -> Run:
     try:
         return work_unit.runs[run_id]
     except KeyError as exc:
-        raise ValueError(f"unknown run_id: {run_id}") from exc
+        raise ValueError(
+            f"unknown run_id: {run_id}. Use /run list to discover valid run_id values."
+        ) from exc
 
 
-def _resolve_run_from_tokens(*, tokens: list[str], session: CliSession, context: InterfaceContext) -> Run:
+def _resolve_run_from_tokens(
+    *,
+    tokens: list[str],
+    session: CliSession,
+    context: InterfaceContext,
+    command_name: str,
+) -> Run:
     run_id = tokens[1] if len(tokens) > 1 else session.scope.run_id
     if run_id is None:
-        raise ValueError("no run_id was provided and the session scope has no current run")
+        raise ValueError(_missing_run_message(command_name))
     if session.scope.project_id is not None:
         project = _get_project(context, session.scope.project_id)
         if session.scope.work_unit_id is not None:
@@ -304,10 +332,12 @@ def _resolve_run_from_tokens(*, tokens: list[str], session: CliSession, context:
             return matches[0]
         if len(matches) > 1:
             raise ValueError(
-                f"ambiguous run_id: {run_id} requires work_unit scope inside current project scope {project.project_id}"
+                f"ambiguous run_id: {run_id} requires work_unit scope inside current project scope {project.project_id}. "
+                "Use /work list, then /work use <work_unit_id>."
             )
         raise ValueError(
-            f"unknown run_id: {run_id} in current project scope {project.project_id}"
+            f"unknown run_id: {run_id} in current project scope {project.project_id}. "
+            "Use /work list or /run list to discover valid IDs."
         )
 
     matches = [
@@ -319,8 +349,18 @@ def _resolve_run_from_tokens(*, tokens: list[str], session: CliSession, context:
     if len(matches) == 1:
         return matches[0]
     if len(matches) > 1:
-        raise ValueError(f"ambiguous run_id: {run_id} requires project or work_unit scope")
-    raise ValueError(f"unknown run_id: {run_id}")
+        raise ValueError(
+            f"ambiguous run_id: {run_id} requires project or work_unit scope. "
+            "Use /project list, /project use <project_id>, and /work list to narrow scope."
+        )
+    raise ValueError(f"unknown run_id: {run_id}. Use /project list, /work list, or /run list to discover valid IDs.")
+
+
+def _missing_run_message(command_name: str) -> str:
+    return (
+        f"{command_name} requires a current run or an explicit <run_id>. "
+        "Use /run list, /run use <run_id>, or /scope show."
+    )
 
 
 def _require_project_for_run(context: InterfaceContext, project_id: str) -> Project:

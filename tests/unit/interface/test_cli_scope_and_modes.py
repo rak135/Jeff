@@ -55,3 +55,19 @@ def test_scope_clear_resets_local_session_scope_only() -> None:
     assert cli.session.scope.work_unit_id is None
     assert cli.session.scope.run_id is None
     assert "project-1" in context.state.projects
+
+
+def test_scope_show_guides_operator_toward_next_valid_scope_step() -> None:
+    context, _ = build_interface_context()
+    cli = JeffCLI(context=context)
+
+    text = cli.run_one_shot("/scope show")
+    assert "[hint] next=/project list then /project use <project_id>" in text
+
+    cli.run_one_shot("/project use project-1")
+    text = cli.run_one_shot("/scope show")
+    assert "[hint] next=/work list then /work use <work_unit_id>" in text
+
+    cli.run_one_shot("/work use wu-1")
+    text = cli.run_one_shot("/scope show")
+    assert "[hint] next=/run list then /run use <run_id>" in text
