@@ -1,6 +1,6 @@
-from jeff.action import GovernedExecutionRequest, evaluate_outcome, normalize_outcome
+from jeff.action import GovernedExecutionRequest, normalize_outcome
 from jeff.action.execution import ExecutionResult
-from jeff.cognitive import PlanArtifact, ProposalOption, ProposalSet, SelectionResult, assemble_context_package
+from jeff.cognitive import PlanArtifact, ProposalOption, ProposalSet, SelectionResult, assemble_context_package, evaluate_outcome
 from jeff.cognitive.types import PlanStep, TriggerInput
 from jeff.contracts import Action
 from jeff.core.schemas import Scope

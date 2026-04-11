@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from jeff.action import EvaluationResult
+from jeff.cognitive import EvaluationResult
 from jeff.core.schemas import Scope
 from jeff.governance import ActionEntryDecision
 from jeff.memory import MemoryWriteDecision

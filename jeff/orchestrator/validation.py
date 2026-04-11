@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from jeff.action import EvaluationResult, ExecutionResult, Outcome
-from jeff.cognitive import ContextPackage, PlanArtifact, ProposalSet, ResearchResult, SelectionResult
+from jeff.action import ExecutionResult, Outcome
+from jeff.cognitive import ContextPackage, EvaluationResult, PlanArtifact, ProposalSet, ResearchResult, SelectionResult
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
 from jeff.core.transition import TransitionResult

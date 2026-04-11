@@ -1,9 +1,9 @@
 import pytest
 
-from jeff.action.evaluation import evaluate_outcome
 from jeff.action.execution import ExecutionResult, GovernedExecutionRequest
 from jeff.action.outcome import normalize_outcome
 from jeff.action.types import SupportRef
+from jeff.cognitive.evaluation import evaluate_outcome
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
 from jeff.governance import CurrentTruthSnapshot, Policy, evaluate_action_entry, may_start_now

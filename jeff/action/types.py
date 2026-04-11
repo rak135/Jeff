@@ -1,4 +1,4 @@
-"""Shared action-layer types."""
+"""Shared action-layer types for execution and outcome contracts."""
 
 from __future__ import annotations
 
@@ -25,28 +25,6 @@ OutcomeState = Literal[
     "failed",
     "inconclusive",
     "mismatch_affected",
-]
-
-EvaluationVerdict = Literal[
-    "acceptable",
-    "acceptable_with_cautions",
-    "partial",
-    "degraded",
-    "blocked",
-    "inconclusive",
-    "unacceptable",
-    "mismatch_affected",
-]
-
-RecommendedNextStep = Literal[
-    "accept_as_complete",
-    "continue",
-    "retry",
-    "revalidate",
-    "recover",
-    "escalate",
-    "terminate_and_replan",
-    "request_clarification",
 ]
 
 SupportRefType = Literal["artifact", "trace", "evidence"]

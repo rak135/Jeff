@@ -1,7 +1,7 @@
 import pytest
 
-from jeff.action import EvaluationResult, Outcome
-from jeff.cognitive import ProposalOption, ProposalSet, SelectionResult, assemble_context_package
+from jeff.action import Outcome
+from jeff.cognitive import EvaluationResult, ProposalOption, ProposalSet, SelectionResult, assemble_context_package
 from jeff.cognitive.types import TriggerInput
 from jeff.contracts import Action
 from jeff.core.schemas import Scope

@@ -96,7 +96,6 @@ python -m pytest -q
 ## Current Caveats
 
 - startup currently uses explicit demo bootstrap only; there is no persisted runtime state
-- operator views report `evaluation` as Cognitive, but the current implementation file still lives at `jeff/action/evaluation.py`
 - the canonical semantics still live in `v1_doc/`, not in this README
 
 ## Explicitly Deferred

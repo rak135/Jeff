@@ -1,5 +1,5 @@
-from jeff.action import EvaluationResult, Outcome
-from jeff.cognitive import ResearchRequest, ResearchResult, SelectionResult, assemble_context_package
+from jeff.action import Outcome
+from jeff.cognitive import EvaluationResult, ResearchRequest, ResearchResult, SelectionResult, assemble_context_package
 from jeff.cognitive.types import Recommendation, SourceSummary, TriggerInput
 from jeff.contracts import Action
 from jeff.core.schemas import Scope

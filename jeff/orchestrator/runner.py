@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Mapping
 
-from jeff.action import EvaluationResult
+from jeff.cognitive import EvaluationResult
 from jeff.core.schemas import Scope
 
 from .flows import FlowFamily, StageName, stage_order_for_flow

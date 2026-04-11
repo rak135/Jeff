@@ -3,9 +3,33 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
-from .outcome import Outcome
-from .types import EvaluationVerdict, RecommendedNextStep, normalize_text_list, require_text
+from jeff.action.outcome import Outcome
+
+from .types import normalize_text_list, require_text
+
+EvaluationVerdict = Literal[
+    "acceptable",
+    "acceptable_with_cautions",
+    "partial",
+    "degraded",
+    "blocked",
+    "inconclusive",
+    "unacceptable",
+    "mismatch_affected",
+]
+
+RecommendedNextStep = Literal[
+    "accept_as_complete",
+    "continue",
+    "retry",
+    "revalidate",
+    "recover",
+    "escalate",
+    "terminate_and_replan",
+    "request_clarification",
+]
 
 
 @dataclass(frozen=True, slots=True)

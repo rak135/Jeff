@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from jeff.action import GovernedExecutionRequest, evaluate_outcome, normalize_outcome
+from jeff.action import GovernedExecutionRequest, normalize_outcome
 from jeff.action.execution import ExecutionResult
-from jeff.cognitive import ProposalOption, ProposalSet, SelectionResult
+from jeff.cognitive import ProposalOption, ProposalSet, SelectionResult, evaluate_outcome
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
 from jeff.core.state import GlobalState, bootstrap_global_state
