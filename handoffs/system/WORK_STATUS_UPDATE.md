@@ -250,3 +250,61 @@
   - jeff/main.py
   - tests/unit/interface/test_cli_usability.py
   - README.md
+
+## 2026-04-11 12:03 - TASK: M-007G - Work-unit-first automatic run handling
+
+- Scope: CLI run resolution, lawful auto-create wiring, and work-unit-first operator flow
+- Done:
+  - added deterministic auto-run resolution so `/inspect` uses the current run, auto-selects the most recent existing run in the selected work unit, or creates a new run when none exists
+  - wired automatic new-run creation through the existing Core `create_run` transition path instead of direct interface mutation
+  - kept `/show`, `/trace`, and `/lifecycle` historical: they can auto-bind an existing run but do not create new runs
+  - updated help, scope guidance, and README so normal flow is project -> work unit -> `/inspect`, with manual run commands positioned as history/debug tools
+  - added fixture support and targeted interface tests for auto-bind, lawful auto-create, no-create history commands, and run-scope clearing
+- Validation: `python -m pytest -q tests/unit/interface tests/smoke/test_cli_entry_smoke.py` passed with 30 tests; `python -m pytest -q tests/acceptance/test_acceptance_cli_orchestrator_alignment.py tests/acceptance/test_acceptance_truthfulness.py tests/acceptance/test_acceptance_scope_isolation.py` passed with 7 tests; `python -m pytest -q` passed with 145 tests
+- Current state: normal CLI work is now work-unit-first while `run` remains a real canonical container for history, trace, lifecycle, and manual switching
+- Next step: keep future CLI flow changes subordinate to canonical run truth and transition-only mutation
+- Files:
+  - jeff/interface/commands.py
+  - jeff/interface/cli.py
+  - jeff/interface/render.py
+  - tests/fixtures/cli.py
+  - tests/unit/interface/test_cli_run_resolution.py
+  - README.md
+
+## 2026-04-11 19:29 - Added infrastructure model adapter Slice A
+
+- Scope: infrastructure model adapter foundations
+- Done:
+  - added standalone `jeff.infrastructure.model_adapters` package with typed request, response, usage, and status models
+  - added narrow adapter contract, explicit registry, and adapter-layer error classes
+  - added deterministic fake provider with consistent timeout and malformed-output failure behavior
+  - added truthful `jeff/infrastructure/HANDOFF.md` for the new module
+  - added focused pytest coverage for types, registry, and fake adapter behavior
+- Validation: targeted adapter tests passed and full `python -m pytest -q` passed with 158 tests
+- Current state: Slice A infrastructure adapter foundations exist as a standalone module with no real providers or runtime wiring yet
+- Next step: add the next bounded infrastructure slice without leaking provider logic into semantic layers
+- Files:
+  - jeff/infrastructure/model_adapters/types.py
+  - jeff/infrastructure/model_adapters/registry.py
+  - jeff/infrastructure/model_adapters/providers/fake.py
+  - jeff/infrastructure/HANDOFF.md
+  - tests/unit/infrastructure/test_fake_model_adapter.py  
+
+## 2026-04-11 19:37 - Added infrastructure model adapter Slice B
+
+- Scope: infrastructure model adapter factory, telemetry, and Ollama provider
+- Done:
+  - added normalized adapter telemetry event model plus request/response-to-telemetry mapping
+  - added explicit adapter factory with fail-closed fake and Ollama provider construction
+  - added minimal standard-library Ollama HTTP adapter with normalized usage and failure mapping
+  - updated `jeff/infrastructure/HANDOFF.md` to reflect Slice B reality and remaining deferrals
+  - added focused pytest coverage for factory, telemetry, and Ollama adapter behavior
+- Validation: targeted infrastructure adapter tests passed and full `python -m pytest -q` passed with 170 tests
+- Current state: Slice B extends the standalone infrastructure adapter module with observability, construction, and one real provider while leaving runtime integration deferred
+- Next step: add future infrastructure-only provider or wiring slices without leaking provider logic into semantic layers
+- Files:
+  - jeff/infrastructure/model_adapters/telemetry.py
+  - jeff/infrastructure/model_adapters/factory.py
+  - jeff/infrastructure/model_adapters/providers/ollama.py
+  - jeff/infrastructure/HANDOFF.md
+  - tests/unit/infrastructure/test_ollama_model_adapter.py

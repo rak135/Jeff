@@ -73,12 +73,14 @@ Useful demo commands after startup:
 /project list
 /project use project-1
 /work use wu-1
-/run list
-/run use run-1
 /inspect
-/show
 /trace
 /lifecycle
+
+# Manual history/debug when needed:
+/run list
+/run use run-1
+/show
 ```
 
 ## Tests

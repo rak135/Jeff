@@ -70,4 +70,4 @@ def test_scope_show_guides_operator_toward_next_valid_scope_step() -> None:
 
     cli.run_one_shot("/work use wu-1")
     text = cli.run_one_shot("/scope show")
-    assert "[hint] next=/run list then /run use <run_id>" in text
+    assert "[hint] next=/inspect (auto-selects or creates a run) or /run list for manual history/debug" in text

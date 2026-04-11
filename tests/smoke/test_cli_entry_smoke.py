@@ -9,6 +9,7 @@ def test_one_shot_help_reaches_cli_surface() -> None:
     assert result.returncode == 0
     assert "Jeff CLI is command-driven." in result.stdout
     assert "/project list" in result.stdout
+    assert "5. /inspect" in result.stdout
     assert "/run list" in result.stdout
     assert "/show [run_id]" in result.stdout
 

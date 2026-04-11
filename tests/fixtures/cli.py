@@ -13,8 +13,18 @@ from jeff.orchestrator.runner import FlowRunResult
 from jeff.orchestrator.trace import OrchestrationEvent
 
 
-def build_state_with_run() -> tuple[object, Scope]:
-    scope = Scope(project_id="project-1", work_unit_id="wu-1", run_id="run-1")
+def build_state_with_runs(
+    *,
+    project_id: str = "project-1",
+    work_unit_id: str = "wu-1",
+    objective: str = "CLI coverage",
+    run_specs: tuple[tuple[str, str], ...] = (("run-1", "created"),),
+) -> tuple[object, Scope]:
+    scope = Scope(
+        project_id=project_id,
+        work_unit_id=work_unit_id,
+        run_id=run_specs[-1][0] if run_specs else None,
+    )
     state = bootstrap_global_state()
     state = apply_transition(
         state,
@@ -33,20 +43,25 @@ def build_state_with_run() -> tuple[object, Scope]:
             transition_type="create_work_unit",
             basis_state_version=1,
             scope=Scope(project_id=str(scope.project_id)),
-            payload={"work_unit_id": str(scope.work_unit_id), "objective": "CLI coverage"},
+            payload={"work_unit_id": str(scope.work_unit_id), "objective": objective},
         ),
     ).state
-    state = apply_transition(
-        state,
-        TransitionRequest(
-            transition_id="transition-run",
-            transition_type="create_run",
-            basis_state_version=2,
-            scope=Scope(project_id=str(scope.project_id), work_unit_id=str(scope.work_unit_id)),
-            payload={"run_id": str(scope.run_id)},
-        ),
-    ).state
+    for index, (run_id, run_lifecycle_state) in enumerate(run_specs, start=1):
+        state = apply_transition(
+            state,
+            TransitionRequest(
+                transition_id=f"transition-run-{index}",
+                transition_type="create_run",
+                basis_state_version=state.state_meta.state_version,
+                scope=Scope(project_id=str(scope.project_id), work_unit_id=str(scope.work_unit_id)),
+                payload={"run_id": run_id, "run_lifecycle_state": run_lifecycle_state},
+            ),
+        ).state
     return state, scope
+
+
+def build_state_with_run() -> tuple[object, Scope]:
+    return build_state_with_runs()
 
 
 def build_flow_run(

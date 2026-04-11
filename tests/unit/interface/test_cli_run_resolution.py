@@ -1,0 +1,112 @@
+import pytest
+
+from jeff.interface import InterfaceContext, JeffCLI
+
+from tests.fixtures.cli import build_flow_run, build_state_with_runs
+
+
+def test_inspect_auto_binds_existing_run_in_selected_work_unit() -> None:
+    state, scope = build_state_with_runs()
+    flow_run = build_flow_run(scope)
+    cli = JeffCLI(context=InterfaceContext(state=state, flow_runs={str(scope.run_id): flow_run}))
+
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+
+    text = cli.run_one_shot("/inspect")
+
+    assert "auto-selected current run: run-1" in text
+    assert "RUN run-1" in text
+    assert cli.session.scope.run_id == "run-1"
+
+
+def test_inspect_creates_new_run_through_transition_path_when_none_exist() -> None:
+    state, _ = build_state_with_runs(run_specs=())
+    cli = JeffCLI(context=InterfaceContext(state=state))
+
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+    text = cli.run_one_shot("/inspect")
+
+    assert "created and selected new run: run-1" in text
+    assert "RUN run-1" in text
+    assert "[derived] no orchestrator flow is attached to this run" in text
+    assert cli.session.scope.run_id == "run-1"
+    assert '"run_id": "run-1"' in cli.run_one_shot("/show", json_output=True)
+    assert "- run-1 lifecycle=created" in cli.run_one_shot("/run list")
+
+
+def test_historical_show_auto_binds_existing_run_without_creating_new_one() -> None:
+    state, scope = build_state_with_runs(run_specs=(("run-1", "created"), ("run-2", "created")))
+    flow_run = build_flow_run(scope)
+    cli = JeffCLI(context=InterfaceContext(state=state, flow_runs={str(scope.run_id): flow_run}))
+
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+    text = cli.run_one_shot("/show")
+
+    assert "auto-selected current run: run-2" in text
+    assert "RUN run-2" in text
+    assert cli.session.scope.run_id == "run-2"
+    run_list = cli.run_one_shot("/run list")
+    assert "- run-1 lifecycle=created" in run_list
+    assert "- run-2 lifecycle=created" in run_list
+
+
+def test_historical_commands_do_not_create_new_run_when_no_run_exists() -> None:
+    state, _ = build_state_with_runs(run_specs=())
+    cli = JeffCLI(context=InterfaceContext(state=state))
+
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+
+    with pytest.raises(ValueError, match="Use /inspect to create and select a new run"):
+        cli.run_one_shot("/show")
+
+    assert cli.session.scope.run_id is None
+    assert "- none" in cli.run_one_shot("/run list")
+
+
+def test_selecting_different_work_unit_clears_incompatible_current_run() -> None:
+    state, _ = build_state_with_runs(run_specs=())
+    state = _add_work_unit(state, work_unit_id="wu-2", objective="Second bounded effort")
+    cli = JeffCLI(context=InterfaceContext(state=state))
+
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+    cli.run_one_shot("/inspect")
+
+    assert cli.session.scope.run_id == "run-1"
+
+    cli.run_one_shot("/work use wu-2")
+
+    assert cli.session.scope.work_unit_id == "wu-2"
+    assert cli.session.scope.run_id is None
+
+
+def test_help_text_marks_run_commands_as_manual_history_debug_path() -> None:
+    state, _ = build_state_with_runs()
+    cli = JeffCLI(context=InterfaceContext(state=state))
+
+    text = cli.run_one_shot("/help")
+
+    assert "5. /inspect" in text
+    assert "Manual history/debug:" in text
+    assert "- /run list" in text
+    assert "- /run use <run_id>" in text
+
+
+def _add_work_unit(state: object, *, work_unit_id: str, objective: str) -> object:
+    from jeff.core.schemas import Scope
+    from jeff.core.transition import TransitionRequest, apply_transition
+
+    return apply_transition(
+        state,
+        TransitionRequest(
+            transition_id=f"transition-add-{work_unit_id}",
+            transition_type="create_work_unit",
+            basis_state_version=state.state_meta.state_version,
+            scope=Scope(project_id="project-1"),
+            payload={"work_unit_id": work_unit_id, "objective": objective},
+        ),
+    ).state

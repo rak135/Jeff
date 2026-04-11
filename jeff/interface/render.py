@@ -62,7 +62,7 @@ def render_scope(payload: dict[str, Any]) -> str:
     elif session["work_unit_id"] is None:
         lines.append("[hint] next=/work list then /work use <work_unit_id>")
     elif session["run_id"] is None:
-        lines.append("[hint] next=/run list then /run use <run_id>")
+        lines.append("[hint] next=/inspect (auto-selects or creates a run) or /run list for manual history/debug")
     return "\n".join(lines)
 
 
@@ -186,10 +186,12 @@ def render_help() -> str:
             "2. /project use <project_id>",
             "3. /work list",
             "4. /work use <work_unit_id>",
-            "5. /run list",
-            "6. /run use <run_id>",
-            "7. /inspect",
-            "8. /trace [run_id] or /lifecycle [run_id]",
+            "5. /inspect",
+            "6. /trace [run_id] or /lifecycle [run_id]",
+            "Manual history/debug:",
+            "- /run list",
+            "- /run use <run_id>",
+            "- /show [run_id]",
             "Current startup uses explicit in-memory demo state only.",
             "",
             "Commands:",
@@ -197,11 +199,11 @@ def render_help() -> str:
             "/project use <project_id>",
             "/work list",
             "/work use <work_unit_id>",
+            "/inspect",
             "/run list",
             "/run use <run_id>",
             "/scope show",
             "/scope clear",
-            "/inspect",
             "/show [run_id]",
             "/trace [run_id]",
             "/lifecycle [run_id]",

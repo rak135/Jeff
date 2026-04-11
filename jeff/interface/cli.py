@@ -45,4 +45,5 @@ class JeffCLI:
             json_output=json_output,
         )
         self._session = result.session
+        self._context = result.context
         return result

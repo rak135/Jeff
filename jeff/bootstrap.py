@@ -10,10 +10,21 @@ from jeff.core.schemas import Scope
 from jeff.core.state import GlobalState, bootstrap_global_state
 from jeff.core.transition import TransitionRequest, apply_transition
 from jeff.governance import Approval, CurrentTruthSnapshot, Policy, evaluate_action_entry
+from jeff.infrastructure import (
+    InfrastructureServices,
+    ModelAdapterRuntimeConfig,
+    build_infrastructure_services,
+)
 from jeff.interface.commands import InterfaceContext
 from jeff.orchestrator.lifecycle import FlowLifecycle
 from jeff.orchestrator.runner import FlowRunResult
 from jeff.orchestrator.trace import OrchestrationEvent
+
+
+def build_infrastructure_runtime(
+    config: ModelAdapterRuntimeConfig,
+) -> InfrastructureServices:
+    return build_infrastructure_services(config)
 
 
 def build_demo_interface_context() -> InterfaceContext:

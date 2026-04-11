@@ -30,17 +30,19 @@ def test_run_list_requires_scope_then_lists_available_runs() -> None:
 def test_inspect_without_current_run_suggests_next_valid_commands() -> None:
     context, _ = build_interface_context()
     cli = JeffCLI(context=context)
-    cli.run_one_shot("/project use project-1")
-    cli.run_one_shot("/work use wu-1")
 
     with pytest.raises(ValueError) as exc_info:
         cli.run_one_shot("/inspect")
 
     message = str(exc_info.value)
-    assert "inspect requires a current run or an explicit <run_id>" in message
-    assert "/run list" in message
-    assert "/run use <run_id>" in message
-    assert "/scope show" in message
+    assert "current session scope has no project_id" in message
+
+    cli.run_one_shot("/project use project-1")
+    with pytest.raises(ValueError) as exc_info:
+        cli.run_one_shot("/inspect")
+
+    message = str(exc_info.value)
+    assert "current session scope has no work_unit_id" in message
 
 
 def test_unknown_scope_ids_suggest_discovery_commands() -> None:
@@ -80,8 +82,8 @@ def test_help_text_explains_normal_cli_flow() -> None:
 
     assert "Jeff CLI is command-driven." in text
     assert "Plain text like 'hello' is not a supported command." in text
-    assert "5. /run list" in text
-    assert "7. /inspect" in text
+    assert "5. /inspect" in text
+    assert "Manual history/debug:" in text
     assert "Current startup uses explicit in-memory demo state only." in text
 
 
