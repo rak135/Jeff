@@ -41,6 +41,7 @@ class CurrentTruthSnapshot:
 @dataclass(frozen=True, slots=True)
 class ActionEntryDecision:
     action_id: str
+    action_binding_key: str
     policy_verdict: PolicyVerdict
     approval_verdict: ApprovalVerdict
     readiness: Readiness
@@ -77,6 +78,7 @@ def evaluate_action_entry(
 
     return ActionEntryDecision(
         action_id=str(action.action_id),
+        action_binding_key=action.binding_key,
         policy_verdict=policy_verdict,
         approval_verdict=approval_verdict,
         readiness=readiness,
