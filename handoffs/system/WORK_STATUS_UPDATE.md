@@ -364,4 +364,95 @@
   - jeff/cognitive/research_documents.py
   - jeff/cognitive/__init__.py
   - tests/unit/cognitive/test_research_documents.py
-  - tests/integration/test_document_research_end_to_end.py   
+  - tests/integration/test_document_research_end_to_end.py
+
+## 2026-04-11 21:07 - Refactored cognitive research into submodule package
+
+- Scope: cognitive research module structure and ownership cleanup
+- Done:
+  - replaced the flat `jeff/cognitive/research.py` and `research_documents.py` files with a dedicated `jeff/cognitive/research/` package
+  - split research contracts, synthesis behavior, document acquisition, errors, and legacy compatibility into bounded files
+  - preserved the existing public research surface through package exports and updated `jeff.cognitive` re-exports
+  - isolated the still-needed legacy `ResearchResult` contract into `research/legacy.py`
+  - added a focused public-surface guard test and kept existing research tests green
+- Validation: targeted research refactor tests passed and full `python -m pytest -q` passed with 199 tests
+- Current state: research now has a cleaner package structure with stable behavior and clearer ownership boundaries
+- Next step: keep future research work inside the new package slices without reintroducing blob modules or leaking provider logic
+- Files:
+  - jeff/cognitive/research/__init__.py
+  - jeff/cognitive/research/contracts.py
+  - jeff/cognitive/research/synthesis.py
+  - jeff/cognitive/research/documents.py
+  - jeff/cognitive/research/legacy.py
+
+## 2026-04-11 21:21 - Added web research Slice C2c
+
+- Scope: bounded web source acquisition and evidence extraction for research
+- Done:
+  - extended `ResearchRequest` with explicit bounded web-query inputs and limits
+  - added `jeff/cognitive/research/web.py` for bounded search, fetch, provenance normalization, and deterministic evidence extraction
+  - added thin `run_web_research(...)` wiring into the existing C2a synthesis path
+  - exported the new web research surface through `jeff.cognitive.research` and `jeff.cognitive`
+  - added deterministic unit and integration tests with mocked web acquisition boundaries
+- Validation: targeted web-research tests passed and full `python -m pytest -q` passed with 209 tests
+- Current state: Jeff can now acquire bounded web sources from explicit queries, normalize them into source-aware evidence packs, and feed that support into the existing research synthesis path
+- Next step: keep future research-source slices bounded and explicit without widening into autonomy, persistence, or memory handoff
+- Files:
+  - jeff/cognitive/research/contracts.py
+  - jeff/cognitive/research/web.py
+  - jeff/cognitive/research/__init__.py
+  - tests/unit/cognitive/test_research_web.py
+  - tests/integration/test_web_research_end_to_end.py
+
+## 2026-04-11 21:29 - Added research artifact persistence Slice C2d
+
+- Scope: bounded persistence for validated research artifacts as durable support records
+- Done:
+  - added `jeff/cognitive/research/persistence.py` with `ResearchArtifactRecord`, `ResearchArtifactStore`, and record-building/persisting helpers
+  - added thin document and web run-and-persist helpers built on the existing bounded research paths
+  - exported the new persistence surface through `jeff.cognitive.research` and `jeff.cognitive`
+  - kept persisted records explicit, JSON-backed, human-inspectable, and separate from memory and truth
+  - added deterministic unit and integration tests for round-trip save/load, filtered listing, and document/web persistence flow
+- Validation: targeted persistence tests passed and full `python -m pytest -q` passed with 218 tests
+- Current state: Jeff can now persist validated research artifacts as bounded local support records with scope, provenance, sources, and evidence preserved
+- Next step: keep future reuse or handoff slices downstream of these stored support artifacts without collapsing them into memory or truth
+- Files:
+  - jeff/cognitive/research/persistence.py
+  - jeff/cognitive/research/__init__.py
+  - jeff/cognitive/__init__.py
+  - tests/unit/cognitive/test_research_persistence.py
+  - tests/integration/test_research_persistence_flow.py
+
+## 2026-04-11 21:39 - Added research-to-memory handoff Slice C2e
+
+- Scope: selective handoff from validated research artifacts into the current memory write pipeline
+- Done:
+  - added `jeff/cognitive/research/memory_handoff.py` with bounded handoff input, pre-handoff gate, and thin memory-pipeline delegation
+  - added persisted-record handoff support without redesigning research persistence or memory
+  - exported the new handoff surface through `jeff.cognitive.research` and `jeff.cognitive`
+  - kept memory write / reject / defer decisions owned by the existing `jeff.memory` write pipeline
+  - added deterministic unit and integration tests for write, reject, and defer outcomes over document and web research flows
+- Validation: targeted handoff tests passed and full `python -m pytest -q` passed with 226 tests
+- Current state: Jeff can now selectively distill validated research artifacts into bounded inputs for the current memory layer while keeping research artifacts, memory, and truth separate
+- Next step: keep future downstream research reuse bounded without redesigning memory or collapsing support artifacts into canonical truth
+- Files:
+  - jeff/cognitive/research/memory_handoff.py
+  - jeff/cognitive/research/__init__.py
+  - jeff/cognitive/__init__.py
+  - tests/unit/cognitive/test_research_memory_handoff.py
+  - tests/integration/test_research_memory_handoff_flow.py
+
+## 2026-04-11 21:48 - Updated cognitive and research handoffs
+
+- Scope: cognitive module and research submodule continuation handoffs
+- Done:
+  - updated `jeff/cognitive/HANDOFF.md` to reflect the current research package reality and point downward to a dedicated research handoff
+  - added `jeff/cognitive/research/HANDOFF.md` using the required submodule structure from `HANDOFF_STRUCTURE.md`
+  - aligned both handoffs with the implemented research slices: synthesis, documents, web, persistence, memory handoff, and bounded legacy support
+  - validated that the handoff text matches the current `jeff/cognitive/research/` file layout
+- Validation: checked `HANDOFF_STRUCTURE.md`, current cognitive/research package layout, and handoff cross-links; no code behavior changes were made
+- Current state: cognitive and research handoffs now match the current repo layout and continuation reality
+- Next step: keep future research changes updating the local research handoff first, then the parent cognitive handoff if the module view changes
+- Files:
+  - jeff/cognitive/HANDOFF.md
+  - jeff/cognitive/research/HANDOFF.md            

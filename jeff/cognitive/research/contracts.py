@@ -25,6 +25,11 @@ class ResearchRequest:
     max_files: int = 20
     max_chars_per_file: int = 8000
     max_evidence_items: int = 20
+    web_queries: tuple[str, ...] = ()
+    max_web_results: int = 10
+    max_web_pages: int = 5
+    max_chars_per_page: int = 12000
+    max_web_evidence_items: int | None = None
     _legacy_research_mode: ResearchMode = field(init=False, repr=False)
     objective: InitVar[str | None] = None
     scope: InitVar[Scope | None] = None
@@ -51,6 +56,7 @@ class ResearchRequest:
         object.__setattr__(self, "constraints", normalize_text_list(self.constraints, field_name="constraints"))
         object.__setattr__(self, "source_mode", require_text(self.source_mode, field_name="source_mode"))
         object.__setattr__(self, "document_paths", normalize_text_list(self.document_paths, field_name="document_paths"))
+        object.__setattr__(self, "web_queries", normalize_text_list(self.web_queries, field_name="web_queries"))
         object.__setattr__(
             self,
             "include_extensions",
@@ -78,6 +84,14 @@ class ResearchRequest:
             raise ValueError("max_chars_per_file must be greater than zero")
         if self.max_evidence_items <= 0:
             raise ValueError("max_evidence_items must be greater than zero")
+        if self.max_web_results <= 0:
+            raise ValueError("max_web_results must be greater than zero")
+        if self.max_web_pages <= 0:
+            raise ValueError("max_web_pages must be greater than zero")
+        if self.max_chars_per_page <= 0:
+            raise ValueError("max_chars_per_page must be greater than zero")
+        if self.max_web_evidence_items is not None and self.max_web_evidence_items <= 0:
+            raise ValueError("max_web_evidence_items must be greater than zero when provided")
 
         object.__setattr__(self, "_legacy_research_mode", research_mode or "direct_output")
 
