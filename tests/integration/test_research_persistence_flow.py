@@ -62,7 +62,7 @@ def test_document_research_can_produce_and_persist_artifact(tmp_path: Path) -> N
                     model_name="fake-model",
                     fake_json_response={
                         "summary": "The documents support a bounded rollout.",
-                        "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": [source_id]}],
+                        "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
                         "inferences": ["A narrow implementation remains better supported."],
                         "uncertainties": ["No external validation was performed."],
                         "recommendation": "Proceed with the bounded path.",
@@ -117,7 +117,7 @@ def test_web_research_can_produce_and_persist_artifact(tmp_path: Path, monkeypat
                     model_name="fake-model",
                     fake_json_response={
                         "summary": "The fetched web source supports a bounded rollout.",
-                        "findings": [{"text": "The article supports the bounded rollout.", "source_refs": [source_id]}],
+                        "findings": [{"text": "The article supports the bounded rollout.", "source_refs": ["S1"]}],
                         "inferences": ["A narrow path remains better supported."],
                         "uncertainties": ["Only one fetched source was considered."],
                         "recommendation": "Keep the rollout bounded.",

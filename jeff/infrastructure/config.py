@@ -106,12 +106,13 @@ class RuntimeDefaults:
 @dataclass(frozen=True, slots=True)
 class PurposeOverrides:
     research: str | None = None
+    research_repair: str | None = None
     proposal: str | None = None
     planning: str | None = None
     evaluation: str | None = None
 
     def __post_init__(self) -> None:
-        for field_name in ("research", "proposal", "planning", "evaluation"):
+        for field_name in ("research", "research_repair", "proposal", "planning", "evaluation"):
             object.__setattr__(
                 self,
                 field_name,
@@ -119,7 +120,7 @@ class PurposeOverrides:
             )
 
     def for_purpose(self, purpose: str) -> str | None:
-        if purpose not in {"research", "proposal", "planning", "evaluation"}:
+        if purpose not in {"research", "research_repair", "proposal", "planning", "evaluation"}:
             return None
         return getattr(self, purpose)
 
@@ -188,6 +189,7 @@ def load_runtime_config(path: str | Path) -> JeffRuntimeConfig:
         adapters=adapters,
         purpose_overrides=PurposeOverrides(
             research=purpose_overrides_table.get("research"),
+            research_repair=purpose_overrides_table.get("research_repair"),
             proposal=purpose_overrides_table.get("proposal"),
             planning=purpose_overrides_table.get("planning"),
             evaluation=purpose_overrides_table.get("evaluation"),

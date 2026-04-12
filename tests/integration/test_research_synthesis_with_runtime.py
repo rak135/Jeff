@@ -24,7 +24,7 @@ def test_runtime_default_fake_adapter_can_drive_research_synthesis() -> None:
                     model_name="fake-model",
                     fake_json_response={
                         "summary": "Default adapter summary.",
-                        "findings": [{"text": "Bounded fact", "source_refs": ["source-a"]}],
+                        "findings": [{"text": "Bounded fact", "source_refs": ["S1"]}],
                         "inferences": ["Bounded inference"],
                         "uncertainties": ["Known uncertainty"],
                         "recommendation": "Stay bounded.",
@@ -55,7 +55,7 @@ def test_runtime_explicit_adapter_selection_works_with_multiple_fake_adapters() 
                     model_name="fake-model",
                     fake_json_response={
                         "summary": "Default summary.",
-                        "findings": [{"text": "Default fact", "source_refs": ["source-a"]}],
+                        "findings": [{"text": "Default fact", "source_refs": ["S1"]}],
                         "inferences": [],
                         "uncertainties": [],
                         "recommendation": None,
@@ -67,7 +67,7 @@ def test_runtime_explicit_adapter_selection_works_with_multiple_fake_adapters() 
                     model_name="fake-model-2",
                     fake_json_response={
                         "summary": "Secondary summary.",
-                        "findings": [{"text": "Secondary fact", "source_refs": ["source-b"]}],
+                        "findings": [{"text": "Secondary fact", "source_refs": ["S2"]}],
                         "inferences": ["Secondary inference"],
                         "uncertainties": ["Secondary uncertainty"],
                         "recommendation": "Use secondary.",

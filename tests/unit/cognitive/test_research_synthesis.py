@@ -6,6 +6,7 @@ from jeff.cognitive import (
     ResearchArtifact,
     ResearchRequest,
     ResearchSynthesisError,
+    ResearchSynthesisRuntimeError,
     ResearchSynthesisValidationError,
     SourceItem,
     build_research_model_request,
@@ -25,8 +26,16 @@ def test_build_research_model_request_includes_bounded_evidence_and_instructions
     assert "Stay within the provided evidence." in model_request.prompt
     assert "Do not invent sources" in model_request.prompt
     assert "Question: What does the prepared evidence support?" in model_request.prompt
-    assert "source-a" in model_request.prompt
+    assert "Allowed citation keys: S1, S2" in model_request.prompt
+    assert "source-a" not in model_request.prompt
+    assert "source-b" not in model_request.prompt
+    assert "refs=S1" in model_request.prompt
     assert "Constraint A" in model_request.prompt
+    assert model_request.json_schema["properties"]["findings"]["items"]["properties"]["source_refs"]["items"]["enum"] == [
+        "S1",
+        "S2",
+    ]
+    assert model_request.metadata["citation_keys"] == ["S1", "S2"]
     assert model_request.metadata["adapter_id"] == "fake-json"
 
 
@@ -39,8 +48,8 @@ def test_successful_synthesis_using_fake_model_adapter_json_mode() -> None:
             default_json_response={
                 "summary": "The prepared evidence supports a bounded conclusion.",
                 "findings": [
-                    {"text": "Source A describes the current state.", "source_refs": ["source-a"]},
-                    {"text": "Source B confirms the same constraint.", "source_refs": ["source-b"]},
+                    {"text": "Source A describes the current state.", "source_refs": ["S1"]},
+                    {"text": "Source B confirms the same constraint.", "source_refs": ["S2"]},
                 ],
                 "inferences": ["A minimal next step is better supported than expansion."],
                 "uncertainties": ["External conditions were not observed directly."],
@@ -52,12 +61,13 @@ def test_successful_synthesis_using_fake_model_adapter_json_mode() -> None:
     assert isinstance(artifact, ResearchArtifact)
     assert artifact.summary == "The prepared evidence supports a bounded conclusion."
     assert artifact.findings[0].text == "Source A describes the current state."
+    assert artifact.findings[0].source_refs == ("source-a",)
     assert artifact.inferences == ("A minimal next step is better supported than expansion.",)
     assert artifact.uncertainties == ("External conditions were not observed directly.",)
 
 
 def test_malformed_json_output_fails_closed() -> None:
-    with pytest.raises(ResearchSynthesisError, match="invocation failed"):
+    with pytest.raises(ResearchSynthesisRuntimeError, match="malformed_output"):
         synthesize_research(
             research_request=_research_request(),
             evidence_pack=_evidence_pack(),
@@ -82,8 +92,8 @@ def test_missing_required_fields_fail_closed() -> None:
         )
 
 
-def test_unknown_source_refs_in_returned_findings_fail_closed() -> None:
-    with pytest.raises(ResearchSynthesisValidationError, match="unknown source refs"):
+def test_unknown_citation_refs_in_returned_findings_fail_closed() -> None:
+    with pytest.raises(ResearchSynthesisValidationError, match="unknown citation refs"):
         synthesize_research(
             research_request=_research_request(),
             evidence_pack=_evidence_pack(),
@@ -91,7 +101,7 @@ def test_unknown_source_refs_in_returned_findings_fail_closed() -> None:
                 adapter_id="fake-json",
                 default_json_response={
                     "summary": "This should fail source validation.",
-                    "findings": [{"text": "Unsupported claim", "source_refs": ["missing-source"]}],
+                    "findings": [{"text": "Unsupported claim", "source_refs": ["S9"]}],
                     "inferences": [],
                     "uncertainties": [],
                     "recommendation": None,
@@ -104,16 +114,16 @@ def test_findings_inferences_and_uncertainties_remain_distinct() -> None:
     artifact = synthesize_research(
         research_request=_research_request(),
         evidence_pack=_evidence_pack(),
-        adapter=FakeModelAdapter(
-            adapter_id="fake-json",
-            default_json_response={
-                "summary": "Distinct fields stay distinct.",
-                "findings": [{"text": "Observed fact", "source_refs": ["source-a"]}],
-                "inferences": ["Interpretation"],
-                "uncertainties": ["Open question"],
-                "recommendation": None,
-            },
-        ),
+            adapter=FakeModelAdapter(
+                adapter_id="fake-json",
+                default_json_response={
+                    "summary": "Distinct fields stay distinct.",
+                    "findings": [{"text": "Observed fact", "source_refs": ["S1"]}],
+                    "inferences": ["Interpretation"],
+                    "uncertainties": ["Open question"],
+                    "recommendation": None,
+                },
+            ),
     )
 
     assert artifact.findings[0].text == "Observed fact"
@@ -125,16 +135,16 @@ def test_synthesize_research_returns_research_artifact_not_model_response() -> N
     result = synthesize_research(
         research_request=_research_request(),
         evidence_pack=_evidence_pack(),
-        adapter=FakeModelAdapter(
-            adapter_id="fake-json",
-            default_json_response={
-                "summary": "Artifact only.",
-                "findings": [{"text": "Observed fact", "source_refs": ["source-a"]}],
-                "inferences": [],
-                "uncertainties": [],
-                "recommendation": None,
-            },
-        ),
+            adapter=FakeModelAdapter(
+                adapter_id="fake-json",
+                default_json_response={
+                    "summary": "Artifact only.",
+                    "findings": [{"text": "Observed fact", "source_refs": ["S1"]}],
+                    "inferences": [],
+                    "uncertainties": [],
+                    "recommendation": None,
+                },
+            ),
     )
 
     assert isinstance(result, ResearchArtifact)

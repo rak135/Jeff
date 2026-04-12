@@ -33,7 +33,7 @@
 - Slice B now adds normalized invocation telemetry, a minimal explicit factory, and one real Ollama HTTP adapter implemented with the standard library.
 - Slice C1 now adds explicit runtime assembly that builds and holds adapter services through the factory and registry, with an optional bootstrap helper that accepts an explicit runtime config object.
 - A local `jeff.runtime.toml` file can now be loaded through Infrastructure-owned config models and converted into runtime services plus purpose overrides.
-- Purpose-based adapter lookup now exists in runtime services, with research consuming it downstream while provider/config translation remains here.
+- Purpose-based adapter lookup now exists in runtime services, including a narrow `research_repair` override with fallback to the normal research adapter path.
 - No environment-driven runtime wiring, CLI-owned provider config, or orchestrator routing policy exists.
 
 # Important Invariants

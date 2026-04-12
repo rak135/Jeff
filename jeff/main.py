@@ -94,6 +94,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 def _run_interactive(cli) -> int:
     from jeff.interface.render import color_enabled, format_error_text, format_hint_text, format_info_text, format_prompt_text
+    from jeff.cognitive import ResearchSynthesisRuntimeError
 
     use_stdout_color = color_enabled(stream_isatty=sys.stdout.isatty())
     use_stderr_color = color_enabled(stream_isatty=sys.stderr.isatty())
@@ -125,7 +126,18 @@ def _run_interactive(cli) -> int:
             return 0
 
         try:
-            output = cli.run_one_shot(normalized)
+            result = cli.execute(
+                normalized,
+                live_debug_emitter=lambda line: print(line),
+            )
+            output = result.text
+        except ResearchSynthesisRuntimeError as exc:
+            rendered = cli.render_research_runtime_error(exc)
+            if cli.session.json_output:
+                print(rendered)
+            else:
+                print(format_error_text(rendered, use_color=use_stderr_color), file=sys.stderr)
+            continue
         except Exception as exc:
             print(format_error_text(str(exc), use_color=use_stderr_color), file=sys.stderr)
             continue

@@ -1,0 +1,115 @@
+{
+  "artifact_id": "research-6066d5b0585258c8",
+  "created_at": "2026-04-12T13:04:08.145470+00:00",
+  "evidence_items": [
+    {
+      "source_refs": [
+        "web-c35ba50566f3"
+      ],
+      "text": "NVIDIA vs AMD (2025): GPUs, AI & Market Share"
+    },
+    {
+      "source_refs": [
+        "web-f8e6a4da8783"
+      ],
+      "text": "The multibillion-dollar deal is AMD's latest move to catch up to Nvidia in the lucrative world of selling artificial intelligence chips."
+    },
+    {
+      "source_refs": [
+        "web-4ce0478e0784"
+      ],
+      "text": "Nvidia dominates gaming GPU market with 95 percent share as sales of AMD Radeon graphics plummet to a historical low of 5 percent | Tom's Hardware"
+    },
+    {
+      "source_refs": [
+        "web-5fd08335339d"
+      ],
+      "text": "AMD vs."
+    },
+    {
+      "source_refs": [
+        "web-5fd08335339d"
+      ],
+      "text": "Nvidia: The AI Supercycle Is Big Enough for Both."
+    }
+  ],
+  "findings": [
+    {
+      "source_refs": [
+        "web-4ce0478e0784"
+      ],
+      "text": "Nvidia holds a 95 percent share of the gaming GPU market, while AMD Radeon graphics sales have reached a historical low of 5 percent."
+    },
+    {
+      "source_refs": [
+        "web-f8e6a4da8783"
+      ],
+      "text": "AMD has entered into a multibillion-dollar 'chips-for-stock' deal as part of an effort to catch up to Nvidia in the AI chip market."
+    },
+    {
+      "source_refs": [
+        "web-5fd08335339d"
+      ],
+      "text": "Some perspectives suggest that the 'AI Supercycle' is large enough to accommodate both AMD and Nvidia."
+    }
+  ],
+  "inferences": [
+    "AMD is leveraging strategic financial partnerships (such as the chips-for-stock deal) to offset Nvidia's current market dominance in AI hardware."
+  ],
+  "project_id": "general_research",
+  "question": "latest AMD and NVIDIA market news",
+  "recommendation": null,
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_ids": [
+    "web-4ce0478e0784",
+    "web-f8e6a4da8783",
+    "web-5fd08335339d"
+  ],
+  "source_items": [
+    {
+      "locator": "https://www.cnbc.com/2026/03/13/nvidia-gtc-ai-jensen-huang-cpu-gpu.html",
+      "published_at": null,
+      "snippet": "@charset \"UTF-8\";.Modal-modalBackground{background:#000000b3;height:100%;left:0;overflow-y:auto;position:fixed;top:0;transition:background-color .4s;width:100%;z-index:100001}.Modal-modalBackgroundBlur{backdrop-filter:blur(4px);background:#00000040}.Modal-bottomModal.Modal-modal{",
+      "source_id": "web-df5906b967d5",
+      "source_type": "web",
+      "title": "Nvidia GTC 2026 preview: Why the CPU is taking center stage - CNBC"
+    },
+    {
+      "locator": "https://techresearchonline.com/blog/nvidia-vs-amd-the-gpu-battle-for-ai-dominance/",
+      "published_at": null,
+      "snippet": "NVIDIA vs AMD (2025): GPUs, AI & Market Share",
+      "source_id": "web-c35ba50566f3",
+      "source_type": "web",
+      "title": "NVIDIA vs AMD (2025): GPUs, AI & Market Share"
+    },
+    {
+      "locator": "https://www.nytimes.com/2026/02/24/business/meta-amd-chips-ai.html",
+      "published_at": null,
+      "snippet": "The multibillion-dollar deal is AMD's latest move to catch up to Nvidia in the lucrative world of selling artificial intelligence chips.",
+      "source_id": "web-f8e6a4da8783",
+      "source_type": "web",
+      "title": "Racing to Catch Up With Nvidia, AMD Signs Chips-for-Stock Deal With ..."
+    },
+    {
+      "locator": "https://www.tomshardware.com/pc-components/gpus/nvidia-dominates-discrete-gpu-market-as-sales-of-amd-radeon-graphics-cards-hit-historical-low",
+      "published_at": "2026-03-07T12:40:00+00:00",
+      "snippet": "Nvidia dominates gaming GPU market with 95 percent share as sales of AMD Radeon graphics plummet to a historical low of 5 percent | Tom's Hardware",
+      "source_id": "web-4ce0478e0784",
+      "source_type": "web",
+      "title": "Nvidia dominates gaming GPU market with 95 percent share as sales of ..."
+    },
+    {
+      "locator": "https://www.fool.com/investing/2026/04/03/amd-vs-nvidia-the-ai-supercycle-is-big-enough-for/",
+      "published_at": "2026-04-03T22:25:00+00:00",
+      "snippet": "AMD vs. Nvidia: The AI Supercycle Is Big Enough for Both. Here's the Better Buy. The Motley Fool Accessibility Menu Search for a company Accessibility ... Help Our Services All Services Stock Advisor Epic Epic Plus Fool Portfolios Fool One All Podcasts Motley Fool Money Podcast R",
+      "source_id": "web-5fd08335339d",
+      "source_type": "web",
+      "title": "AMD vs. Nvidia: The AI Supercycle Is Big Enough for Both. Here's the ..."
+    }
+  ],
+  "source_mode": "web",
+  "summary": "Nvidia currently maintains a dominant position in the gaming GPU market, while AMD is pursuing strategies to compete in the artificial intelligence chip sector.",
+  "uncertainties": [],
+  "work_unit_id": "research-web-latest-amd-and-nvidia-market-news-d26b32bb"
+}

@@ -12,9 +12,11 @@ from .research import (
     ResearchArtifactStore,
     ResearchFinding,
     ResearchMemoryHandoffInput,
+    ResearchProvenanceValidationError,
     ResearchRequest,
     ResearchResult,
     ResearchSynthesisError,
+    ResearchSynthesisRuntimeError,
     ResearchSynthesisValidationError,
     SourceItem,
     build_document_evidence_pack,
@@ -34,6 +36,8 @@ from .research import (
     should_handoff_research_to_memory,
     synthesize_research,
     synthesize_research_with_runtime,
+    validate_research_artifact_record,
+    validate_research_provenance,
 )
 from .selection import SelectionResult
 
@@ -49,10 +53,12 @@ __all__ = [
     "ResearchArtifactStore",
     "ResearchFinding",
     "ResearchMemoryHandoffInput",
+    "ResearchProvenanceValidationError",
     "ProposalSet",
     "ResearchRequest",
     "ResearchResult",
     "ResearchSynthesisError",
+    "ResearchSynthesisRuntimeError",
     "ResearchSynthesisValidationError",
     "SelectionResult",
     "SourceItem",
@@ -78,4 +84,6 @@ __all__ = [
     "should_plan",
     "synthesize_research",
     "synthesize_research_with_runtime",
+    "validate_research_artifact_record",
+    "validate_research_provenance",
 ]

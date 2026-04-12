@@ -8,6 +8,7 @@ from typing import Literal
 from jeff.core.schemas import Scope
 
 from ..types import normalize_text_list, require_text
+from .errors import ResearchProvenanceValidationError
 
 ResearchMode = Literal["direct_output", "decision_support"]
 
@@ -119,6 +120,7 @@ class SourceItem:
     title: str | None = None
     locator: str | None = None
     snippet: str | None = None
+    published_at: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "source_id", require_text(self.source_id, field_name="source_id"))
@@ -129,6 +131,8 @@ class SourceItem:
             object.__setattr__(self, "locator", require_text(self.locator, field_name="locator"))
         if self.snippet is not None:
             object.__setattr__(self, "snippet", require_text(self.snippet, field_name="snippet"))
+        if self.published_at is not None:
+            object.__setattr__(self, "published_at", require_text(self.published_at, field_name="published_at"))
 
 
 @dataclass(frozen=True, slots=True)
@@ -169,6 +173,8 @@ class EvidencePack:
         source_ids = {source.source_id for source in self.sources}
         if not source_ids:
             raise ValueError("evidence pack requires at least one source")
+        if len(source_ids) != len(self.sources):
+            raise ValueError("evidence pack source ids must be unique")
 
         for evidence_item in self.evidence_items:
             missing = [source_id for source_id in evidence_item.source_refs if source_id not in source_ids]
@@ -218,6 +224,63 @@ class ResearchArtifact:
             raise ValueError("research artifact requires at least one finding")
         if not self.source_ids:
             raise ValueError("research artifact requires at least one source_id")
+
+
+def validate_research_provenance(
+    *,
+    findings: tuple[ResearchFinding, ...],
+    source_ids: tuple[str, ...],
+    source_items: tuple[SourceItem, ...],
+    evidence_items: tuple[EvidenceItem, ...] = (),
+) -> None:
+    known_source_ids: set[str] = set()
+    duplicate_source_ids: set[str] = set()
+    for source in source_items:
+        source_id = require_text(source.source_id, field_name="source_id")
+        if source_id in known_source_ids:
+            duplicate_source_ids.add(source_id)
+        known_source_ids.add(source_id)
+
+    if duplicate_source_ids:
+        duplicates = sorted(duplicate_source_ids)
+        raise ResearchProvenanceValidationError(
+            f"research provenance contains duplicate source ids: {duplicates}",
+        )
+    if not known_source_ids:
+        raise ResearchProvenanceValidationError("research provenance requires at least one source item")
+
+    for finding in findings:
+        _validate_source_refs(finding.source_refs, known_source_ids=known_source_ids, owner_label="finding")
+
+    for evidence_item in evidence_items:
+        _validate_source_refs(
+            evidence_item.source_refs,
+            known_source_ids=known_source_ids,
+            owner_label="evidence item",
+        )
+
+    for source_id in source_ids:
+        normalized_source_id = require_text(source_id, field_name="source_ids")
+        if normalized_source_id not in known_source_ids:
+            raise ResearchProvenanceValidationError(
+                f"research provenance lists unknown source id: {normalized_source_id}",
+            )
+
+
+def _validate_source_refs(
+    source_refs: tuple[str, ...],
+    *,
+    known_source_ids: set[str],
+    owner_label: str,
+) -> None:
+    if not source_refs:
+        raise ResearchProvenanceValidationError(f"{owner_label} must keep at least one source_ref")
+    for source_ref in source_refs:
+        normalized_source_ref = require_text(source_ref, field_name="source_refs")
+        if normalized_source_ref not in known_source_ids:
+            raise ResearchProvenanceValidationError(
+                f"{owner_label} references unknown source ids: {normalized_source_ref}",
+            )
 
 
 def _normalize_extension(value: str) -> str:

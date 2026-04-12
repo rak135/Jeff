@@ -43,7 +43,7 @@ def test_web_queries_and_fake_default_adapter_drive_end_to_end_research(monkeypa
                     model_name="fake-model",
                     fake_json_response={
                         "summary": "The fetched web source supports a bounded rollout.",
-                        "findings": [{"text": "The article supports the bounded rollout.", "source_refs": [source_id]}],
+                        "findings": [{"text": "The article supports the bounded rollout.", "source_refs": ["S1"]}],
                         "inferences": ["A narrow path remains better supported."],
                         "uncertainties": ["Only one fetched source was considered."],
                         "recommendation": "Keep the rollout bounded.",
@@ -94,7 +94,7 @@ def test_explicit_adapter_selection_works_with_multiple_registered_fake_adapters
                     model_name="fake-model",
                     fake_json_response={
                         "summary": "Default summary.",
-                        "findings": [{"text": "Default finding", "source_refs": [source_id]}],
+                        "findings": [{"text": "Default finding", "source_refs": ["S1"]}],
                         "inferences": [],
                         "uncertainties": [],
                         "recommendation": None,
@@ -106,7 +106,7 @@ def test_explicit_adapter_selection_works_with_multiple_registered_fake_adapters
                     model_name="fake-model-2",
                     fake_json_response={
                         "summary": "Secondary summary.",
-                        "findings": [{"text": "Secondary finding", "source_refs": [source_id]}],
+                        "findings": [{"text": "Secondary finding", "source_refs": ["S1"]}],
                         "inferences": ["Secondary inference"],
                         "uncertainties": ["Secondary uncertainty"],
                         "recommendation": "Use the secondary adapter.",

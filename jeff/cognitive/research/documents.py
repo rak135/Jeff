@@ -151,6 +151,7 @@ def run_document_research(
     research_request: ResearchRequest,
     infrastructure_services: InfrastructureServices,
     adapter_id: str | None = None,
+    debug_emitter=None,
 ) -> ResearchArtifact:
     sources = collect_document_sources(research_request)
     if not sources:
@@ -165,6 +166,7 @@ def run_document_research(
         evidence_pack=evidence_pack,
         infrastructure_services=infrastructure_services,
         adapter_id=adapter_id,
+        debug_emitter=debug_emitter,
     )
 
 

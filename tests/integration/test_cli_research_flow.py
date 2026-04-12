@@ -28,7 +28,8 @@ def test_cli_docs_research_runs_end_to_end_with_persistence_and_rendered_result(
     assert "created and selected new run: run-1" in result.text
     assert "artifact_id=research-" in result.text
     assert "summary=The documents support a bounded rollout." in result.text
-    assert "[sources:" in result.text
+    assert "plan.md | " in result.text
+    assert str(document) in result.text
     assert "persistence=research artifact persisted as support by default" in result.text
     assert len(records) == 1
     assert records[0].run_id == "run-1"
@@ -170,7 +171,7 @@ def _build_docs_cli(tmp_path: Path, *, question: str) -> tuple[JeffCLI, Path]:
             tmp_path,
             fake_json_response={
                 "summary": "The documents support a bounded rollout.",
-                "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": [source_id]}],
+                "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
                 "inferences": ["A narrow implementation remains better supported."],
                 "uncertainties": ["No external validation was performed."],
                 "recommendation": "Proceed with the bounded path.",
@@ -215,7 +216,7 @@ def _build_web_cli(
     if fake_json_response is None:
         fake_json_response = {
             "summary": "The fetched web source supports a bounded rollout.",
-            "findings": [{"text": "The article supports the bounded rollout.", "source_refs": [source_id]}],
+            "findings": [{"text": "The article supports the bounded rollout.", "source_refs": ["S1"]}],
             "inferences": ["A narrow path remains better supported."],
             "uncertainties": ["Only one fetched source was considered."],
             "recommendation": "Keep the rollout bounded.",
@@ -223,7 +224,7 @@ def _build_web_cli(
     else:
         fake_json_response = {
             **fake_json_response,
-            "findings": [{"text": fake_json_response["findings"][0]["text"], "source_refs": [source_id]}],
+            "findings": [{"text": fake_json_response["findings"][0]["text"], "source_refs": ["S1"]}],
         }
     return JeffCLI(
         context=_build_research_context(

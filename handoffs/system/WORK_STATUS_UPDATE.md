@@ -455,4 +455,157 @@
 - Next step: keep future research changes updating the local research handoff first, then the parent cognitive handoff if the module view changes
 - Files:
   - jeff/cognitive/HANDOFF.md
-  - jeff/cognitive/research/HANDOFF.md            
+  - jeff/cognitive/research/HANDOFF.md
+
+## 2026-04-11 22:35 - Added CLI research interface slice R1
+
+- Scope: interface research command surface
+- Done:
+  - added `/research docs` and `/research web` command handling with explicit quoted-question parsing and optional `--handoff-memory`
+  - added lawful scope helpers for current-scope research and ad-hoc anchoring into the built-in `general_research` project through transitions
+  - added truthful research JSON and human renderers with support-vs-truth separation and explicit memory handoff outcomes
+  - added unit and integration coverage for parsing, scope resolution, persistence, rendering, JSON output, and handoff behavior
+- Validation: `python -m pytest -q tests\unit\interface\test_research_commands.py tests\integration\test_cli_research_flow.py` passed; full `python -m pytest -q` passed with 243 tests
+- Current state: Jeff CLI now exposes a usable thin research command family over the existing backend slices without adding orchestrator-owned research flow
+- Next step: keep future research operator work bounded to truthful presentation and lawful backend integration
+- Files:
+  - jeff/interface/commands.py
+  - jeff/interface/json_views.py
+  - jeff/interface/render.py
+  - jeff/interface/HANDOFF.md
+  - tests/unit/interface/test_research_commands.py
+  - tests/integration/test_cli_research_flow.py
+
+## 2026-04-11 23:04 - Added explicit runtime config and startup wiring for research CLI
+
+- Scope: infrastructure runtime config and startup composition
+- Done:
+  - added typed `jeff.runtime.toml` config loading with explicit runtime, adapter, purpose override, and research sections
+  - extended infrastructure runtime assembly with purpose-based adapter lookup and config-to-adapter construction
+  - wired startup to load local runtime config when present and attach research runtime dependencies into the CLI context
+  - added deterministic tests for config parsing, bootstrap behavior, CLI research runtime flow, and Ollama context-length mapping
+- Validation: `python -m pytest -q tests\unit\infrastructure\test_runtime_config.py tests\integration\test_bootstrap_runtime_config.py tests\integration\test_cli_research_runtime_config.py` passed; full `python -m pytest -q` passed with 256 tests
+- Current state: Jeff startup can now remain demo-safe without config and becomes research-runnable through explicit local runtime config when `jeff.runtime.toml` is present
+- Next step: keep future runtime work bounded to explicit config evolution and downstream stage integration without adding CLI-owned model switching
+- Files:
+  - jeff/infrastructure/config.py
+  - jeff/infrastructure/runtime.py
+  - jeff/infrastructure/model_adapters/factory.py
+  - jeff/infrastructure/model_adapters/providers/ollama.py
+  - jeff/bootstrap.py
+  - tests/unit/infrastructure/test_runtime_config.py
+  - tests/integration/test_bootstrap_runtime_config.py
+  - tests/integration/test_cli_research_runtime_config.py
+
+## 2026-04-12 10:54 â€” Repaired research provenance consistency
+
+- Scope: cognitive research provenance validation and persistence/render guards
+- Done:
+  - added explicit provenance validation for findings, evidence items, source ids, and source items
+  - enforced provenance checks after synthesis and during research artifact record build/save/load
+  - guarded operator-facing research JSON projection from rendering invalid persisted linkage
+  - added unit and integration regression tests for broken and valid provenance flows
+- Validation: `python -m pytest -q tests\unit\cognitive\test_research_provenance_consistency.py tests\integration\test_research_provenance_consistency_flow.py` and full `python -m pytest -q` both passed
+- Current state: invalid research source linkage now fails closed before persistence or operator-facing projection
+- Next step: continue Research v2 Phase 01 repairs without widening beyond current v1 behavior
+- Files:
+  - jeff/cognitive/research/contracts.py
+  - jeff/cognitive/research/synthesis.py
+  - jeff/cognitive/research/persistence.py
+  - jeff/interface/json_views.py
+  - tests/unit/cognitive/test_research_provenance_consistency.py
+  - tests/integration/test_research_provenance_consistency_flow.py
+
+## 2026-04-12 11:00 â€” Repaired research source transparency in operator output
+
+- Scope: interface research result projection and CLI rendering
+- Done:
+  - resolved finding source refs into bounded real source objects in research JSON output
+  - exposed compact support source entries with source_id, source_type, title, and locator
+  - updated CLI research rendering to show title plus locator instead of opaque source ids
+  - added unit and integration tests for source-transparent text and JSON output
+- Validation: `python -m pytest -q tests\unit\interface\test_research_source_transparency.py tests\integration\test_cli_research_source_transparency.py` and full `python -m pytest -q` both passed
+- Current state: operator-facing research output now shows real cited sources while keeping support separate from truth
+- Next step: continue bounded Research v2 Phase 01 repairs without widening research semantics
+- Files:
+  - jeff/interface/json_views.py
+  - jeff/interface/render.py
+  - tests/unit/interface/test_research_source_transparency.py
+  - tests/integration/test_cli_research_source_transparency.py
+  - tests/integration/test_cli_research_flow.py                    
+
+## 2026-04-12 11:09 â€” Repaired research snippet cleaning and publish-date support
+
+- Scope: cognitive research web-source support quality and interface metadata projection
+- Done:
+  - added bounded web snippet cleaning to reduce HTML, CSS, and JS sludge
+  - added nullable `published_at` support on research source items with strict bounded extraction from fetched metadata
+  - carried cleaned snippet and published date through persistence, JSON projection, and CLI rendering
+  - added unit and integration tests for cleaning, publish-date extraction, persistence compatibility, and CLI metadata output
+- Validation: `python -m pytest -q tests\unit\cognitive\test_research_source_cleaning.py tests\unit\cognitive\test_research_publish_date_support.py tests\integration\test_cli_research_source_metadata.py` and full `python -m pytest -q` both passed
+- Current state: web research support is cleaner, publish dates surface when confidently available, and unknown dates remain explicit `null`/omitted in CLI
+- Next step: continue bounded Research v2 Phase 01 repairs without widening acquisition architecture
+- Files:
+  - jeff/cognitive/research/contracts.py
+  - jeff/cognitive/research/web.py
+  - jeff/interface/json_views.py
+  - jeff/interface/render.py
+  - tests/unit/cognitive/test_research_source_cleaning.py
+  - tests/unit/cognitive/test_research_publish_date_support.py
+  - tests/integration/test_cli_research_source_metadata.py
+
+## 2026-04-12 11:45 â€” Repaired research synthesis runtime timeout and error transparency
+
+- Scope: research synthesis invocation behavior and CLI/json failure surfacing
+- Done:
+  - removed the hardcoded research request timeout so runtime-configured adapter timeouts remain authoritative
+  - added bounded research runtime error classification for timeout, connection, provider HTTP, malformed output, unsupported runtime config, and generic invocation failure
+  - exposed structured research error JSON for failed research commands in json mode
+  - added unit and integration tests for runtime error mapping, timeout handling, and CLI failure output
+- Validation: `python -m pytest -q tests\unit\cognitive\test_research_synthesis_runtime_errors.py tests\integration\test_cli_research_synthesis_runtime_errors.py tests\unit\cognitive\test_research_synthesis.py` and full `python -m pytest -q` both passed
+- Current state: research synthesis now respects configured adapter timeout behavior and surfaces bounded useful failure detail to operators
+- Next step: continue bounded Research v2 Phase 01 repairs without widening research semantics or runtime architecture
+- Files:
+  - jeff/cognitive/research/synthesis.py
+  - jeff/cognitive/research/errors.py
+  - jeff/infrastructure/model_adapters/errors.py
+  - jeff/infrastructure/model_adapters/providers/ollama.py
+  - jeff/interface/commands.py
+  - jeff/interface/json_views.py
+  - tests/unit/cognitive/test_research_synthesis_runtime_errors.py
+  - tests/integration/test_cli_research_synthesis_runtime_errors.py
+
+## 2026-04-12 11:53 â€” Repaired live CLI research failure surfacing
+
+- Scope: live CLI research runtime failure output in interactive text and `/json on` modes
+- Done:
+  - added CLI-side rendering helper for bounded research runtime failures
+  - updated `JeffCLI.run_interactive` to surface classified research failures instead of propagating them raw
+  - updated the real interactive shell loop to emit structured `research_error` JSON in `/json on` mode and bounded human-readable detail otherwise
+  - added unit and integration tests for live failure surfacing and unchanged success behavior
+- Validation: `python -m pytest -q tests\unit\interface\test_research_failure_json_mode.py tests\integration\test_cli_research_failure_surface.py` and full `python -m pytest -q` both passed
+- Current state: live CLI research failures now surface the backend’s bounded runtime detail instead of reverting to a generic message
+- Next step: continue bounded Research v2 Phase 01 repairs without widening CLI or research semantics
+- Files:
+  - jeff/interface/cli.py
+  - jeff/main.py
+  - tests/unit/interface/test_research_failure_json_mode.py
+  - tests/integration/test_cli_research_failure_surface.py
+
+## 2026-04-12 13:56 â€” Added research synthesis citation-key remap
+
+- Scope: research synthesis contract hardening for citation handling
+- Done:
+  - replaced model-facing raw `source_id` citations with deterministic request-local `S1..Sn` keys in research synthesis requests
+  - added dynamic allowed-key JSON schema constraints for `findings[].source_refs`
+  - remapped returned citation keys back to real internal `source_id` values before artifact construction and provenance validation
+  - added unit and integration coverage for citation-key generation, model-facing projection, remap success, and fail-closed invented-key drift
+  - updated existing research synthesis test fixtures to return citation keys while preserving final real-source artifact semantics
+- Validation: targeted citation-key pytest files passed; full `pytest -q` passed with 312 passed
+- Current state: research synthesis now uses bounded citation keys for the model and preserves real internal source identity after deterministic remap
+- Next step: later slices can address malformed-output repair and other robustness work without changing this remap contract
+- Files:
+  - jeff/cognitive/research/synthesis.py
+  - tests/unit/cognitive/test_research_synthesis.py
+  - tests/unit/cognitive/test_research_synthesis_citation_keys.py
+  - tests/integration/test_research_synthesis_citation_key_flow.py      

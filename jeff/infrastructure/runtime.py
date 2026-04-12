@@ -27,9 +27,13 @@ class InfrastructureServices:
     def get_model_adapter(self, adapter_id: str) -> ModelAdapter:
         return self.model_adapter_registry.get(adapter_id)
 
-    def get_adapter_for_purpose(self, purpose: str) -> ModelAdapter:
+    def get_adapter_for_purpose(self, purpose: str, *, fallback_adapter_id: str | None = None) -> ModelAdapter:
         override_adapter_id = self.purpose_overrides.for_purpose(purpose)
         if override_adapter_id is None:
+            if purpose == "research_repair":
+                if fallback_adapter_id is not None:
+                    return self.get_model_adapter(fallback_adapter_id)
+                return self.get_adapter_for_purpose("research")
             return self.get_default_model_adapter()
         return self.get_model_adapter(override_adapter_id)
 
@@ -47,7 +51,7 @@ def build_infrastructure_services(config: ModelAdapterRuntimeConfig) -> Infrastr
     )
 
     services.get_default_model_adapter()
-    for purpose in ("research", "proposal", "planning", "evaluation"):
+    for purpose in ("research", "research_repair", "proposal", "planning", "evaluation"):
         override_adapter_id = config.purpose_overrides.for_purpose(purpose)
         if override_adapter_id is not None:
             services.get_model_adapter(override_adapter_id)

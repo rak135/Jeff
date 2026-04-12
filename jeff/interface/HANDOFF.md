@@ -42,6 +42,7 @@
 - Startup can now also load an explicit local `jeff.runtime.toml` file and attach research runtime dependencies when present.
 - Session scope is local CLI state, not canonical truth mutation.
 - The CLI now includes `/research docs` and `/research web` as a thin operator surface over the existing research backend.
+- `/mode debug` now emits bounded live research-debug checkpoints during research runs so operators can see synthesis, repair, remap, and provenance stages without changing backend semantics.
 - Ad-hoc research is not projectless: when no project scope is selected, the interface anchors the request into the built-in `general_research` project plus a bounded derived work unit and lawful run.
 - When runtime config is absent, non-research CLI surfaces still work and research remains explicitly unavailable rather than silently fabricated.
 

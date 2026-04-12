@@ -33,7 +33,7 @@ def test_local_documents_and_fake_default_adapter_drive_end_to_end_research(tmp_
                     model_name="fake-model",
                     fake_json_response={
                         "summary": "The documents support a bounded rollout.",
-                        "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": [source_id]}],
+                        "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
                         "inferences": ["A narrow implementation remains better supported."],
                         "uncertainties": ["No external validation was performed."],
                         "recommendation": "Proceed with the bounded path.",
@@ -74,7 +74,7 @@ def test_explicit_adapter_selection_works_with_multiple_registered_fake_adapters
                     model_name="fake-model",
                     fake_json_response={
                         "summary": "Default summary.",
-                        "findings": [{"text": "Default finding", "source_refs": [source_id]}],
+                        "findings": [{"text": "Default finding", "source_refs": ["S1"]}],
                         "inferences": [],
                         "uncertainties": [],
                         "recommendation": None,
@@ -86,7 +86,7 @@ def test_explicit_adapter_selection_works_with_multiple_registered_fake_adapters
                     model_name="fake-model-2",
                     fake_json_response={
                         "summary": "Secondary summary.",
-                        "findings": [{"text": "Secondary finding", "source_refs": [source_id]}],
+                        "findings": [{"text": "Secondary finding", "source_refs": ["S1"]}],
                         "inferences": ["Secondary inference"],
                         "uncertainties": ["Secondary uncertainty"],
                         "recommendation": "Use the secondary adapter.",

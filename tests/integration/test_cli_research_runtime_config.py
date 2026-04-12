@@ -28,7 +28,7 @@ def test_cli_research_works_with_runtime_config_and_anchors_general_research(
         captured_payloads=captured_payloads,
         output_json={
             "summary": "The documents support a bounded rollout.",
-            "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": [source_id]}],
+            "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
             "inferences": ["A narrow implementation remains better supported."],
             "uncertainties": ["No external validation was performed."],
             "recommendation": "Proceed with the bounded path.",
@@ -69,7 +69,7 @@ def test_runtime_configured_research_adapter_is_used_instead_of_default_adapter(
         captured_payloads=captured_payloads,
         output_json={
             "summary": "Research used the research-specific adapter.",
-            "findings": [{"text": "The research adapter path executed.", "source_refs": [source_id]}],
+            "findings": [{"text": "The research adapter path executed.", "source_refs": ["S1"]}],
             "inferences": [],
             "uncertainties": [],
             "recommendation": "Keep the purpose override.",
@@ -102,7 +102,7 @@ def test_runtime_configured_handoff_memory_still_delegates_to_current_memory_lay
         captured_payloads=[],
         output_json={
             "summary": "The documents support a bounded rollout.",
-            "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": [source_id]}],
+            "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
             "inferences": ["A narrow implementation remains better supported."],
             "uncertainties": ["No external validation was performed."],
             "recommendation": "Proceed with the bounded path.",

@@ -6,7 +6,9 @@ from .errors import (
     ModelAdapterNotFoundError,
     ModelInvocationError,
     ModelMalformedOutputError,
+    ModelProviderHTTPError,
     ModelTimeoutError,
+    ModelTransportError,
 )
 from .factory import AdapterFactoryConfig, AdapterProviderKind, create_model_adapter
 from .providers import FakeModelAdapter, OllamaModelAdapter
@@ -31,11 +33,13 @@ __all__ = [
     "ModelInvocationError",
     "ModelInvocationStatus",
     "ModelMalformedOutputError",
+    "ModelProviderHTTPError",
     "ModelRequest",
     "ModelResponse",
     "ModelResponseMode",
     "ModelTelemetryEvent",
     "ModelTimeoutError",
+    "ModelTransportError",
     "ModelUsage",
     "OllamaModelAdapter",
     "create_model_adapter",

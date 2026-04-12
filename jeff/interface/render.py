@@ -191,8 +191,11 @@ def render_research_result(payload: dict[str, Any]) -> str:
         "[support] findings",
     ]
     for finding in support["findings"]:
-        refs = ", ".join(finding["source_refs"])
-        lines.append(f"- {finding['text']} [sources: {refs}]")
+        lines.append(f"- {finding['text']}")
+        for source in finding["resolved_sources"]:
+            lines.append(f"  source: {_render_source_label(source)}")
+            if source.get("published_at"):
+                lines.append(f"  published: {source['published_at']}")
 
     lines.append("[support] uncertainties")
     if support["uncertainties"]:
@@ -220,6 +223,41 @@ def render_research_result(payload: dict[str, Any]) -> str:
     for reason in handoff_result["reasons"]:
         lines.append(f"- memory_reason: {reason}")
     return "\n".join(lines)
+
+
+def render_research_debug_event(event: dict[str, Any]) -> str:
+    checkpoint = event.get("checkpoint", "unknown")
+    payload = event.get("payload", {})
+    parts = []
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            if value is None:
+                continue
+            parts.append(f"{key}={_render_debug_value(value)}")
+    suffix = f" {' '.join(parts)}" if parts else ""
+    return f"[debug][research] {checkpoint}{suffix}"
+
+
+def _render_source_label(source: dict[str, Any]) -> str:
+    title = source.get("title")
+    locator = source.get("locator")
+    source_type = source.get("source_type") or "source"
+
+    if title and locator:
+        return f"{title} | {locator}"
+    if title:
+        return title
+    if locator:
+        return locator
+    return f"{source_type} source"
+
+
+def _render_debug_value(value: Any) -> str:
+    if isinstance(value, (list, tuple)):
+        return ",".join(str(item) for item in value)
+    if isinstance(value, dict):
+        return ",".join(f"{key}:{value[key]}" for key in value)
+    return str(value)
 
 
 def render_help() -> str:

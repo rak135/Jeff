@@ -9,7 +9,13 @@ from dataclasses import dataclass
 from typing import Any
 from urllib import error, request
 
-from ..errors import ModelInvocationError, ModelMalformedOutputError, ModelTimeoutError
+from ..errors import (
+    ModelInvocationError,
+    ModelMalformedOutputError,
+    ModelProviderHTTPError,
+    ModelTimeoutError,
+    ModelTransportError,
+)
 from ..types import (
     ModelInvocationStatus,
     ModelRequest,
@@ -63,7 +69,7 @@ class OllamaModelAdapter:
             with request.urlopen(http_request, timeout=self.timeout_seconds) as http_response:
                 response_payload = json.loads(http_response.read().decode("utf-8"))
         except error.HTTPError as exc:
-            raise ModelInvocationError(f"ollama HTTP failure for adapter {self.adapter_id}") from exc
+            raise ModelProviderHTTPError(f"ollama HTTP failure for adapter {self.adapter_id}") from exc
         except (TimeoutError, socket.timeout, error.URLError) as exc:
             reason = getattr(exc, "reason", None)
             if isinstance(exc, (TimeoutError, socket.timeout)) or isinstance(
@@ -73,7 +79,7 @@ class OllamaModelAdapter:
                 raise ModelTimeoutError(
                     f"ollama invocation timed out for adapter {self.adapter_id}",
                 ) from exc
-            raise ModelInvocationError(
+            raise ModelTransportError(
                 f"ollama transport failed for adapter {self.adapter_id}",
             ) from exc
         except json.JSONDecodeError as exc:
@@ -91,10 +97,12 @@ class OllamaModelAdapter:
             except json.JSONDecodeError as exc:
                 raise ModelMalformedOutputError(
                     f"ollama text output was not valid JSON for adapter {self.adapter_id}",
+                    raw_output=output_text,
                 ) from exc
             if not isinstance(parsed, dict):
                 raise ModelMalformedOutputError(
                     f"ollama JSON mode requires an object result for adapter {self.adapter_id}",
+                    raw_output=output_text,
                 )
             output_json = parsed
 

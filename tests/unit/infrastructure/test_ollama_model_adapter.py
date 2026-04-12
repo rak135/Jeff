@@ -59,8 +59,10 @@ def test_ollama_adapter_raises_for_malformed_json_mode_output(
     _install_urlopen_stub(monkeypatch, payload={"response": "not valid json"})
     _install_monotonic_stub(monkeypatch, start=300.0, end=300.02)
 
-    with pytest.raises(ModelMalformedOutputError, match="not valid JSON"):
+    with pytest.raises(ModelMalformedOutputError, match="not valid JSON") as exc_info:
         adapter.invoke(_request(response_mode=ModelResponseMode.JSON))
+
+    assert exc_info.value.raw_output == "not valid json"
 
 
 def test_ollama_adapter_maps_timeout(monkeypatch: pytest.MonkeyPatch) -> None:

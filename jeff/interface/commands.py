@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from dataclasses import dataclass, field
 import json
 import re
@@ -13,6 +14,7 @@ from jeff.cognitive import (
     ResearchArtifactRecord,
     ResearchArtifactStore,
     ResearchRequest,
+    ResearchSynthesisRuntimeError,
     handoff_persisted_research_record_to_memory,
     run_and_persist_document_research,
     run_and_persist_web_research,
@@ -28,6 +30,7 @@ from jeff.orchestrator import FlowRunResult
 from .json_views import (
     lifecycle_json,
     project_list_json,
+    research_error_json,
     research_result_json,
     request_receipt_json,
     run_list_json,
@@ -42,6 +45,7 @@ from .render import (
     render_project_list,
     render_research_result,
     render_request_receipt,
+    render_research_debug_event,
     render_run_list,
     render_run_show,
     render_scope,
@@ -75,6 +79,7 @@ class CommandResult:
     session: CliSession
     text: str
     json_payload: dict[str, object] | None = None
+    debug_events: tuple[dict[str, object], ...] = ()
 
 
 GENERAL_RESEARCH_PROJECT_ID = "general_research"
@@ -86,6 +91,7 @@ def execute_command(
     session: CliSession,
     context: InterfaceContext,
     json_output: bool | None = None,
+    live_debug_emitter: Callable[[str], None] | None = None,
 ) -> CommandResult:
     tokens = _parse(command_line)
     if not tokens:
@@ -119,12 +125,33 @@ def execute_command(
         result = _lifecycle_command(tokens=tokens, session=session, context=context)
         return _apply_json_mode(result, json_output=json_output)
     if tokens[0] == "research":
-        result = _research_command(
-            command_line=command_line,
-            tokens=tokens,
-            session=session,
-            context=context,
-        )
+        try:
+            result = _research_command(
+                command_line=command_line,
+                tokens=tokens,
+                session=session,
+                context=context,
+                live_debug_emitter=live_debug_emitter,
+            )
+        except ResearchSynthesisRuntimeError as exc:
+            if not (json_output is True or (json_output is None and session.json_output)):
+                raise
+            payload = research_error_json(
+                project_id=exc.project_id,
+                work_unit_id=exc.work_unit_id,
+                run_id=exc.run_id,
+                research_mode=exc.research_mode,
+                error=exc,
+                session=session,
+            )
+            payload = _with_debug_payload(payload, debug_events=getattr(exc, "debug_events", ()), session=session)
+            return CommandResult(
+                context=context,
+                session=session,
+                text=json.dumps(payload, sort_keys=True),
+                json_payload=payload,
+                debug_events=tuple(getattr(exc, "debug_events", ())),
+            )
         return _apply_json_mode(result, json_output=json_output)
     if tokens[0] in {"approve", "reject", "retry", "revalidate", "recover"}:
         result = _request_command(tokens=tokens, session=session, context=context)
@@ -310,6 +337,7 @@ def _research_command(
     tokens: list[str],
     session: CliSession,
     context: InterfaceContext,
+    live_debug_emitter: Callable[[str], None] | None = None,
 ) -> CommandResult:
     spec = _parse_research_command(command_line=command_line, tokens=tokens)
     project, work_unit, run, next_session, next_context, scope_notice = _resolve_research_scope(
@@ -327,30 +355,117 @@ def _research_command(
         document_paths=spec.inputs if spec.mode == "docs" else (),
         web_queries=spec.inputs if spec.mode == "web" else (),
     )
-    record = _run_research_backend(
-        spec=spec,
-        research_request=research_request,
-        context=next_context,
-    )
-    memory_handoff_result = _maybe_handoff_research_record_to_memory(
-        context=next_context,
-        spec=spec,
-        record=record,
-    )
-    payload = research_result_json(
-        project_id=str(project.project_id),
-        work_unit_id=str(work_unit.work_unit_id),
-        run_id=str(run.run_id),
-        research_mode=spec.mode,
-        handoff_memory_requested=spec.handoff_memory,
-        record=record,
-        memory_handoff_result=memory_handoff_result,
+    debug_collector = _ResearchDebugCollector(
         session=next_session,
+        live_debug_emitter=live_debug_emitter if next_session.output_mode == "debug" else None,
     )
-    text = render_research_result(payload)
-    if scope_notice is not None:
-        text = f"{scope_notice}\n{text}"
-    return CommandResult(context=next_context, session=next_session, text=text, json_payload=payload)
+    try:
+        record = _run_research_backend(
+            spec=spec,
+            research_request=research_request,
+            context=next_context,
+            debug_emitter=debug_collector.emit,
+        )
+        memory_handoff_result = _maybe_handoff_research_record_to_memory(
+            context=next_context,
+            spec=spec,
+            record=record,
+        )
+        debug_collector.emit(
+            {
+                "domain": "research",
+                "checkpoint": "projection_started",
+                "payload": {
+                    "source_item_count": len(record.source_items),
+                    "artifact_source_ids": _summarize_values(tuple(record.source_ids)),
+                    "finding_source_refs_summary": _finding_source_refs_summary(record.findings),
+                },
+            }
+        )
+        try:
+            payload = research_result_json(
+                project_id=str(project.project_id),
+                work_unit_id=str(work_unit.work_unit_id),
+                run_id=str(run.run_id),
+                research_mode=spec.mode,
+                handoff_memory_requested=spec.handoff_memory,
+                record=record,
+                memory_handoff_result=memory_handoff_result,
+                session=next_session,
+            )
+        except Exception as exc:
+            debug_collector.emit(
+                {
+                    "domain": "research",
+                    "checkpoint": "projection_failed",
+                    "payload": {
+                        "reason": str(exc),
+                        "source_item_count": len(record.source_items),
+                        "artifact_source_ids": _summarize_values(tuple(record.source_ids)),
+                        "finding_source_refs_summary": _finding_source_refs_summary(record.findings),
+                    },
+                }
+            )
+            raise
+        debug_collector.emit(
+            {
+                "domain": "research",
+                "checkpoint": "projection_succeeded",
+                "payload": {
+                    "projected_source_count": len(payload["support"]["sources"]),
+                    "artifact_source_ids": _summarize_values(tuple(record.source_ids)),
+                    "finding_source_refs_summary": _finding_source_refs_summary(record.findings),
+                },
+            }
+        )
+        debug_collector.emit(
+            {
+                "domain": "research",
+                "checkpoint": "render_started",
+                "payload": {
+                    "projected_source_count": len(payload["support"]["sources"]),
+                },
+            }
+        )
+        try:
+            text = render_research_result(payload)
+        except Exception as exc:
+            debug_collector.emit(
+                {
+                    "domain": "research",
+                    "checkpoint": "render_failed",
+                    "payload": {
+                        "reason": str(exc),
+                        "projected_source_count": len(payload["support"]["sources"]),
+                    },
+                }
+            )
+            raise
+        debug_collector.emit(
+            {
+                "domain": "research",
+                "checkpoint": "render_succeeded",
+                "payload": {
+                    "projected_source_count": len(payload["support"]["sources"]),
+                },
+            }
+        )
+        if scope_notice is not None:
+            text = f"{scope_notice}\n{text}"
+        return CommandResult(
+            context=next_context,
+            session=next_session,
+            text=text,
+            json_payload=payload,
+            debug_events=tuple(debug_collector.events),
+        )
+    except Exception as exc:
+        if debug_collector.events:
+            try:
+                setattr(exc, "debug_events", tuple(debug_collector.events))
+            except Exception:
+                pass
+        raise
 
 
 def _request_command(*, tokens: list[str], session: CliSession, context: InterfaceContext) -> CommandResult:
@@ -393,11 +508,13 @@ def _request_command(*, tokens: list[str], session: CliSession, context: Interfa
 def _apply_json_mode(result: CommandResult, *, json_output: bool | None) -> CommandResult:
     if not (result.json_payload and (json_output is True or (json_output is None and result.session.json_output))):
         return result
+    payload = _with_debug_payload(result.json_payload, debug_events=result.debug_events, session=result.session)
     return CommandResult(
         context=result.context,
         session=result.session,
-        text=json.dumps(result.json_payload, sort_keys=True),
-        json_payload=result.json_payload,
+        text=json.dumps(payload, sort_keys=True),
+        json_payload=payload,
+        debug_events=result.debug_events,
     )
 
 
@@ -793,12 +910,31 @@ def _run_research_backend(
     spec: ResearchCommandSpec,
     research_request: ResearchRequest,
     context: InterfaceContext,
+    debug_emitter=None,
 ) -> ResearchArtifactRecord:
     infrastructure_services = _require_research_infrastructure(context)
     artifact_store = _require_research_store(context)
-    if spec.mode == "docs":
-        return run_and_persist_document_research(research_request, infrastructure_services, artifact_store)
-    return run_and_persist_web_research(research_request, infrastructure_services, artifact_store)
+    try:
+        if spec.mode == "docs":
+            return run_and_persist_document_research(
+                research_request,
+                infrastructure_services,
+                artifact_store,
+                debug_emitter=debug_emitter,
+            )
+        return run_and_persist_web_research(
+            research_request,
+            infrastructure_services,
+            artifact_store,
+            debug_emitter=debug_emitter,
+        )
+    except ResearchSynthesisRuntimeError as exc:
+        raise exc.with_context(
+            research_mode=spec.mode,
+            project_id=research_request.project_id,
+            work_unit_id=research_request.work_unit_id,
+            run_id=research_request.run_id,
+        ) from exc
 
 
 def _maybe_handoff_research_record_to_memory(
@@ -845,6 +981,45 @@ def _replace_context_state(context: InterfaceContext, state: GlobalState) -> Int
         memory_store=context.memory_store,
         research_memory_handoff_enabled=context.research_memory_handoff_enabled,
     )
+
+
+def _with_debug_payload(
+    payload: dict[str, object],
+    *,
+    debug_events: tuple[dict[str, object], ...],
+    session: CliSession,
+) -> dict[str, object]:
+    if session.output_mode != "debug" or not debug_events:
+        return payload
+    return {**payload, "debug": {"events": [dict(event) for event in debug_events]}}
+
+
+@dataclass(slots=True)
+class _ResearchDebugCollector:
+    session: CliSession
+    live_debug_emitter: Callable[[str], None] | None = None
+    events: list[dict[str, object]] = field(default_factory=list)
+
+    def emit(self, event: dict[str, object]) -> None:
+        self.events.append(event)
+        if self.live_debug_emitter is None:
+            return
+        if self.session.json_output:
+            self.live_debug_emitter(json.dumps({"view": "research_debug_event", "debug": event}, sort_keys=True))
+            return
+        self.live_debug_emitter(render_research_debug_event(event))
+
+
+def _finding_source_refs_summary(findings) -> list[str]:  # type: ignore[no-untyped-def]
+    summary = [",".join(finding.source_refs) for finding in findings]
+    return _summarize_values(tuple(summary))
+
+
+def _summarize_values(values: tuple[str, ...], *, limit: int = 5) -> list[str]:
+    items = list(values)
+    if len(items) <= limit:
+        return items
+    return [*items[:limit], f"+{len(items) - limit} more"]
 
 
 def _general_research_work_unit_id(*, mode: str, question: str) -> str:

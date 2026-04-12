@@ -6,7 +6,11 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
-from jeff.cognitive import ResearchArtifactRecord
+from jeff.cognitive import (
+    ResearchArtifactRecord,
+    ResearchSynthesisRuntimeError,
+    validate_research_artifact_record,
+)
 from jeff.core.containers.models import Project, Run, WorkUnit
 from jeff.memory import MemoryWriteDecision
 from jeff.orchestrator import FlowRunResult
@@ -184,6 +188,8 @@ def research_result_json(
     memory_handoff_result: MemoryWriteDecision | None,
     session: CliSession,
 ) -> dict[str, Any]:
+    validate_research_artifact_record(record)
+    source_index = {source.source_id: _project_research_source(source) for source in record.source_items}
     return {
         "view": "research_result",
         "truth": {
@@ -205,13 +211,45 @@ def research_result_json(
                 {
                     "text": finding.text,
                     "source_refs": list(finding.source_refs),
+                    "resolved_sources": [source_index[source_ref] for source_ref in finding.source_refs],
                 }
                 for finding in record.findings
             ],
             "uncertainties": list(record.uncertainties),
             "recommendation": record.recommendation,
             "source_ids": list(record.source_ids),
+            "sources": [source_index[source.source_id] for source in record.source_items],
         },
+        "session": {
+            "project_id": session.scope.project_id,
+            "work_unit_id": session.scope.work_unit_id,
+            "run_id": session.scope.run_id,
+            "output_mode": session.output_mode,
+            "json_output": session.json_output,
+        },
+    }
+
+
+def research_error_json(
+    *,
+    project_id: str | None,
+    work_unit_id: str | None,
+    run_id: str | None,
+    research_mode: str | None,
+    error: ResearchSynthesisRuntimeError,
+    session: CliSession,
+) -> dict[str, Any]:
+    return {
+        "view": "research_error",
+        "truth": {
+            "project_id": project_id,
+            "work_unit_id": work_unit_id,
+            "run_id": run_id,
+        },
+        "derived": {
+            "research_mode": research_mode,
+        },
+        "support": error.to_payload(),
         "session": {
             "project_id": session.scope.project_id,
             "work_unit_id": session.scope.work_unit_id,
@@ -308,6 +346,17 @@ def _module_for_stage(stage: str | None) -> str | None:
 
 def _selected_proposal_id(selection: Any) -> str | None:
     return None if selection.selected_proposal_id is None else str(selection.selected_proposal_id)
+
+
+def _project_research_source(source: Any) -> dict[str, Any]:
+    return {
+        "source_id": source.source_id,
+        "source_type": source.source_type,
+        "title": source.title,
+        "locator": source.locator,
+        "snippet": source.snippet,
+        "published_at": source.published_at,
+    }
 
 
 def _memory_handoff_json(memory_handoff_result: MemoryWriteDecision | None) -> dict[str, Any] | None:
