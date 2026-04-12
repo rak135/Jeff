@@ -9,6 +9,12 @@ from .contracts import (
     SourceItem,
     validate_research_provenance,
 )
+from .debug import (
+    ResearchDebugEmitter,
+    emit_research_debug_event,
+    finding_source_refs_summary,
+    summarize_values,
+)
 from .documents import build_document_evidence_pack, collect_document_sources, run_document_research
 from .errors import (
     ResearchProvenanceValidationError,
@@ -42,6 +48,7 @@ __all__ = [
     "ResearchArtifact",
     "ResearchArtifactRecord",
     "ResearchArtifactStore",
+    "ResearchDebugEmitter",
     "ResearchFinding",
     "ResearchMemoryHandoffInput",
     "ResearchProvenanceValidationError",
@@ -58,6 +65,8 @@ __all__ = [
     "build_web_evidence_pack",
     "collect_document_sources",
     "collect_web_sources",
+    "emit_research_debug_event",
+    "finding_source_refs_summary",
     "handoff_persisted_research_record_to_memory",
     "handoff_research_to_memory",
     "persist_research_artifact",
@@ -66,6 +75,7 @@ __all__ = [
     "run_document_research",
     "run_web_research",
     "should_handoff_research_to_memory",
+    "summarize_values",
     "synthesize_research",
     "synthesize_research_with_runtime",
     "validate_research_artifact_record",

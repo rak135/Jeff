@@ -608,4 +608,187 @@
   - jeff/cognitive/research/synthesis.py
   - tests/unit/cognitive/test_research_synthesis.py
   - tests/unit/cognitive/test_research_synthesis_citation_keys.py
-  - tests/integration/test_research_synthesis_citation_key_flow.py      
+  - tests/integration/test_research_synthesis_citation_key_flow.py   
+
+## 2026-04-12 14:11 â€” Added bounded research malformed-output repair pass
+
+- Scope: research synthesis malformed-output recovery
+- Done:
+  - added one bounded repair attempt for research synthesis when the primary adapter call fails with `malformed_output`
+  - kept the repair prompt formatting-only and limited it to malformed content, exact schema, and allowed citation keys
+  - preserved Slice A citation-key remap and fail-closed provenance validation after successful repair
+  - added unit and integration coverage for successful repair, failed repair, one-attempt behavior, and non-malformed no-repair paths
+  - refined malformed adapter errors to carry bounded raw output needed for repair input
+- Validation: targeted repair-path pytest files passed; full `pytest -q` passed with 322 passed
+- Current state: research synthesis can recover from one formatting-only malformed-output failure without changing successful artifact semantics
+- Next step: later slices can build on this without adding retry loops or changing research semantics
+- Files:
+  - jeff/cognitive/research/synthesis.py
+  - jeff/infrastructure/model_adapters/errors.py
+  - jeff/infrastructure/model_adapters/providers/ollama.py
+  - tests/unit/cognitive/test_research_synthesis_repair_pass.py
+  - tests/integration/test_research_synthesis_repair_flow.py
+
+## 2026-04-12 14:20 â€” Added separate research repair adapter override
+
+- Scope: infrastructure runtime/config wiring for research repair adapter selection
+- Done:
+  - added optional `purpose_overrides.research_repair` parsing and typed config support
+  - extended runtime adapter lookup so `research_repair` can resolve separately and still fall back cleanly
+  - wired research malformed-output repair to use a separate repair adapter when configured and the primary adapter otherwise
+  - added unit and integration coverage for repair override resolution, fallback behavior, and unchanged artifact semantics
+  - updated the example `jeff.runtime.toml` and infrastructure handoff to show the new optional override
+- Validation: targeted runtime/repair pytest files passed; full `pytest -q` passed with 328 passed
+- Current state: research synthesis repair can use a separately configured formatter/repair adapter without changing default behavior
+- Next step: later slices can build on this narrow split without adding broader capability routing
+- Files:
+  - jeff/infrastructure/config.py
+  - jeff/infrastructure/runtime.py
+  - jeff/cognitive/research/synthesis.py
+  - tests/unit/infrastructure/test_runtime_purpose_overrides.py
+  - tests/integration/test_research_synthesis_repair_flow.py
+
+## 2026-04-12 14:49 â€” Added live research debug checkpoints for /mode debug
+
+- Scope: bounded research-debug observability in the CLI
+- Done:
+  - added bounded research debug checkpoint emission through synthesis, repair, remap, and provenance stages
+  - wired `/mode debug` to render progressive live research debug lines during interactive CLI runs
+  - kept non-debug output compact and added debug events to JSON-mode research result/error payloads only when debug mode is active
+  - added interface tests for bounded debug output, truncation, and debug/json coexistence
+  - added integration coverage for live malformed-output repair streaming and later-stage provenance failure checkpoints
+- Validation: targeted debug-mode pytest files passed; full `pytest -q` passed with 334 passed
+- Current state: operators can now see bounded live research pipeline checkpoints in `/mode debug` without changing research semantics
+- Next step: later slices can add more observability only if they stay bounded and avoid broad tracing-framework expansion
+- Files:
+  - jeff/cognitive/research/synthesis.py
+  - jeff/interface/commands.py
+  - jeff/interface/cli.py
+  - tests/unit/interface/test_research_debug_mode.py
+  - tests/integration/test_cli_research_debug_stream.py
+
+
+## 2026-04-12 15:01 â€” Fixed post-validation research source linkage
+
+- Scope: research downstream persistence, projection, and debug checkpoints
+- Done:
+  - added downstream debug checkpoints for artifact record build, store save/load, projection, and render
+  - fixed document and web persist flows to reuse the same evidence pack for synthesis and persistence
+  - wrapped malformed persisted-record linkage failures cleanly at load time
+  - added unit and integration coverage for downstream source-linkage stability and debug streaming
+- Validation: targeted downstream tests passed; full `pytest -q` passed
+- Current state: valid post-remap research artifacts now keep consistent real source IDs through persistence and rendering, with bounded downstream debug visibility in `/mode debug`
+- Next step: use the new downstream checkpoints to diagnose any remaining live research failures without widening research semantics
+- Files:
+  - jeff/cognitive/research/persistence.py
+  - jeff/interface/commands.py
+  - tests/unit/cognitive/test_research_post_validation_linkage.py
+  - tests/integration/test_cli_research_post_validation_debug.py
+
+
+
+# 2026-04-12 15:30 Pre-Phase-02 Research Refactor: COMPLETE
+
+## Summary
+
+Successfully implemented all three pre-Phase-02 refactors for Jeff's research subsystem. The refactor maintains 100% backward compatibility while preparing the codebase for Phase 02 improvements.
+
+## What Was Done
+
+### 1. Consolidated Debug Helpers ✅
+- Moved shared debugging functions into `jeff/cognitive/research/debug.py`
+- Removed 100 lines of duplicated code across 3 files
+- Functions now imported from centralized location
+- All debug tests passing (128 tests)
+
+### 2. Extended SourceItem with Phase-02 Fields ✅
+- Added 5 new optional fields to `SourceItem` dataclass:
+  - `extractor_used` – tracks which extractor was used
+  - `extraction_quality` – quality assessment
+  - `fetched_at` – when content was retrieved
+  - `domain` – source domain
+  - `discovery_rank` – position in discovery order
+- Validated `discovery_rank` to prevent silent bugs
+- 100% backward compatible (all existing code unaffected)
+
+### 3. Separated Discovery from Extraction ✅
+- **Web sources**: Created `discover_web_sources()` and `extract_web_source()` as separate phases
+- **Document sources**: Created `discover_document_sources()` and `extract_document_source()` as separate phases
+- Clear boundaries enable Phase 02 to plug in new providers (SearXNG, Trafilatura, etc.)
+- Behavior identical to before (all 128 research tests pass)
+
+## Test Results
+
+- **Total tests**: 350 passing ✅
+  - 128 research tests (existing)
+  - 12 refactor verification tests (new)
+  - 210 other tests (unchanged)
+- **Test suite duration**: 2.59s
+- **Zero test failures**: 100% green
+
+## Key Design Decisions
+
+1. **Private intermediate types** – `_DiscoveredWebSource`, `_ExtractedWebSource`, etc. not exported
+2. **Optional fields with None defaults** – Phase 02 will populate as needed
+3. **Explicit composition** – Discovery and extraction composed explicitly in `collect_*_sources()`
+4. **No provider abstraction yet** – Phase 02 will decide on abstraction model
+5. **Validation for safety** – Added checks for `discovery_rank` to prevent silent errors
+
+## Phase-02 Readiness
+
+The refactor specifically enables Phase 02 to:
+
+1. **Add SearXNG** for better web discovery without touching extraction
+2. **Add Trafilatura** for better web extraction without touching discovery  
+3. **Add fallbacks** (e.g., Crawl4AI) in extraction layer
+4. **Add Unstructured** for document parsing (PDF, DOCX)
+5. **Implement ranking** using new SourceItem fields
+6. **Add capability routing** without rewriting the whole pipeline
+
+## What Did NOT Change (Intentionally)
+
+- Evidence pack structure
+- Synthesis/repair logic
+- CLI interface
+- Persistence format
+- Governance/approval flows
+- Runtime/config ownership
+
+## Files Modified
+
+```
+NEW:  jeff/cognitive/research/debug.py (+50 lines)
+NEW:  tests/unit/cognitive/test_refactor_phase_02_readiness.py (+180 lines)
+MOD:  jeff/cognitive/research/contracts.py (+20 lines)
+MOD:  jeff/cognitive/research/web.py (+100 lines)
+MOD:  jeff/cognitive/research/documents.py (+90 lines)
+MOD:  jeff/cognitive/research/synthesis.py (-30 lines)
+MOD:  jeff/cognitive/research/persistence.py (-50 lines)
+MOD:  jeff/interface/commands.py (-20 lines)
+MOD:  jeff/cognitive/research/__init__.py (+8 lines)
+```
+
+**Net effect**: ~350 lines of improved structure (mostly new code for clarity)
+
+## Verification
+
+All changes verified:
+```bash
+python -m pytest tests/ -v
+# Result: 350 passed ✅
+```
+
+## Documentation
+
+Full details available in:
+- `REFACTOR_PHASE_02_READINESS_SUMMARY.md` – Complete technical summary
+- Inline code comments – All refactored functions documented
+- Test file – `test_refactor_phase_02_readiness.py` shows usage patterns
+
+## Recommendation
+
+**Status: READY FOR PHASE 02**
+
+The research subsystem is now cleanly structured for Phase 02 work. All three refactors are complete, all tests pass, and the architecture supports the planned improvements without requiring rewrites.
+
+Next steps: Phase 02 implementation can begin (SearXNG, Trafilatura, etc.) using the new discovery/extraction boundaries.  

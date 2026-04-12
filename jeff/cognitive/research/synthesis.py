@@ -23,6 +23,7 @@ from jeff.infrastructure import (
 
 from ..types import require_text
 from .contracts import EvidencePack, ResearchArtifact, ResearchFinding, ResearchRequest, validate_research_provenance
+from .debug import ResearchDebugEmitter, emit_research_debug_event
 from .errors import ResearchSynthesisError, ResearchSynthesisRuntimeError, ResearchSynthesisValidationError
 
 
@@ -34,9 +35,6 @@ class ModelFacingSource:
     locator: str | None
     snippet: str | None
     published_at: str | None
-
-
-ResearchDebugEmitter = Callable[[dict[str, object]], None]
 
 
 def build_research_model_request(
@@ -143,7 +141,7 @@ def synthesize_research(
 
     effective_repair_adapter = repair_adapter or adapter
     citation_key_map = build_citation_key_map(evidence_pack)
-    _emit_research_debug_event(
+    emit_research_debug_event(
         debug_emitter,
         "source_key_map_built",
         keys=list(citation_key_map.keys()),
@@ -166,7 +164,7 @@ def synthesize_research(
         payload=payload,
         debug_emitter=debug_emitter,
     )
-    _emit_research_debug_event(
+    emit_research_debug_event(
         debug_emitter,
         "provenance_validation_started",
         source_item_count=len(evidence_pack.sources),
@@ -181,7 +179,7 @@ def synthesize_research(
             evidence_items=evidence_pack.evidence_items,
         )
     except ResearchSynthesisValidationError as exc:
-        _emit_research_debug_event(
+        emit_research_debug_event(
             debug_emitter,
             "provenance_validation_failed",
             reason=_bounded_debug_text(str(exc)),
@@ -189,7 +187,7 @@ def synthesize_research(
             artifact_source_ids=list(artifact.source_ids),
         )
         raise
-    _emit_research_debug_event(
+    emit_research_debug_event(
         debug_emitter,
         "provenance_validation_succeeded",
         source_item_count=len(evidence_pack.sources),
@@ -241,7 +239,7 @@ def _research_artifact_from_output(
     debug_emitter: ResearchDebugEmitter | None = None,
 ) -> ResearchArtifact:
     citation_key_map = build_citation_key_map(evidence_pack)
-    _emit_research_debug_event(
+    emit_research_debug_event(
         debug_emitter,
         "citation_remap_started",
         allowed_citation_keys=list(citation_key_map.keys()),
@@ -288,7 +286,7 @@ def _research_artifact_from_output(
             source_ids=tuple(used_source_ids),
         )
     except ResearchSynthesisValidationError as exc:
-        _emit_research_debug_event(
+        emit_research_debug_event(
             debug_emitter,
             "citation_remap_failed",
             reason=_bounded_debug_text(str(exc)),
@@ -297,7 +295,7 @@ def _research_artifact_from_output(
         )
         raise
 
-    _emit_research_debug_event(
+    emit_research_debug_event(
         debug_emitter,
         "citation_remap_succeeded",
         used_source_ids=list(artifact.source_ids),
@@ -315,7 +313,7 @@ def _invoke_synthesis_payload_with_optional_repair(
     model_request: ModelRequest,
     debug_emitter: ResearchDebugEmitter | None = None,
 ) -> dict[str, Any]:
-    _emit_research_debug_event(
+    emit_research_debug_event(
         debug_emitter,
         "primary_synthesis_started",
         adapter_id=adapter.adapter_id,
@@ -326,7 +324,7 @@ def _invoke_synthesis_payload_with_optional_repair(
     try:
         response = adapter.invoke(model_request)
     except ModelInvocationError as exc:
-        _emit_research_debug_event(
+        emit_research_debug_event(
             debug_emitter,
             "primary_synthesis_failed",
             failure_class=_failure_class_from_exception(exc),
@@ -352,7 +350,7 @@ def _invoke_synthesis_payload_with_optional_repair(
 
     if response.output_json is None:
         raise ResearchSynthesisValidationError("research synthesis requires JSON output")
-    _emit_research_debug_event(
+    emit_research_debug_event(
         debug_emitter,
         "primary_synthesis_succeeded",
         adapter_id=adapter.adapter_id,
@@ -527,7 +525,7 @@ def _attempt_malformed_output_repair(
 ) -> dict[str, Any] | None:
     raw_output = getattr(malformed_error, "raw_output", None)
     if raw_output is None:
-        _emit_research_debug_event(
+        emit_research_debug_event(
             debug_emitter,
             "repair_pass_failed",
             failure_class="malformed_output",
@@ -539,7 +537,7 @@ def _attempt_malformed_output_repair(
         return None
 
     repair_input = _sanitize_repair_input(raw_output, build_citation_key_map(evidence_pack))
-    _emit_research_debug_event(
+    emit_research_debug_event(
         debug_emitter,
         "repair_pass_started",
         adapter_id=repair_adapter.adapter_id,
@@ -560,7 +558,7 @@ def _attempt_malformed_output_repair(
     try:
         repair_response = repair_adapter.invoke(repair_request)
     except ModelInvocationError as exc:
-        _emit_research_debug_event(
+        emit_research_debug_event(
             debug_emitter,
             "repair_pass_failed",
             failure_class=_failure_class_from_exception(exc),
@@ -573,7 +571,7 @@ def _attempt_malformed_output_repair(
         return None
 
     if repair_response.output_json is None:
-        _emit_research_debug_event(
+        emit_research_debug_event(
             debug_emitter,
             "repair_pass_failed",
             failure_class="validation_error",
@@ -583,7 +581,7 @@ def _attempt_malformed_output_repair(
             reason="repair pass returned no JSON output",
         )
         return None
-    _emit_research_debug_event(
+    emit_research_debug_event(
         debug_emitter,
         "repair_pass_succeeded",
         adapter_id=repair_adapter.adapter_id,
@@ -604,22 +602,6 @@ def _rewrite_source_identifiers(text: str, source_id_to_citation_key: dict[str, 
 def _sanitize_repair_input(malformed_output: str, citation_key_map: dict[str, str]) -> str:
     source_id_to_citation_key = {source_id: citation_key for citation_key, source_id in citation_key_map.items()}
     return _rewrite_source_identifiers(malformed_output, source_id_to_citation_key)
-
-
-def _emit_research_debug_event(
-    emitter: ResearchDebugEmitter | None,
-    checkpoint: str,
-    **payload: object,
-) -> None:
-    if emitter is None:
-        return
-    emitter(
-        {
-            "domain": "research",
-            "checkpoint": checkpoint,
-            "payload": payload,
-        }
-    )
 
 
 def _citation_key_map_preview(citation_key_map: dict[str, str], *, limit: int = 5) -> list[str]:

@@ -67,20 +67,49 @@ class _WebSearchResult:
     snippet: str | None = None
 
 
-def collect_web_sources(research_request: ResearchRequest) -> tuple[SourceItem, ...]:
-    if not research_request.web_queries:
-        raise ValueError("web source collection requires explicit web_queries")
+@dataclass(frozen=True, slots=True)
+class _DiscoveredWebSource:
+    """Represents a source discovered during web search (before extraction)."""
+    title: str
+    url: str
+    search_snippet: str | None = None
+    discovery_rank: int = 0
 
-    sources: list[SourceItem] = []
+
+@dataclass(frozen=True, slots=True)
+class _ExtractedWebSource:
+    """Represents a source after extraction from the web."""
+    source_id: str
+    title: str
+    locator: str
+    snippet: str
+    published_at: str | None = None
+
+
+def discover_web_sources(
+    web_queries: tuple[str, ...],
+    max_results: int,
+    max_pages: int,
+) -> tuple[_DiscoveredWebSource, ...]:
+    """Discover candidate web sources from search queries.
+
+    This step performs search and deduplication but no extraction.
+    Returns discovered sources in rank order with search snippets.
+    """
+    if not web_queries:
+        raise ValueError("web discovery requires explicit web_queries")
+
+    discovered: list[_DiscoveredWebSource] = []
     seen_urls: set[str] = set()
-    remaining_results = research_request.max_web_results
+    remaining_results = max_results
+    discovery_rank = 0
 
-    for query in research_request.web_queries:
-        if remaining_results <= 0 or len(sources) >= research_request.max_web_pages:
+    for query in web_queries:
+        if remaining_results <= 0 or len(discovered) >= max_pages:
             break
 
         for result in _search_web_query(query, max_results=remaining_results):
-            if len(sources) >= research_request.max_web_pages or remaining_results <= 0:
+            if len(discovered) >= max_pages or remaining_results <= 0:
                 break
             normalized_url = _normalize_url(result.url)
             if normalized_url is None:
@@ -90,25 +119,77 @@ def collect_web_sources(research_request: ResearchRequest) -> tuple[SourceItem, 
             seen_urls.add(normalized_url)
             remaining_results -= 1
 
-            _PUBLISHED_AT_CACHE.pop((normalized_url, research_request.max_chars_per_page), None)
-            fetched_excerpt = _fetch_web_page_excerpt(normalized_url, max_chars=research_request.max_chars_per_page)
-            cleaned_fetched_excerpt = (
-                _clean_web_excerpt_text(fetched_excerpt, max_chars=research_request.max_chars_per_page)
-                if fetched_excerpt
-                else None
+            search_snippet = _clean_web_excerpt_text(result.snippet or "", max_chars=280)
+            discovered.append(
+                _DiscoveredWebSource(
+                    title=result.title or normalized_url,
+                    url=normalized_url,
+                    search_snippet=search_snippet if search_snippet else None,
+                    discovery_rank=discovery_rank,
+                )
             )
-            search_snippet = _clean_web_excerpt_text(result.snippet or "", max_chars=research_request.max_chars_per_page)
-            snippet = _snippet_from_text(cleaned_fetched_excerpt or search_snippet or "", max_chars=280)
-            if not snippet:
-                continue
+            discovery_rank += 1
+
+    return tuple(discovered)
+
+
+def extract_web_source(
+    discovered_source: _DiscoveredWebSource,
+    max_chars: int,
+) -> _ExtractedWebSource | None:
+    """Extract content and metadata from a discovered web source.
+
+    This step fetches the URL and extracts main content.
+    Returns None if extraction fails or produces insufficient content.
+    """
+    _PUBLISHED_AT_CACHE.pop((discovered_source.url, max_chars), None)
+    fetched_excerpt = _fetch_web_page_excerpt(discovered_source.url, max_chars=max_chars)
+    cleaned_fetched_excerpt = (
+        _clean_web_excerpt_text(fetched_excerpt, max_chars=max_chars)
+        if fetched_excerpt
+        else None
+    )
+    full_text = cleaned_fetched_excerpt or discovered_source.search_snippet or ""
+    snippet = _snippet_from_text(full_text, max_chars=280)
+
+    if not snippet:
+        return None
+
+    return _ExtractedWebSource(
+        source_id=_stable_web_source_id(discovered_source.url),
+        title=discovered_source.title,
+        locator=discovered_source.url,
+        snippet=snippet,
+        published_at=_PUBLISHED_AT_CACHE.get((discovered_source.url, max_chars)),
+    )
+
+
+def collect_web_sources(research_request: ResearchRequest) -> tuple[SourceItem, ...]:
+    """Collect web sources through discovery and extraction (composition layer)."""
+    if not research_request.web_queries:
+        raise ValueError("web source collection requires explicit web_queries")
+
+    # Discovery phase
+    discovered = discover_web_sources(
+        web_queries=research_request.web_queries,
+        max_results=research_request.max_web_results,
+        max_pages=research_request.max_web_pages,
+    )
+
+    # Extraction and composition phase
+    sources: list[SourceItem] = []
+    for discovered_source in discovered:
+        extracted = extract_web_source(discovered_source, max_chars=research_request.max_chars_per_page)
+        if extracted is not None:
             sources.append(
                 SourceItem(
-                    source_id=_stable_web_source_id(normalized_url),
+                    source_id=extracted.source_id,
                     source_type="web",
-                    title=result.title or normalized_url,
-                    locator=normalized_url,
-                    snippet=snippet,
-                    published_at=_PUBLISHED_AT_CACHE.get((normalized_url, research_request.max_chars_per_page)),
+                    title=extracted.title,
+                    locator=extracted.locator,
+                    snippet=extracted.snippet,
+                    published_at=extracted.published_at,
+                    discovery_rank=discovered_source.discovery_rank,
                 )
             )
 

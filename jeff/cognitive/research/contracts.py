@@ -121,6 +121,11 @@ class SourceItem:
     locator: str | None = None
     snippet: str | None = None
     published_at: str | None = None
+    extractor_used: str | None = None
+    extraction_quality: str | None = None
+    fetched_at: str | None = None
+    domain: str | None = None
+    discovery_rank: int | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "source_id", require_text(self.source_id, field_name="source_id"))
@@ -133,6 +138,19 @@ class SourceItem:
             object.__setattr__(self, "snippet", require_text(self.snippet, field_name="snippet"))
         if self.published_at is not None:
             object.__setattr__(self, "published_at", require_text(self.published_at, field_name="published_at"))
+        if self.extractor_used is not None:
+            object.__setattr__(self, "extractor_used", require_text(self.extractor_used, field_name="extractor_used"))
+        if self.extraction_quality is not None:
+            object.__setattr__(self, "extraction_quality", require_text(self.extraction_quality, field_name="extraction_quality"))
+        if self.fetched_at is not None:
+            object.__setattr__(self, "fetched_at", require_text(self.fetched_at, field_name="fetched_at"))
+        if self.domain is not None:
+            object.__setattr__(self, "domain", require_text(self.domain, field_name="domain"))
+        if self.discovery_rank is not None:
+            if isinstance(self.discovery_rank, bool) or not isinstance(self.discovery_rank, int):
+                raise ValueError("discovery_rank must be an integer when provided")
+            if self.discovery_rank < 0:
+                raise ValueError("discovery_rank must be non-negative when provided")
 
 
 @dataclass(frozen=True, slots=True)

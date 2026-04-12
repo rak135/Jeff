@@ -22,12 +22,11 @@ from .contracts import (
     SourceItem,
     validate_research_provenance,
 )
+from .debug import ResearchDebugEmitter, emit_research_debug_event, finding_source_refs_summary, summarize_values
 from .errors import ResearchProvenanceValidationError
 from .documents import build_document_evidence_pack, collect_document_sources
 from .synthesis import synthesize_research_with_runtime
 from .web import build_web_evidence_pack, collect_web_sources
-
-ResearchDebugEmitter = Callable[[dict[str, object]], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,29 +56,29 @@ class ResearchArtifactStore:
         self._artifacts_dir.mkdir(parents=True, exist_ok=True)
 
     def save(self, record: ResearchArtifactRecord, *, debug_emitter: ResearchDebugEmitter | None = None) -> Path:
-        _emit_research_debug_event(
+        emit_research_debug_event(
             debug_emitter,
             "artifact_store_save_started",
             artifact_id=record.artifact_id,
             source_item_count=len(record.source_items),
-            artifact_source_ids=_summarize_values(record.source_ids),
-            finding_source_refs_summary=_finding_source_refs_summary(record.findings),
+            artifact_source_ids=summarize_values(record.source_ids),
+            finding_source_refs_summary=finding_source_refs_summary(record.findings),
         )
         validate_research_artifact_record(record)
         path = self._path_for(record.artifact_id)
         payload = _record_to_payload(record)
         path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
-        _emit_research_debug_event(
+        emit_research_debug_event(
             debug_emitter,
             "artifact_store_save_succeeded",
             artifact_id=record.artifact_id,
             persisted_record_source_count=len(record.source_items),
-            artifact_source_ids=_summarize_values(record.source_ids),
+            artifact_source_ids=summarize_values(record.source_ids),
         )
         return path
 
     def load(self, artifact_id: str, *, debug_emitter: ResearchDebugEmitter | None = None) -> ResearchArtifactRecord:
-        _emit_research_debug_event(
+        emit_research_debug_event(
             debug_emitter,
             "artifact_store_load_started",
             artifact_id=artifact_id,
@@ -88,7 +87,7 @@ class ResearchArtifactStore:
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            _emit_research_debug_event(
+            emit_research_debug_event(
                 debug_emitter,
                 "artifact_store_load_failed",
                 artifact_id=artifact_id,
@@ -98,20 +97,20 @@ class ResearchArtifactStore:
         try:
             record = _record_from_payload(payload)
         except ValueError as exc:
-            _emit_research_debug_event(
+            emit_research_debug_event(
                 debug_emitter,
                 "artifact_store_load_failed",
                 artifact_id=artifact_id,
                 reason=str(exc),
             )
             raise
-        _emit_research_debug_event(
+        emit_research_debug_event(
             debug_emitter,
             "artifact_store_load_succeeded",
             artifact_id=artifact_id,
             loaded_record_source_count=len(record.source_items),
-            artifact_source_ids=_summarize_values(record.source_ids),
-            finding_source_refs_summary=_finding_source_refs_summary(record.findings),
+            artifact_source_ids=summarize_values(record.source_ids),
+            finding_source_refs_summary=finding_source_refs_summary(record.findings),
         )
         return record
 
@@ -143,12 +142,12 @@ def build_research_artifact_record(
     *,
     debug_emitter: ResearchDebugEmitter | None = None,
 ) -> ResearchArtifactRecord:
-    _emit_research_debug_event(
+    emit_research_debug_event(
         debug_emitter,
         "artifact_record_build_started",
         source_item_count=len(evidence_pack.sources),
-        artifact_source_ids=_summarize_values(artifact.source_ids),
-        finding_source_refs_summary=_finding_source_refs_summary(artifact.findings),
+        artifact_source_ids=summarize_values(artifact.source_ids),
+        finding_source_refs_summary=finding_source_refs_summary(artifact.findings),
     )
     try:
         validate_research_provenance(
@@ -185,22 +184,22 @@ def build_research_artifact_record(
         )
         validate_research_artifact_record(record)
     except Exception as exc:
-        _emit_research_debug_event(
+        emit_research_debug_event(
             debug_emitter,
             "artifact_record_build_failed",
             reason=str(exc),
             source_item_count=len(evidence_pack.sources),
-            artifact_source_ids=_summarize_values(artifact.source_ids),
-            finding_source_refs_summary=_finding_source_refs_summary(artifact.findings),
+            artifact_source_ids=summarize_values(artifact.source_ids),
+            finding_source_refs_summary=finding_source_refs_summary(artifact.findings),
         )
         raise
-    _emit_research_debug_event(
+    emit_research_debug_event(
         debug_emitter,
         "artifact_record_build_succeeded",
         artifact_id=record.artifact_id,
         source_item_count=len(record.source_items),
-        artifact_source_ids=_summarize_values(record.source_ids),
-        finding_source_refs_summary=_finding_source_refs_summary(record.findings),
+        artifact_source_ids=summarize_values(record.source_ids),
+        finding_source_refs_summary=finding_source_refs_summary(record.findings),
     )
     return record
 
@@ -341,31 +340,3 @@ def _record_from_payload(payload: dict[str, Any]) -> ResearchArtifactRecord:
         return record
     except (KeyError, TypeError, ValueError, ResearchProvenanceValidationError) as exc:
         raise ValueError("malformed persisted research artifact record") from exc
-
-
-def _emit_research_debug_event(
-    emitter: ResearchDebugEmitter | None,
-    checkpoint: str,
-    **payload: object,
-) -> None:
-    if emitter is None:
-        return
-    emitter(
-        {
-            "domain": "research",
-            "checkpoint": checkpoint,
-            "payload": payload,
-        }
-    )
-
-
-def _finding_source_refs_summary(findings: tuple[ResearchFinding, ...], *, limit: int = 4) -> list[str]:
-    summary = [",".join(finding.source_refs) for finding in findings]
-    return _summarize_values(tuple(summary), limit=limit)
-
-
-def _summarize_values(values: tuple[str, ...], *, limit: int = 5) -> list[str]:
-    items = list(values)
-    if len(items) <= limit:
-        return items
-    return [*items[:limit], f"+{len(items) - limit} more"]

@@ -19,6 +19,7 @@ from jeff.cognitive import (
     run_and_persist_document_research,
     run_and_persist_web_research,
 )
+from jeff.cognitive.research.debug import finding_source_refs_summary, summarize_values
 from jeff.core.containers.models import Project, Run, WorkUnit
 from jeff.core.schemas import Scope
 from jeff.core.state.models import GlobalState
@@ -377,8 +378,8 @@ def _research_command(
                 "checkpoint": "projection_started",
                 "payload": {
                     "source_item_count": len(record.source_items),
-                    "artifact_source_ids": _summarize_values(tuple(record.source_ids)),
-                    "finding_source_refs_summary": _finding_source_refs_summary(record.findings),
+                    "artifact_source_ids": summarize_values(tuple(record.source_ids)),
+                    "finding_source_refs_summary": finding_source_refs_summary(record.findings),
                 },
             }
         )
@@ -401,8 +402,8 @@ def _research_command(
                     "payload": {
                         "reason": str(exc),
                         "source_item_count": len(record.source_items),
-                        "artifact_source_ids": _summarize_values(tuple(record.source_ids)),
-                        "finding_source_refs_summary": _finding_source_refs_summary(record.findings),
+                        "artifact_source_ids": summarize_values(tuple(record.source_ids)),
+                        "finding_source_refs_summary": finding_source_refs_summary(record.findings),
                     },
                 }
             )
@@ -413,8 +414,8 @@ def _research_command(
                 "checkpoint": "projection_succeeded",
                 "payload": {
                     "projected_source_count": len(payload["support"]["sources"]),
-                    "artifact_source_ids": _summarize_values(tuple(record.source_ids)),
-                    "finding_source_refs_summary": _finding_source_refs_summary(record.findings),
+                    "artifact_source_ids": summarize_values(tuple(record.source_ids)),
+                    "finding_source_refs_summary": finding_source_refs_summary(record.findings),
                 },
             }
         )
@@ -1008,18 +1009,6 @@ class _ResearchDebugCollector:
             self.live_debug_emitter(json.dumps({"view": "research_debug_event", "debug": event}, sort_keys=True))
             return
         self.live_debug_emitter(render_research_debug_event(event))
-
-
-def _finding_source_refs_summary(findings) -> list[str]:  # type: ignore[no-untyped-def]
-    summary = [",".join(finding.source_refs) for finding in findings]
-    return _summarize_values(tuple(summary))
-
-
-def _summarize_values(values: tuple[str, ...], *, limit: int = 5) -> list[str]:
-    items = list(values)
-    if len(items) <= limit:
-        return items
-    return [*items[:limit], f"+{len(items) - limit} more"]
 
 
 def _general_research_work_unit_id(*, mode: str, question: str) -> str:

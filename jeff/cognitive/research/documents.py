@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from jeff.infrastructure import InfrastructureServices
@@ -70,40 +71,113 @@ _STOP_WORDS = {
 _CONTRADICTION_MARKERS = ("contradiction", "contradicts", "conflict", "conflicts", "inconsistent")
 
 
-def collect_document_sources(research_request: ResearchRequest) -> tuple[SourceItem, ...]:
-    if not research_request.document_paths:
-        raise ValueError("document source collection requires explicit document_paths")
+@dataclass(frozen=True, slots=True)
+class _DiscoveredDocument:
+    """Represents a document discovered during path enumeration (before extraction)."""
+    path: Path
+    discovery_rank: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class _ExtractedDocument:
+    """Represents a document after reading and extraction."""
+    source_id: str
+    title: str
+    locator: str
+    snippet: str
+
+
+def discover_document_sources(
+    document_paths: tuple[str, ...],
+    include_extensions: tuple[str, ...],
+    max_files: int,
+) -> tuple[_DiscoveredDocument, ...]:
+    """Discover candidate documents by path enumeration and filtering.
+
+    This step expands paths and filters by extension, but does not read or extract content.
+    Returns discovered document paths in order.
+    """
+    if not document_paths:
+        raise ValueError("document discovery requires explicit document_paths")
 
     allowed_extensions = (
-        set(SUPPORTED_DOCUMENT_EXTENSIONS).intersection(research_request.include_extensions)
-        if research_request.include_extensions
+        set(SUPPORTED_DOCUMENT_EXTENSIONS).intersection(include_extensions)
+        if include_extensions
         else set(SUPPORTED_DOCUMENT_EXTENSIONS)
     )
 
-    collected: list[SourceItem] = []
-    for raw_path in research_request.document_paths:
-        if len(collected) >= research_request.max_files:
+    discovered: list[_DiscoveredDocument] = []
+    discovery_rank = 0
+
+    for raw_path in document_paths:
+        if len(discovered) >= max_files:
             break
 
         for candidate in _expand_explicit_path(Path(raw_path)):
-            if len(collected) >= research_request.max_files:
+            if len(discovered) >= max_files:
                 break
             if candidate.suffix.lower() not in allowed_extensions:
                 continue
-            text = _read_document_text(candidate, max_chars=research_request.max_chars_per_file)
-            if text is None:
-                continue
-            collected.append(
+            discovered.append(_DiscoveredDocument(path=candidate, discovery_rank=discovery_rank))
+            discovery_rank += 1
+
+    return tuple(discovered)
+
+
+def extract_document_source(
+    discovered_document: _DiscoveredDocument,
+    max_chars: int,
+) -> _ExtractedDocument | None:
+    """Extract content and metadata from a discovered document.
+
+    This step reads the file and extracts snippet.
+    Returns None if reading fails or produces insufficient content.
+    """
+    text = _read_document_text(discovered_document.path, max_chars=max_chars)
+    if text is None:
+        return None
+
+    snippet = _snippet_from_text(text)
+    if not snippet:
+        return None
+
+    return _ExtractedDocument(
+        source_id=_stable_source_id(discovered_document.path),
+        title=discovered_document.path.name,
+        locator=str(discovered_document.path.resolve()),
+        snippet=snippet,
+    )
+
+
+def collect_document_sources(research_request: ResearchRequest) -> tuple[SourceItem, ...]:
+    """Collect document sources through discovery and extraction (composition layer)."""
+    if not research_request.document_paths:
+        raise ValueError("document source collection requires explicit document_paths")
+
+    # Discovery phase
+    discovered = discover_document_sources(
+        document_paths=research_request.document_paths,
+        include_extensions=research_request.include_extensions,
+        max_files=research_request.max_files,
+    )
+
+    # Extraction and composition phase
+    sources: list[SourceItem] = []
+    for discovered_document in discovered:
+        extracted = extract_document_source(discovered_document, max_chars=research_request.max_chars_per_file)
+        if extracted is not None:
+            sources.append(
                 SourceItem(
-                    source_id=_stable_source_id(candidate),
+                    source_id=extracted.source_id,
                     source_type="document",
-                    title=candidate.name,
-                    locator=str(candidate.resolve()),
-                    snippet=_snippet_from_text(text),
+                    title=extracted.title,
+                    locator=extracted.locator,
+                    snippet=extracted.snippet,
+                    discovery_rank=discovered_document.discovery_rank,
                 )
             )
 
-    return tuple(collected)
+    return tuple(sources)
 
 
 def build_document_evidence_pack(
