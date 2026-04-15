@@ -19,6 +19,7 @@ from jeff.infrastructure import (
     ModelTimeoutError,
     ModelTransportError,
 )
+from jeff.infrastructure.contract_runtime import ContractRuntime
 
 from ..types import require_text
 from .bounded_syntax import STEP1_BOUNDED_SYNTAX_DESCRIPTION, validate_step1_bounded_text
@@ -27,8 +28,11 @@ from .deterministic_transformer import transform_step1_bounded_text_to_candidate
 from .debug import ResearchDebugEmitter, emit_research_debug_event
 from .errors import ResearchSynthesisError, ResearchSynthesisRuntimeError, ResearchSynthesisValidationError
 from .fallback_policy import decide_formatter_fallback
-from .formatter import build_research_formatter_model_request, validate_research_formatter_output
-from .validators import build_candidate_research_json_schema
+from .formatter import (
+    FORMATTER_BRIDGE_RUNTIME_OVERRIDE,
+    build_research_formatter_model_request,
+    validate_research_formatter_output,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,13 +93,20 @@ def synthesize_research(
     research_request: ResearchRequest,
     evidence_pack: EvidencePack,
     adapter: ModelAdapter,
-    repair_adapter: ModelAdapter | None = None,
+    formatter_adapter: ModelAdapter | None = None,
     debug_emitter: ResearchDebugEmitter | None = None,
+    contract_runtime: ContractRuntime | None = None,
+    **legacy_kwargs: Any,
 ) -> ResearchArtifact:
     if not evidence_pack.evidence_items:
         raise ResearchSynthesisValidationError("research synthesis requires at least one evidence item")
 
-    effective_formatter_adapter = repair_adapter or adapter
+    compatibility_formatter_adapter = legacy_kwargs.pop("repair_adapter", None)
+    if legacy_kwargs:
+        unexpected = ", ".join(sorted(legacy_kwargs))
+        raise TypeError(f"synthesize_research() got unexpected keyword argument(s): {unexpected}")
+
+    effective_formatter_adapter = formatter_adapter or compatibility_formatter_adapter or adapter
     citation_key_map = build_citation_key_map(evidence_pack)
     emit_research_debug_event(
         debug_emitter,
@@ -112,6 +123,7 @@ def synthesize_research(
         formatter_adapter=effective_formatter_adapter,
         model_request=model_request,
         debug_emitter=debug_emitter,
+        contract_runtime=contract_runtime,
     )
 
     artifact = _research_artifact_from_output(
@@ -169,7 +181,7 @@ def synthesize_research_with_runtime(
         raise _runtime_error_from_exception(exc, adapter=None, adapter_id_hint=adapter_id) from exc
     try:
         formatter_adapter = infrastructure_services.get_adapter_for_purpose(
-            "research_repair",
+            FORMATTER_BRIDGE_RUNTIME_OVERRIDE,
             fallback_adapter_id=adapter.adapter_id,
         )
     except ModelAdapterError as exc:
@@ -182,8 +194,9 @@ def synthesize_research_with_runtime(
         research_request=research_request,
         evidence_pack=evidence_pack,
         adapter=adapter,
-        repair_adapter=formatter_adapter,
+        formatter_adapter=formatter_adapter,
         debug_emitter=debug_emitter,
+        contract_runtime=infrastructure_services.contract_runtime,
     )
 
 
@@ -268,6 +281,7 @@ def _invoke_step1_bounded_text_and_transform(
     formatter_adapter: ModelAdapter,
     model_request: ModelRequest,
     debug_emitter: ResearchDebugEmitter | None = None,
+    contract_runtime: ContractRuntime | None = None,
 ) -> dict[str, Any]:
     emit_research_debug_event(
         debug_emitter,
@@ -278,7 +292,10 @@ def _invoke_step1_bounded_text_and_transform(
         allowed_citation_keys=list(build_citation_key_map(evidence_pack).keys()),
     )
     try:
-        response = adapter.invoke(model_request)
+        if contract_runtime is not None:
+            response = contract_runtime.invoke_with_request(model_request, adapter_id=adapter.adapter_id)
+        else:
+            response = adapter.invoke(model_request)
     except ModelInvocationError as exc:
         emit_research_debug_event(
             debug_emitter,
@@ -357,6 +374,7 @@ def _invoke_step1_bounded_text_and_transform(
             bounded_text=bounded_text,
             transform_failure_reason=fallback_decision.reason,
             debug_emitter=debug_emitter,
+            contract_runtime=contract_runtime,
         )
     emit_research_debug_event(
         debug_emitter,
@@ -423,9 +441,28 @@ def build_model_facing_sources(
         for source in evidence_pack.sources
     )
 
+def build_research_formatter_bridge_model_request(
+    request: ResearchRequest,
+    evidence_pack: EvidencePack,
+    bounded_text: str,
+    *,
+    primary_request: ModelRequest,
+    adapter_id: str | None = None,
+) -> ModelRequest:
+    """Build the temporary Step 3 formatter bridge request directly.
 
-def _build_research_synthesis_schema(allowed_citation_keys: tuple[str, ...]) -> dict[str, Any]:
-    return build_candidate_research_json_schema(allowed_citation_keys)
+    This helper exists for tests and narrow compatibility surfaces that need
+    to construct the formatter bridge request outside the normal fallback path.
+    """
+
+    return build_research_formatter_model_request(
+        request=request,
+        evidence_pack=evidence_pack,
+        bounded_text=bounded_text,
+        transform_failure_reason="direct formatter bridge request",
+        primary_request=primary_request,
+        adapter_id=adapter_id,
+    )
 
 
 def build_research_repair_model_request(
@@ -436,45 +473,14 @@ def build_research_repair_model_request(
     primary_request: ModelRequest,
     adapter_id: str | None = None,
 ) -> ModelRequest:
-    # Temporary compatibility bridge for callers/tests that still use the old
-    # repair helper name while Step 3 formatter fallback is settling.
-    if request.question != evidence_pack.question:
-        raise ValueError("research request question must match evidence pack question")
+    """Legacy compatibility wrapper for older repair-era helper callers."""
 
-    citation_key_map = build_citation_key_map(evidence_pack)
-    allowed_citation_keys = tuple(citation_key_map.keys())
-    sanitized_output = _sanitize_repair_input(malformed_output, citation_key_map)
-    json_schema = primary_request.json_schema or _build_research_synthesis_schema(allowed_citation_keys)
-    prompt = _build_repair_prompt(
+    return build_research_formatter_bridge_model_request(
         request=request,
-        allowed_citation_keys=allowed_citation_keys,
-        json_schema=json_schema,
-        sanitized_output=sanitized_output,
-    )
-
-    return ModelRequest(
-        request_id=f"{primary_request.request_id}:repair",
-        project_id=request.project_id,
-        work_unit_id=request.work_unit_id,
-        run_id=request.run_id,
-        purpose="research_synthesis_repair",
-        prompt=prompt,
-        system_instructions=_repair_system_instructions(),
-        response_mode=ModelResponseMode.JSON,
-        json_schema=json_schema,
-        timeout_seconds=primary_request.timeout_seconds,
-        max_output_tokens=primary_request.max_output_tokens,
-        reasoning_effort="low",
-        metadata={
-            "research_question": request.question,
-            "source_mode": request.source_mode,
-            "expected_output_shape": "research_artifact_v1",
-            "adapter_id": adapter_id,
-            "citation_keys": list(allowed_citation_keys),
-            "source_count": len(evidence_pack.sources),
-            "repair_attempt": 1,
-            "repair_target_request_id": primary_request.request_id,
-        },
+        evidence_pack=evidence_pack,
+        bounded_text=malformed_output,
+        primary_request=primary_request,
+        adapter_id=adapter_id,
     )
 
 
@@ -487,6 +493,7 @@ def _attempt_formatter_fallback(
     bounded_text: str,
     transform_failure_reason: str,
     debug_emitter: ResearchDebugEmitter | None = None,
+    contract_runtime: ContractRuntime | None = None,
 ) -> dict[str, Any]:
     emit_research_debug_event(
         debug_emitter,
@@ -508,7 +515,12 @@ def _attempt_formatter_fallback(
     )
 
     try:
-        formatter_response = formatter_adapter.invoke(formatter_request)
+        if contract_runtime is not None:
+            formatter_response = contract_runtime.invoke_with_request(
+                formatter_request, adapter_id=formatter_adapter.adapter_id
+            )
+        else:
+            formatter_response = formatter_adapter.invoke(formatter_request)
     except ModelInvocationError as exc:
         emit_research_debug_event(
             debug_emitter,
@@ -636,45 +648,6 @@ def _build_primary_synthesis_prompt(
         ]
     )
 
-
-def _repair_system_instructions() -> str:
-    return (
-        "Repair invalid research synthesis output into exactly one JSON object that matches json_schema. "
-        "No markdown, no code fences, no commentary. "
-        "Do not add claims, sources, evidence, or certainty. "
-        "Use only the allowed citation keys in findings.source_refs."
-    )
-
-
-def _build_repair_prompt(
-    *,
-    request: ResearchRequest,
-    allowed_citation_keys: tuple[str, ...],
-    json_schema: dict[str, Any],
-    sanitized_output: str,
-) -> str:
-    compact_schema = json.dumps(json_schema, sort_keys=True, separators=(",", ":"))
-    return "\n".join(
-        [
-            "TASK: repair invalid research synthesis output",
-            "Reformat only the provided content into valid JSON.",
-            "Preserve only content already present.",
-            "Do not add claims, evidence, source refs, or certainty.",
-            "Output exactly one JSON object matching json_schema.",
-            "Do not output markdown, code fences, or extra prose.",
-            "findings must be a JSON array.",
-            "Each findings item must be a JSON object with text and source_refs.",
-            "finding.source_refs must be a JSON array of strings using only allowed citation keys.",
-            'Even one citation must be ["S1"], never "S1".',
-            f"QUESTION: {request.question}",
-            f"ALLOWED_CITATION_KEYS: {', '.join(allowed_citation_keys)}",
-            f"JSON_SCHEMA: {compact_schema}",
-            "MALFORMED_CONTENT:",
-            sanitized_output,
-        ]
-    )
-
-
 def _compact_section_lines(values: tuple[str, ...], *, prefix: str) -> list[str]:
     if not values:
         return ["none"]
@@ -709,13 +682,6 @@ def _rewrite_source_identifiers(text: str, source_id_to_citation_key: dict[str, 
     for source_id, citation_key in sorted(source_id_to_citation_key.items(), key=lambda item: len(item[0]), reverse=True):
         rewritten = rewritten.replace(source_id, citation_key)
     return rewritten
-
-
-def _sanitize_repair_input(malformed_output: str, citation_key_map: dict[str, str]) -> str:
-    source_id_to_citation_key = {source_id: citation_key for citation_key, source_id in citation_key_map.items()}
-    return _rewrite_source_identifiers(malformed_output, source_id_to_citation_key)
-
-
 def _citation_key_map_preview(citation_key_map: dict[str, str], *, limit: int = 5) -> list[str]:
     preview = [f"{citation_key}->{_short_source_id(source_id)}" for citation_key, source_id in citation_key_map.items()]
     if len(preview) <= limit:

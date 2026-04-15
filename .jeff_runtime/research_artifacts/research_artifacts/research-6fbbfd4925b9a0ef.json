@@ -1,0 +1,205 @@
+{
+  "artifact_id": "research-6fbbfd4925b9a0ef",
+  "created_at": "2026-04-13T19:04:06.183063+00:00",
+  "evidence_items": [
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Interpretation: - Step 2 deterministic transformation is the **primary** normalization path - Step 3 formatter is **fallback-only**, not the normal success path - Step 3 uses the **already-produced bounded text artifact**, not the original evidence pack again - downstream remap / provenance / persistence / render remain unchanged"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "#### Instructor Decision: **USE NOW** Role: multi-provider typed LLM call layer Where: Step 3 formatter fallback; later other typed LLM contracts Why: - practical provider-swappable structured output layer - works well as a thin typed wrapper - useful for future Proposal / Evaluation typed outputs too"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "#### BAML Decision: **OPTIONAL LATER** Role: contract layer for selected typed LLM flows Where: likely Step 3 formatter later; possibly Proposal / Evaluation later Why: - can become useful once provider fallback trees and typed contracts get richer - can help with contract testing and provider fallback orchestration"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "- `formatter.py` - new - owns Step 3 formatter request builder and formatter-stage call wrapper - may initially use existing runtime/adapters directly - later may use Instructor-backed typed calls through Infrastructure"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "# 3step_transition.md"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Status: implementation transition plan for Jeff typed-LLM runtime and Research 3-step pipeline Authority: subordinate to `ARCHITECTURE.md`, `PLANNING_AND_RESEARCH_SPEC.md`, `ORCHESTRATOR_SPEC.md`, `INTERFACE_OPERATOR_SPEC.md`, `MEMORY_SPEC.md`, `CORE_SCHEMAS_SPEC.md`, `2step_reseach_transition.md`, and current implementation reality Purpose: define the concrete target shape for Jeff's 3-step Resea"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "So this document does two things together: 1. defines the **Research 3-step pipeline** 2. defines the **reusable Infrastructure runtime shape** that can serve Research now and other typed LLM stages later"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "`source acquisition -> evidence pack -> Step 1 bounded text artifact -> Step 2 deterministic transformer -> Step 3 formatter fallback only if needed -> remap -> provenance -> persistence/render -> optional memory handoff`"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "```text source acquisition -> evidence pack -> Step 1 bounded text generation -> Step 1 syntax precheck -> Step 2 deterministic transformer -> success -> validated canonical research JSON -> structural failure -> Step 3 formatter fallback eligibility check -> Step 3 formatter fallback -> strict output validation -> citation remap -> provenance validation -> persistence -> projection/render -> opti"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "- Step 1 owns semantic synthesis from evidence - Step 2 owns mechanical normalization only - Step 3 owns formatting fallback only - Step 3 does **not** analyze the original evidence pack again - Step 3 receives the already-created bounded artifact plus the exact target schema"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "# 3step_transition_buildplan.md"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "Status: working build plan for the Jeff 3-step transition Authority: subordinate to `3step_transition.md`, Jeff canon in `v1_doc/`, and current repo reality Purpose: define the concrete, step-by-step implementation plan for moving Jeff Research from the current JSON-first synthesis/repair flow to the new 3-step transition without broad rewrite"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "1. **Step 1 \u2014 bounded text generation** 2. **Step 2 \u2014 deterministic transformer** 3. **Step 3 \u2014 formatter fallback** 4. existing downstream unchanged: - citation remap - provenance validation - persistence - projection/render - optional memory handoff"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "`evidence pack -> Step 1 bounded text -> Step 2 deterministic transformer -> Step 3 formatter fallback if needed -> remap -> provenance -> persistence/render -> optional memory handoff`"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "#### Research owns - Step 1 syntax contract - Step 1 prompt/request builder - Step 1 bounded-text artifact definitions - Step 2 deterministic parsing/normalization - Step 2 research-local validation rules - Step 3 formatter request builder - Step 3 fallback eligibility policy - research debug checkpoints - research-local exceptions"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "- `synthesis.py` - keep and modify - remains research pipeline orchestrator - should stop being the dumping ground for every helper - should orchestrate Step 1 -> Step 2 -> Step 3 -> downstream handoff"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "### Instructor Use **later in the Step 3 slice if needed**, not as the first thing to add."
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "The 3-step model is usually cheaper because: - Step 1 uses a smaller, cheaper bounded syntax instead of exact JSON - Step 2 is pure local deterministic code - Step 3 runs only on the failure tail - Step 3 works on the already-created bounded artifact, not the original full evidence pack"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "#### Guardrails Decision: **OPTIONAL NOW / LIMITED USE** Role: extra validation helpers where useful Where: post-Step-3 checks or selected validator composition Why: - can help with custom validator packaging - can be useful where a validator is clearer there than in ad hoc code"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "#### Outlines Decision: **OPTIONAL LATER** Role: constrained generation for controlled backends Where: possible future optimization of Step 1 on selected local backends Why: - useful only if we control the inference backend well enough - useful only if it actually reduces failure rate materially"
+    }
+  ],
+  "findings": [
+    {
+      "source_refs": [
+        "document-8436715cc8a8",
+        "document-60e057d2083d"
+      ],
+      "text": "The 3-step pipeline consists of Step 1 bounded text generation, Step 2 deterministic transformer, and Step 3 formatter fallback."
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Step 2 deterministic transformation serves as the primary normalization path."
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Step 3 is a fallback-only stage that operates on the already-produced bounded text artifact rather than the original evidence pack."
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "The infrastructure utilizes a multi-provider typed LLM call layer via Instructor for Step 3 formatter fallbacks and future typed LLM contracts, including Proposal and Evaluation typed outputs."
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "BAML is designated as an optional later addition for contract layers in selected typed LLM flows, such as Step 3, Proposal, or Evaluation."
+    }
+  ],
+  "inferences": [
+    "The architecture prioritizes cost efficiency by utilizing cheaper bounded syntax in Step 1 and restricting expensive LLM calls (Step 3) to failure cases."
+  ],
+  "project_id": "general_research",
+  "question": "What durable architectural lessons from the 3-step transition should matter again later?",
+  "recommendation": null,
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_ids": [
+    "document-8436715cc8a8",
+    "document-60e057d2083d"
+  ],
+  "source_items": [
+    {
+      "discovery_rank": 0,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\v1_doc\\additional\\3step_transition.md",
+      "published_at": null,
+      "snippet": "# 3step_transition.md Status: implementation transition plan for Jeff typed-LLM runtime and Research 3-step pipeline Authority: subordinate to `ARCHITECTURE.md`, `PLANNING_AND_RESEARCH_SPEC.md`, `ORCHESTRATOR_SPEC.md`, `INTERFACE_OPERATOR_SPEC.md`, `MEMORY_SPEC.md`, `CORE_SCHEMAS",
+      "source_id": "document-8436715cc8a8",
+      "source_type": "document",
+      "title": "3step_transition.md"
+    },
+    {
+      "discovery_rank": 1,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\v1_doc\\additional\\3step_transition_buildplan.md",
+      "published_at": null,
+      "snippet": "# 3step_transition_buildplan.md Status: working build plan for the Jeff 3-step transition Authority: subordinate to `3step_transition.md`, Jeff canon in `v1_doc/`, and current repo reality Purpose: define the concrete, step-by-step implementation plan for moving Jeff Research fro",
+      "source_id": "document-60e057d2083d",
+      "source_type": "document",
+      "title": "3step_transition_buildplan.md"
+    }
+  ],
+  "source_mode": "local_documents",
+  "summary": "The 3-step transition introduces a reusable infrastructure runtime designed for Research and future typed LLM stages. This architecture separates semantic synthesis from mechanical normalization and formatting fallbacks to reduce costs and provide a provider-swappable structured output layer.",
+  "uncertainties": [
+    "The actual utility of Outlines for Step 1 optimization depends on the level of control over the inference backend and whether it materially reduces failure rates."
+  ],
+  "work_unit_id": "research-docs-what-durable-architectural-lessons-from-the-3-st-e8aa697f"
+}

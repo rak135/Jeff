@@ -1,0 +1,207 @@
+{
+  "artifact_id": "research-c30f6f6b6c34b905",
+  "created_at": "2026-04-14T20:09:54.298024+00:00",
+  "evidence_items": [
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Status: implementation transition plan for Jeff typed-LLM runtime and Research 3-step pipeline Authority: subordinate to `ARCHITECTURE.md`, `PLANNING_AND_RESEARCH_SPEC.md`, `ORCHESTRATOR_SPEC.md`, `INTERFACE_OPERATOR_SPEC.md`, `MEMORY_SPEC.md`, `CORE_SCHEMAS_SPEC.md`, `2step_reseach_transition.md`, and current implementation reality Purpose: define the concrete target shape for Jeff's 3-step Resea"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "#### Instructor Decision: **USE NOW** Role: multi-provider typed LLM call layer Where: Step 3 formatter fallback; later other typed LLM contracts Why: - practical provider-swappable structured output layer - works well as a thin typed wrapper - useful for future Proposal / Evaluation typed outputs too"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "At the same time, we do **not** want Research to invent its own one-off infrastructure that Proposal, Evaluation, and future typed LLM stages cannot reuse."
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "So this document does two things together: 1. defines the **Research 3-step pipeline** 2. defines the **reusable Infrastructure runtime shape** that can serve Research now and other typed LLM stages later"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "#### BAML Decision: **OPTIONAL LATER** Role: contract layer for selected typed LLM flows Where: likely Step 3 formatter later; possibly Proposal / Evaluation later Why: - can become useful once provider fallback trees and typed contracts get richer - can help with contract testing and provider fallback orchestration"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "Status: working build plan for the Jeff 3-step transition Authority: subordinate to `3step_transition.md`, Jeff canon in `v1_doc/`, and current repo reality Purpose: define the concrete, step-by-step implementation plan for moving Jeff Research from the current JSON-first synthesis/repair flow to the new 3-step transition without broad rewrite"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "#### Infrastructure owns - runtime config - stable purpose vocabulary - output strategy vocabulary - capability profile vocabulary - technical fallback execution policy - model/provider selection and adapter calls - optional typed-call helpers used by research/proposal/evaluation later"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "- `formatter.py` - new - owns Step 3 formatter request builder and formatter-stage call wrapper - may initially use existing runtime/adapters directly - later may use Instructor-backed typed calls through Infrastructure"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "# 3step_transition.md"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "`source acquisition -> evidence pack -> Step 1 bounded text artifact -> Step 2 deterministic transformer -> Step 3 formatter fallback only if needed -> remap -> provenance -> persistence/render -> optional memory handoff`"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "# 3step_transition_buildplan.md"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "This document is not a fresh architecture spec. It is the practical implementation plan for migrating the real current repo."
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "1. **Step 1 \u2014 bounded text generation** 2. **Step 2 \u2014 deterministic transformer** 3. **Step 3 \u2014 formatter fallback** 4. existing downstream unchanged: - citation remap - provenance validation - persistence - projection/render - optional memory handoff"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "## 3. Current repo reality we are building from"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "`evidence pack -> Step 1 bounded text -> Step 2 deterministic transformer -> Step 3 formatter fallback if needed -> remap -> provenance -> persistence/render -> optional memory handoff`"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "- `debug.py` - keep - update checkpoint vocabulary to truthful 3-step stage labels"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "- `jeff/cognitive/HANDOFF.md` - `handoffs/system/REPO_HANDOFF.md` - `jeff/infrastructure/HANDOFF.md` - `jeff/memory/HANDOFF.md` - `jeff/orchestrator/HANDOFF.md`"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Interpretation: - Step 2 deterministic transformation is the **primary** normalization path - Step 3 formatter is **fallback-only**, not the normal success path - Step 3 uses the **already-produced bounded text artifact**, not the original evidence pack again - downstream remap / provenance / persistence / render remain unchanged"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "This same Infrastructure must later be able to support: - `plain_text` - `native_json_schema` - `baml_contract` - and other typed-output strategies when justified"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "The following must remain true: - Research is support, not truth - evidence-first research remains - citation-key remap remains - remap to internal `source_id` remains downstream - fail-closed provenance remains downstream - persistence / projection / render remain downstream - memory handoff semantics remain downstream - Interface remains downstream only - Orchestrator sequences stages but does n"
+    }
+  ],
+  "findings": [
+    {
+      "source_refs": [
+        "document-8436715cc8a8",
+        "document-60e057d2083d"
+      ],
+      "text": "The 3-step pipeline requires Infrastructure to define vocabulary for typed LLM stages and runtime config"
+    }
+  ],
+  "inferences": [
+    "Infrastructure vocabulary is critical for enabling future typed-output strategies like native_json_schema and baml_contract"
+  ],
+  "project_id": "general_research",
+  "question": "Based on the current repo state and completed 3-step transition, what is the next smallest safe implementation step: infrastructure vocabulary for future typed LLM stages, proposal-layer foundation, or memory-layer strengthening?",
+  "recommendation": "infrastructure vocabulary for future typed LLM stages",
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_ids": [
+    "document-8436715cc8a8",
+    "document-60e057d2083d"
+  ],
+  "source_items": [
+    {
+      "discovery_rank": 0,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\v1_doc\\additional\\3step_transition.md",
+      "published_at": null,
+      "snippet": "# 3step_transition.md Status: implementation transition plan for Jeff typed-LLM runtime and Research 3-step pipeline Authority: subordinate to `ARCHITECTURE.md`, `PLANNING_AND_RESEARCH_SPEC.md`, `ORCHESTRATOR_SPEC.md`, `INTERFACE_OPERATOR_SPEC.md`, `MEMORY_SPEC.md`, `CORE_SCHEMAS",
+      "source_id": "document-8436715cc8a8",
+      "source_type": "document",
+      "title": "3step_transition.md"
+    },
+    {
+      "discovery_rank": 1,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\v1_doc\\additional\\3step_transition_buildplan.md",
+      "published_at": null,
+      "snippet": "# 3step_transition_buildplan.md Status: working build plan for the Jeff 3-step transition Authority: subordinate to `3step_transition.md`, Jeff canon in `v1_doc/`, and current repo reality Purpose: define the concrete, step-by-step implementation plan for moving Jeff Research fro",
+      "source_id": "document-60e057d2083d",
+      "source_type": "document",
+      "title": "3step_transition_buildplan.md"
+    },
+    {
+      "discovery_rank": 2,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\jeff\\cognitive\\research\\HANDOFF.md",
+      "published_at": null,
+      "snippet": "# Submodule Name - `jeff.cognitive.research` # Parent Module - `jeff.cognitive` # Submodule Purpose - Own bounded research contracts and the shared research pipeline from explicit inputs to source-aware support outputs, including acquisition, synthesis, persistence, and selective",
+      "source_id": "document-af8bdc633365",
+      "source_type": "document",
+      "title": "HANDOFF.md"
+    },
+    {
+      "discovery_rank": 3,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\handoffs\\system\\WORK_STATUS_UPDATE_2026-04-13_2007.md",
+      "published_at": null,
+      "snippet": "## 2026-04-13 20:07 \u2014 Added Step 3 formatter fallback bridge - Scope: `jeff.cognitive.research` Slice 4 formatter fallback wiring - Done: - added `formatter.py` for Step 3 formatter request building and hard output validation - added `fallback_policy.py` for explicit formatter el",
+      "source_id": "document-2aa5f41f2df4",
+      "source_type": "document",
+      "title": "WORK_STATUS_UPDATE_2026-04-13_2007.md"
+    }
+  ],
+  "source_mode": "local_documents",
+  "summary": "The 3-step transition is complete, with Step 3 formatter fallback implemented. Infrastructure must now support future typed LLM stages while maintaining existing downstream processes. Research must avoid inventing isolated infrastructure, instead reusing Infrastructure runtime for Proposal/Evaluation stages.",
+  "uncertainties": [
+    "Uncertainty about how quickly future typed LLM stages will require new vocabulary extensions"
+  ],
+  "work_unit_id": "research-web-for-a-provider-swappable-local-first-llm-system-77206349"
+}

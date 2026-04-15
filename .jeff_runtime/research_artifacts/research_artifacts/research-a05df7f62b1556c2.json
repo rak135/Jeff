@@ -1,0 +1,233 @@
+{
+  "artifact_id": "research-a05df7f62b1556c2",
+  "created_at": "2026-04-13T19:01:05.287920+00:00",
+  "evidence_items": [
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Status: implementation transition plan for Jeff typed-LLM runtime and Research 3-step pipeline Authority: subordinate to `ARCHITECTURE.md`, `PLANNING_AND_RESEARCH_SPEC.md`, `ORCHESTRATOR_SPEC.md`, `INTERFACE_OPERATOR_SPEC.md`, `MEMORY_SPEC.md`, `CORE_SCHEMAS_SPEC.md`, `2step_reseach_transition.md`, and current implementation reality Purpose: define the concrete target shape for Jeff's 3-step Resea"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "`source acquisition -> evidence pack -> Step 1 bounded text artifact -> Step 2 deterministic transformer -> Step 3 formatter fallback only if needed -> remap -> provenance -> persistence/render -> optional memory handoff`"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "The following must remain true: - Research is support, not truth - evidence-first research remains - citation-key remap remains - remap to internal `source_id` remains downstream - fail-closed provenance remains downstream - persistence / projection / render remain downstream - memory handoff semantics remain downstream - Interface remains downstream only - Orchestrator sequences stages but does n"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "We are building this as a hybrid system. We will use open-source parts for generic plumbing only. Jeff keeps ownership of its semantics."
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "#### Outlines Decision: **OPTIONAL LATER** Role: constrained generation for controlled backends Where: possible future optimization of Step 1 on selected local backends Why: - useful only if we control the inference backend well enough - useful only if it actually reduces failure rate materially"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "These remain fully Jeff-owned: - Step 1 syntax contract - Step 1 prompt builder - Step 2 deterministic transformer - all research semantics - finding / inference / uncertainty / recommendation separation - citation-key discipline - fallback eligibility policy - fail-closed downstream rules - provider/capability routing policy - purpose routing policy"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "### Input - research question - evidence pack - citation keys only (`S1..Sn`) - no internal `source_id`"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Jeff Research already has a usable base: - bounded source acquisition - evidence-pack construction - citation-key remap (`S1..Sn`) - fail-closed provenance validation - truthful debug boundaries - downstream persistence / projection linkage - Infrastructure-owned runtime/config routing"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "The weakness is the middle of the pipeline. One-shot strict JSON is too brittle across models and providers. We want a cheaper and more provider-agnostic path: - cheap bounded generation first - deterministic normalization second - LLM formatting only when needed"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Interpretation: - Step 2 deterministic transformation is the **primary** normalization path - Step 3 formatter is **fallback-only**, not the normal success path - Step 3 uses the **already-produced bounded text artifact**, not the original evidence pack again - downstream remap / provenance / persistence / render remain unchanged"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "If a proposal violates any of the above, it is wrong."
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "## 4. Why this is better than one-shot JSON"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "That is bad not only for reliability but also for token cost."
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "The 3-step model is usually cheaper because: - Step 1 uses a smaller, cheaper bounded syntax instead of exact JSON - Step 2 is pure local deterministic code - Step 3 runs only on the failure tail - Step 3 works on the already-created bounded artifact, not the original full evidence pack"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "So the expected cost is usually lower than: - always forcing exact JSON in Step 1, or - always doing two LLM passes"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "## 5. Open-source decisions"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "#### Guardrails Decision: **OPTIONAL NOW / LIMITED USE** Role: extra validation helpers where useful Where: post-Step-3 checks or selected validator composition Why: - can help with custom validator packaging - can be useful where a validator is clearer there than in ad hoc code"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "### 5.3 Jeff-owned only"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "```text source acquisition -> evidence pack -> Step 1 bounded text generation -> Step 1 syntax precheck -> Step 2 deterministic transformer -> success -> validated canonical research JSON -> structural failure -> Step 3 formatter fallback eligibility check -> Step 3 formatter fallback -> strict output validation -> citation remap -> provenance validation -> persistence -> projection/render -> opti"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "- Step 1 owns semantic synthesis from evidence - Step 2 owns mechanical normalization only - Step 3 owns formatting fallback only - Step 3 does **not** analyze the original evidence pack again - Step 3 receives the already-created bounded artifact plus the exact target schema"
+    }
+  ],
+  "findings": [
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "The 3-step pipeline consists of source acquisition, evidence pack, Step 1 bounded text artifact, Step 2 deterministic transformer, Step 3 formatter (fallback only), remap, provenance, persistence/render, and optional memory handoff"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Step 1 is responsible for semantic synthesis from evidence and uses a smaller, cheaper bounded syntax instead of exact JSON"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Step 2 is the primary normalization path and consists of pure local deterministic code for mechanical normalization"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Step 3 is a fallback-only formatter that uses the bounded text artifact and target schema rather than re-analyzing the original evidence pack"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Jeff-owned components include the Step 1 syntax contract, Step 1 prompt builder, Step 2 deterministic transformer, all research semantics, and the separation of findings, inferences, uncertainties, and recommendations"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "The system utilizes open-source parts for generic plumbing only, while Jeff retains ownership of semantics"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "The 3-step model is generally cheaper than always forcing exact JSON in Step 1 or performing two LLM passes"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Input for the process includes the research question, evidence pack, and citation keys (S1..Sn), excluding internal source_ids"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Guardrails are considered optional now or for limited use as extra validation helpers"
+    },
+    {
+      "source_refs": [
+        "document-8436715cc8a8"
+      ],
+      "text": "Outlines are designated as optional for later use for constrained generation on controlled backends"
+    }
+  ],
+  "inferences": [
+    "The transition to a 3-step process is intended to increase reliability and reduce token costs compared to one-shot JSON generation."
+  ],
+  "project_id": "general_research",
+  "question": "List the concrete claims supported by each source separately, and identify any claim that is only inference rather than direct finding.",
+  "recommendation": null,
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_ids": [
+    "document-8436715cc8a8"
+  ],
+  "source_items": [
+    {
+      "discovery_rank": 0,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\v1_doc\\additional\\3step_transition.md",
+      "published_at": null,
+      "snippet": "# 3step_transition.md Status: implementation transition plan for Jeff typed-LLM runtime and Research 3-step pipeline Authority: subordinate to `ARCHITECTURE.md`, `PLANNING_AND_RESEARCH_SPEC.md`, `ORCHESTRATOR_SPEC.md`, `INTERFACE_OPERATOR_SPEC.md`, `MEMORY_SPEC.md`, `CORE_SCHEMAS",
+      "source_id": "document-8436715cc8a8",
+      "source_type": "document",
+      "title": "3step_transition.md"
+    },
+    {
+      "discovery_rank": 1,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\v1_doc\\additional\\3step_transition_buildplan.md",
+      "published_at": null,
+      "snippet": "# 3step_transition_buildplan.md Status: working build plan for the Jeff 3-step transition Authority: subordinate to `3step_transition.md`, Jeff canon in `v1_doc/`, and current repo reality Purpose: define the concrete, step-by-step implementation plan for moving Jeff Research fro",
+      "source_id": "document-60e057d2083d",
+      "source_type": "document",
+      "title": "3step_transition_buildplan.md"
+    }
+  ],
+  "source_mode": "local_documents",
+  "summary": "The Jeff 3-step transition plan defines a hybrid runtime for the Research pipeline designed to replace brittle one-shot JSON generation with a more cost-effective, provider-agnostic sequence. The process moves from source acquisition and evidence packing to a bounded text artifact (Step 1), followed by deterministic transformation (Step 2), and utilizes a formatter only as a fallback (Step 3) before final provenance and persistence.",
+  "uncertainties": [
+    "The specific material reduction in failure rate provided by the use of outlines on local backends is not quantified."
+  ],
+  "work_unit_id": "research-docs-compare-the-build-plan-the-current-research-hand-f32071e7"
+}

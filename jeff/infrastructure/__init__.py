@@ -1,5 +1,9 @@
 """Infrastructure-owned replaceable plumbing for Jeff."""
 
+from .capability_profiles import CapabilityProfile, CapabilityProfileRegistry
+from .contract_runtime import ContractCallRequest, ContractRuntime
+from .output_strategies import OutputStrategy
+from .purposes import Purpose
 from .config import (
     AdapterConfig,
     AdapterRuntimeOptions,
@@ -40,6 +44,12 @@ from .runtime import (
 )
 
 __all__ = [
+    "CapabilityProfile",
+    "CapabilityProfileRegistry",
+    "ContractCallRequest",
+    "ContractRuntime",
+    "OutputStrategy",
+    "Purpose",
     "AdapterConfig",
     "AdapterRegistry",
     "AdapterFactoryConfig",

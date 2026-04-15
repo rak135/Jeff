@@ -6,6 +6,7 @@ from jeff.infrastructure import (
     ModelAdapterRuntimeConfig,
     build_infrastructure_services,
 )
+from tests.fixtures.research import bounded_research_text_from_payload
 
 
 def test_web_queries_and_fake_default_adapter_drive_end_to_end_research(monkeypatch) -> None:
@@ -41,13 +42,15 @@ def test_web_queries_and_fake_default_adapter_drive_end_to_end_research(monkeypa
                     provider_kind=AdapterProviderKind.FAKE,
                     adapter_id="fake-default",
                     model_name="fake-model",
-                    fake_json_response={
+                    fake_text_response=bounded_research_text_from_payload(
+                        {
                         "summary": "The fetched web source supports a bounded rollout.",
                         "findings": [{"text": "The article supports the bounded rollout.", "source_refs": ["S1"]}],
                         "inferences": ["A narrow path remains better supported."],
                         "uncertainties": ["Only one fetched source was considered."],
                         "recommendation": "Keep the rollout bounded.",
-                    },
+                        }
+                    ),
                 ),
             ),
         )
@@ -92,25 +95,29 @@ def test_explicit_adapter_selection_works_with_multiple_registered_fake_adapters
                     provider_kind=AdapterProviderKind.FAKE,
                     adapter_id="fake-default",
                     model_name="fake-model",
-                    fake_json_response={
+                    fake_text_response=bounded_research_text_from_payload(
+                        {
                         "summary": "Default summary.",
                         "findings": [{"text": "Default finding", "source_refs": ["S1"]}],
                         "inferences": [],
                         "uncertainties": [],
                         "recommendation": None,
-                    },
+                        }
+                    ),
                 ),
                 AdapterFactoryConfig(
                     provider_kind=AdapterProviderKind.FAKE,
                     adapter_id="fake-secondary",
                     model_name="fake-model-2",
-                    fake_json_response={
+                    fake_text_response=bounded_research_text_from_payload(
+                        {
                         "summary": "Secondary summary.",
                         "findings": [{"text": "Secondary finding", "source_refs": ["S1"]}],
                         "inferences": ["Secondary inference"],
                         "uncertainties": ["Secondary uncertainty"],
                         "recommendation": "Use the secondary adapter.",
-                    },
+                        }
+                    ),
                 ),
             ),
         )

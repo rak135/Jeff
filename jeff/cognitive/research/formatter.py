@@ -10,6 +10,9 @@ from jeff.infrastructure import ModelRequest, ModelResponseMode
 from .contracts import EvidencePack, ResearchRequest
 from .validators import build_candidate_research_json_schema, validate_candidate_research_payload
 
+FORMATTER_BRIDGE_RUNTIME_OVERRIDE = "research_repair"
+FORMATTER_BRIDGE_REQUEST_PURPOSE = "research_synthesis_repair"
+
 
 def build_research_formatter_model_request(
     request: ResearchRequest,
@@ -40,9 +43,9 @@ def build_research_formatter_model_request(
         project_id=request.project_id,
         work_unit_id=request.work_unit_id,
         run_id=request.run_id,
-        # Deliberate temporary bridge: reuse the current runtime purpose override
-        # until Slice 5 cleans up the purpose vocabulary.
-        purpose="research_synthesis_repair",
+        # Deliberate temporary bridge: keep using the existing runtime purpose
+        # contract until infrastructure naming is cleaned up separately.
+        purpose=FORMATTER_BRIDGE_REQUEST_PURPOSE,
         prompt=prompt,
         system_instructions=_formatter_system_instructions(),
         response_mode=ModelResponseMode.JSON,

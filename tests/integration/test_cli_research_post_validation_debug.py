@@ -17,6 +17,7 @@ from jeff.cognitive import ResearchArtifactStore
 from jeff.memory import InMemoryMemoryStore
 
 from tests.fixtures.cli import build_state_with_runs
+from tests.fixtures.research import bounded_research_text_from_payload
 
 
 def test_debug_stream_shows_downstream_post_validation_checkpoints_and_success(
@@ -96,13 +97,15 @@ def _build_docs_cli_with_single_use_source_collection(
                             provider_kind=AdapterProviderKind.FAKE,
                             adapter_id="fake-default",
                             model_name="fake-model",
-                            fake_json_response={
+                            fake_text_response=bounded_research_text_from_payload(
+                                {
                                 "summary": "The documents support a bounded rollout.",
                                 "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
                                 "inferences": [],
                                 "uncertainties": [],
                                 "recommendation": None,
-                            },
+                                }
+                            ),
                         ),
                     ),
                 )

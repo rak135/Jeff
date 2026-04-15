@@ -30,25 +30,6 @@ def test_document_research_can_produce_and_persist_artifact(tmp_path: Path) -> N
         document_paths=(str(document),),
         source_mode="local_documents",
     )
-    services = build_infrastructure_services(
-        ModelAdapterRuntimeConfig(
-            default_adapter_id="fake-default",
-            adapters=(
-                AdapterFactoryConfig(
-                    provider_kind=AdapterProviderKind.FAKE,
-                    adapter_id="fake-default",
-                    model_name="fake-model",
-                    fake_json_response={
-                        "summary": "The documents support a bounded rollout.",
-                        "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": []}],
-                        "inferences": ["A narrow implementation remains better supported."],
-                        "uncertainties": ["No external validation was performed."],
-                        "recommendation": "Proceed with the bounded path.",
-                    },
-                ),
-            ),
-        )
-    )
     source_id = "document"
     collected = __import__("jeff.cognitive", fromlist=["collect_document_sources"]).collect_document_sources(request)
     source_id = collected[0].source_id
@@ -60,13 +41,13 @@ def test_document_research_can_produce_and_persist_artifact(tmp_path: Path) -> N
                     provider_kind=AdapterProviderKind.FAKE,
                     adapter_id="fake-default",
                     model_name="fake-model",
-                    fake_json_response={
-                        "summary": "The documents support a bounded rollout.",
-                        "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
-                        "inferences": ["A narrow implementation remains better supported."],
-                        "uncertainties": ["No external validation was performed."],
-                        "recommendation": "Proceed with the bounded path.",
-                    },
+                    fake_text_response=_bounded_text(
+                        summary="The documents support a bounded rollout.",
+                        findings=(("The plan emphasizes bounded rollout.", "S1"),),
+                        inference="A narrow implementation remains better supported.",
+                        uncertainty="No external validation was performed.",
+                        recommendation="Proceed with the bounded path.",
+                    ),
                 ),
             ),
         )
@@ -115,13 +96,13 @@ def test_web_research_can_produce_and_persist_artifact(tmp_path: Path, monkeypat
                     provider_kind=AdapterProviderKind.FAKE,
                     adapter_id="fake-default",
                     model_name="fake-model",
-                    fake_json_response={
-                        "summary": "The fetched web source supports a bounded rollout.",
-                        "findings": [{"text": "The article supports the bounded rollout.", "source_refs": ["S1"]}],
-                        "inferences": ["A narrow path remains better supported."],
-                        "uncertainties": ["Only one fetched source was considered."],
-                        "recommendation": "Keep the rollout bounded.",
-                    },
+                    fake_text_response=_bounded_text(
+                        summary="The fetched web source supports a bounded rollout.",
+                        findings=(("The article supports the bounded rollout.", "S1"),),
+                        inference="A narrow path remains better supported.",
+                        uncertainty="Only one fetched source was considered.",
+                        recommendation="Keep the rollout bounded.",
+                    ),
                 ),
             ),
         )
@@ -134,3 +115,35 @@ def test_web_research_can_produce_and_persist_artifact(tmp_path: Path, monkeypat
     assert record.source_items[0].locator == "https://example.com/a"
     assert record.evidence_items[0].source_refs == (source_id,)
     assert store.load(record.artifact_id) == record
+
+
+def _bounded_text(
+    *,
+    summary: str,
+    findings: tuple[tuple[str, str], ...],
+    inference: str,
+    uncertainty: str,
+    recommendation: str,
+) -> str:
+    finding_lines: list[str] = []
+    for text, citation_key in findings:
+        finding_lines.extend([f"- text: {text}", f"  cites: {citation_key}"])
+
+    return "\n".join(
+        [
+            "SUMMARY:",
+            summary,
+            "",
+            "FINDINGS:",
+            *finding_lines,
+            "",
+            "INFERENCES:",
+            f"- {inference}",
+            "",
+            "UNCERTAINTIES:",
+            f"- {uncertainty}",
+            "",
+            "RECOMMENDATION:",
+            recommendation,
+        ]
+    )

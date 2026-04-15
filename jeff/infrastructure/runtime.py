@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .config import JeffRuntimeConfig, PurposeOverrides
+from .contract_runtime import ContractRuntime
 from .model_adapters import AdapterFactoryConfig, AdapterProviderKind, AdapterRegistry, ModelAdapter, create_model_adapter
 
 
@@ -26,6 +27,11 @@ class InfrastructureServices:
 
     def get_model_adapter(self, adapter_id: str) -> ModelAdapter:
         return self.model_adapter_registry.get(adapter_id)
+
+    @property
+    def contract_runtime(self) -> ContractRuntime:
+        """Return a ContractRuntime bound to this services instance."""
+        return ContractRuntime(self)
 
     def get_adapter_for_purpose(self, purpose: str, *, fallback_adapter_id: str | None = None) -> ModelAdapter:
         override_adapter_id = self.purpose_overrides.for_purpose(purpose)

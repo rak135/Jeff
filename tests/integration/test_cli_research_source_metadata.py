@@ -15,6 +15,7 @@ from jeff.interface import InterfaceContext, JeffCLI
 from jeff.memory import InMemoryMemoryStore
 
 from tests.fixtures.cli import build_state_with_runs
+from tests.fixtures.research import bounded_research_text_from_payload
 
 
 def test_cli_web_research_source_rendering_shows_title_locator_and_date_when_available(
@@ -87,13 +88,15 @@ def _build_docs_cli(tmp_path: Path, *, question: str) -> tuple[JeffCLI, Path]:
     return JeffCLI(
         context=_build_research_context(
             tmp_path,
-            fake_json_response={
+            step1_text=bounded_research_text_from_payload(
+                {
                 "summary": "The documents support a bounded rollout.",
                 "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
                 "inferences": ["A narrow implementation remains better supported."],
                 "uncertainties": ["No external validation was performed."],
                 "recommendation": "Proceed with the bounded path.",
-            },
+                }
+            ),
         )
     ), document
 
@@ -134,18 +137,20 @@ def _build_web_cli(
     return JeffCLI(
         context=_build_research_context(
             tmp_path,
-            fake_json_response={
+            step1_text=bounded_research_text_from_payload(
+                {
                 "summary": "The fetched web source supports a bounded rollout.",
                 "findings": [{"text": "The article supports the bounded rollout.", "source_refs": ["S1"]}],
                 "inferences": ["A narrow path remains better supported."],
                 "uncertainties": ["Only one fetched source was considered."],
                 "recommendation": "Keep the rollout bounded.",
-            },
+                }
+            ),
         )
     )
 
 
-def _build_research_context(tmp_path: Path, *, fake_json_response: dict[str, object]) -> InterfaceContext:
+def _build_research_context(tmp_path: Path, *, step1_text: str) -> InterfaceContext:
     state, _ = build_state_with_runs(run_specs=())
     return InterfaceContext(
         state=state,
@@ -157,7 +162,7 @@ def _build_research_context(tmp_path: Path, *, fake_json_response: dict[str, obj
                         provider_kind=AdapterProviderKind.FAKE,
                         adapter_id="fake-default",
                         model_name="fake-model",
-                        fake_json_response=fake_json_response,
+                        fake_text_response=step1_text,
                     ),
                 ),
             )

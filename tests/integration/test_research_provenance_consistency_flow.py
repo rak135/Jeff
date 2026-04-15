@@ -84,13 +84,13 @@ def test_valid_document_research_flow_still_persists_successfully(tmp_path: Path
                     provider_kind=AdapterProviderKind.FAKE,
                     adapter_id="fake-default",
                     model_name="fake-model",
-                    fake_json_response={
-                        "summary": "The documents support a bounded rollout.",
-                        "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
-                        "inferences": ["A narrow implementation remains better supported."],
-                        "uncertainties": ["No external validation was performed."],
-                        "recommendation": "Proceed with the bounded path.",
-                    },
+                    fake_text_response=_bounded_text(
+                        summary="The documents support a bounded rollout.",
+                        findings=(("The plan emphasizes bounded rollout.", "S1"),),
+                        inference="A narrow implementation remains better supported.",
+                        uncertainty="No external validation was performed.",
+                        recommendation="Proceed with the bounded path.",
+                    ),
                 ),
             ),
         )
@@ -142,3 +142,35 @@ def test_operator_facing_result_construction_does_not_mask_invalid_persisted_lin
             memory_handoff_result=None,
             session=CliSession(scope=SessionScope(project_id="project-1", work_unit_id="wu-1", run_id="run-1")),
         )
+
+
+def _bounded_text(
+    *,
+    summary: str,
+    findings: tuple[tuple[str, str], ...],
+    inference: str,
+    uncertainty: str,
+    recommendation: str,
+) -> str:
+    finding_lines: list[str] = []
+    for text, citation_key in findings:
+        finding_lines.extend([f"- text: {text}", f"  cites: {citation_key}"])
+
+    return "\n".join(
+        [
+            "SUMMARY:",
+            summary,
+            "",
+            "FINDINGS:",
+            *finding_lines,
+            "",
+            "INFERENCES:",
+            f"- {inference}",
+            "",
+            "UNCERTAINTIES:",
+            f"- {uncertainty}",
+            "",
+            "RECOMMENDATION:",
+            recommendation,
+        ]
+    )

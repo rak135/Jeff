@@ -18,6 +18,7 @@ from jeff.cognitive import ResearchArtifactStore, ResearchRequest, collect_docum
 from jeff.memory import InMemoryMemoryStore
 
 from tests.fixtures.cli import build_state_with_runs
+from tests.fixtures.research import bounded_research_text_from_payload
 
 
 def test_live_cli_timeout_with_json_on_surfaces_structured_json(
@@ -122,13 +123,15 @@ def _build_docs_cli(tmp_path: Path, *, mode: str) -> tuple[JeffCLI, Path]:
                             adapter_id="fake-default",
                             model_name="fallback-model",
                             provider_name="fake",
-                            fake_json_response={
+                            fake_text_response=bounded_research_text_from_payload(
+                                {
                                 "summary": "Fallback should not be used.",
-                                "findings": [],
+                                "findings": [{"text": "Fallback should not be used.", "source_refs": ["S1"]}],
                                 "inferences": [],
                                 "uncertainties": [],
                                 "recommendation": None,
-                            },
+                                }
+                            ),
                         ),
                         AdapterFactoryConfig(
                             provider_kind=AdapterProviderKind.FAKE,
@@ -177,13 +180,15 @@ def _build_success_docs_cli(tmp_path: Path) -> tuple[JeffCLI, Path]:
                             adapter_id="fake-default",
                             model_name="research-model",
                             provider_name="fake",
-                            fake_json_response={
+                            fake_text_response=bounded_research_text_from_payload(
+                                {
                                 "summary": "The documents support a bounded rollout.",
                                 "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
                                 "inferences": ["A narrow implementation remains better supported."],
                                 "uncertainties": ["No external validation was performed."],
                                 "recommendation": "Proceed with the bounded path.",
-                            },
+                                }
+                            ),
                         ),
                     ),
                 )

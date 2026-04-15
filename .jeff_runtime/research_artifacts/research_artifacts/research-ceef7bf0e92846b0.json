@@ -1,0 +1,249 @@
+{
+  "artifact_id": "research-ceef7bf0e92846b0",
+  "created_at": "2026-04-13T18:54:30.375126+00:00",
+  "evidence_items": [
+    {
+      "source_refs": [
+        "document-2aa5f41f2df4"
+      ],
+      "text": "- Scope: `jeff.cognitive.research` Slice 4 formatter fallback wiring - Done: - added `formatter.py` for Step 3 formatter request building and hard output validation - added `fallback_policy.py` for explicit formatter eligibility after deterministic-transform failure - wired formatter fallback into live synthesis after Step 2 failure while keeping downstream remap/provenance unchanged - updated deb"
+    },
+    {
+      "source_refs": [
+        "document-b17dd0e33441"
+      ],
+      "text": "- Scope: `jeff.cognitive.research` Slice 1 contract-only transition work - Done: - added `Step1BoundedFinding` and `Step1BoundedArtifact` contract types in research contracts - added `bounded_syntax.py` with canonical Step 1 section constants and fail-closed structural validators - added focused unit tests for valid structure, malformed sections, citation-key shape, duplicate citations, empty requ"
+    },
+    {
+      "source_refs": [
+        "document-9ceed72fc44f"
+      ],
+      "text": "- Scope: `jeff.cognitive.research` Slice 2 deterministic transformation layer - Done: - added `deterministic_transformer.py` to parse Step 1 bounded text into a citation-key candidate research payload - added `validators.py` for fail-closed candidate payload validation with exact field and citation-key checks - added focused unit tests for valid transform, missing sections, malformed findings, mal"
+    },
+    {
+      "source_refs": [
+        "document-721b1632f4ef"
+      ],
+      "text": "## 2026-04-13 19:56 \u2014 Wired Step 1 and Step 2 into live research synthesis"
+    },
+    {
+      "source_refs": [
+        "document-721b1632f4ef"
+      ],
+      "text": "- Scope: `jeff.cognitive.research` Slice 3 primary-path transition - Done: - switched `research_synthesis` requests from JSON mode to bounded Step 1 text mode - wired live synthesis through syntax precheck and deterministic Step 2 transform before existing citation remap/provenance validation - updated research debug checkpoints to truthful content-generation and deterministic-transform labels - u"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "- Own bounded research contracts and the shared research pipeline from explicit inputs to source-aware support outputs, including acquisition, synthesis, persistence, and selective memory handoff."
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "- Does not own canonical truth, governance permission, execution, outcome semantics, memory retrieval semantics, memory commit decisions, or provider implementations. - Does not browse autonomously, schedule recurring work, mutate truth, or treat research artifacts as memory or truth. - Does not persist raw provider outputs or giant source dumps. - Memory handoff begins only after a validated rese"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "- `v1_doc/PLANNING_AND_RESEARCH_SPEC.md` - `v1_doc/additional/RESEARCH_ARCHITECTURE.md` - `v1_doc/CONTEXT_SPEC.md` - `v1_doc/MEMORY_SPEC.md` - `v1_doc/additional/MEMORY_ARCHITECTURE.md` - `v1_doc/ARCHITECTURE.md`"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "- `contracts.py` owns the active research request, source, evidence, finding, and artifact contracts. - `bounded_syntax.py` owns the Step 1 bounded-text syntax contract and syntax validation helpers. - `deterministic_transformer.py` owns the Step 2 deterministic parse/normalization path from bounded text into the candidate research payload shape. - `formatter.py` and `fallback_policy.py` own the S"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "- Synthesis starts from an explicit `EvidencePack`; the model is not allowed to invent the research process around it. - Step 1 produces bounded text, not the final persisted artifact shape. - Step 2 is the primary normalization path and must remain deterministic rather than semantic repair. - Step 3 runs only after Step 2 failure and receives the bounded Step 1 artifact, not the original full evi"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "- The web path is intentionally basic and bounded; richer freshness comparison, source ranking, and broader fetch logic remain unimplemented. - Persistence is local JSON only; there is no operator-facing inspection surface yet. - Research-to-memory gating is intentionally simple and could still over- or under-select some artifacts until more real usage sharpens the boundary. - The legacy surface s"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "# Next Continuation Steps"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "- If adding new research capability, place it in the appropriate local slice: contracts, bounded syntax, deterministic transform, formatter/fallback, acquisition, synthesis, persistence, or handoff. - Keep future source providers or persistence reuse bounded and provenance-preserving. - Re-check whether `legacy.py` is still needed whenever real callers/tests move off `ResearchResult` and compatibi"
+    },
+    {
+      "source_refs": [
+        "document-b17dd0e33441"
+      ],
+      "text": "## 2026-04-13 19:36 \u2014 Added Step 1 bounded syntax contract foundation"
+    },
+    {
+      "source_refs": [
+        "document-9ceed72fc44f"
+      ],
+      "text": "## 2026-04-13 19:43 \u2014 Added deterministic Step 2 bounded-text transformer"
+    },
+    {
+      "source_refs": [
+        "document-2aa5f41f2df4"
+      ],
+      "text": "## 2026-04-13 20:07 \u2014 Added Step 3 formatter fallback bridge"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "- `jeff.cognitive.research`"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "- `jeff/cognitive/research/__init__.py` - `jeff/cognitive/research/contracts.py` - `jeff/cognitive/research/bounded_syntax.py` - `jeff/cognitive/research/synthesis.py` - `jeff/cognitive/research/deterministic_transformer.py` - `jeff/cognitive/research/formatter.py` - `jeff/cognitive/research/fallback_policy.py` - `jeff/cognitive/research/debug.py` - `jeff/cognitive/research/documents.py` - `jeff/c"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "# Current Implementation Reality"
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "# Related Handoffs"
+    }
+  ],
+  "findings": [
+    {
+      "source_refs": [
+        "document-b17dd0e33441",
+        "document-9ceed72fc44f",
+        "document-2aa5f41f2df4"
+      ],
+      "text": "Implemented components include Step 1 bounded syntax contracts and validators, the Step 2 deterministic transformer for parsing bounded text into research payloads, and the Step 3 formatter with a fallback policy for use after Step 2 failure."
+    },
+    {
+      "source_refs": [
+        "document-721b1632f4ef"
+      ],
+      "text": "The research synthesis process has been updated to use bounded Step 1 text mode instead of JSON mode."
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "The web path is basic and bounded, with source ranking, broader fetch logic, and richer freshness comparison remaining unimplemented."
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "Persistence is currently limited to local JSON and lacks an operator-facing inspection surface."
+    },
+    {
+      "source_refs": [
+        "document-af8bdc633365"
+      ],
+      "text": "Research-to-memory gating is described as intentionally simple and may over- or under-select artifacts."
+    }
+  ],
+  "inferences": [
+    "The transition from JSON to bounded text is complete through the primary path and fallback mechanisms.",
+    "The system is in a state of functional transition where core synthesis logic is live, but supporting infrastructure (web fetching, persistence tools) is still in a minimal or temporary state."
+  ],
+  "project_id": "general_research",
+  "question": "Compare the build plan, the current research handoff, and the recent status updates. What is already implemented, what remains temporary, and what is the next most logical step?",
+  "recommendation": "Re-evaluate the necessity of `legacy.py` as callers migrate to the new research contracts.",
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_ids": [
+    "document-b17dd0e33441",
+    "document-9ceed72fc44f",
+    "document-2aa5f41f2df4",
+    "document-721b1632f4ef",
+    "document-af8bdc633365"
+  ],
+  "source_items": [
+    {
+      "discovery_rank": 0,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\handoffs\\system\\WORK_STATUS_UPDATE_2026-04-13_1936.md",
+      "published_at": null,
+      "snippet": "## 2026-04-13 19:36 \u2014 Added Step 1 bounded syntax contract foundation - Scope: `jeff.cognitive.research` Slice 1 contract-only transition work - Done: - added `Step1BoundedFinding` and `Step1BoundedArtifact` contract types in research contracts - added `bounded_syntax.py` with ca",
+      "source_id": "document-b17dd0e33441",
+      "source_type": "document",
+      "title": "WORK_STATUS_UPDATE_2026-04-13_1936.md"
+    },
+    {
+      "discovery_rank": 1,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\handoffs\\system\\WORK_STATUS_UPDATE_2026-04-13_1943.md",
+      "published_at": null,
+      "snippet": "## 2026-04-13 19:43 \u2014 Added deterministic Step 2 bounded-text transformer - Scope: `jeff.cognitive.research` Slice 2 deterministic transformation layer - Done: - added `deterministic_transformer.py` to parse Step 1 bounded text into a citation-key candidate research payload - add",
+      "source_id": "document-9ceed72fc44f",
+      "source_type": "document",
+      "title": "WORK_STATUS_UPDATE_2026-04-13_1943.md"
+    },
+    {
+      "discovery_rank": 2,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\handoffs\\system\\WORK_STATUS_UPDATE_2026-04-13_1956.md",
+      "published_at": null,
+      "snippet": "## 2026-04-13 19:56 \u2014 Wired Step 1 and Step 2 into live research synthesis - Scope: `jeff.cognitive.research` Slice 3 primary-path transition - Done: - switched `research_synthesis` requests from JSON mode to bounded Step 1 text mode - wired live synthesis through syntax precheck",
+      "source_id": "document-721b1632f4ef",
+      "source_type": "document",
+      "title": "WORK_STATUS_UPDATE_2026-04-13_1956.md"
+    },
+    {
+      "discovery_rank": 3,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\handoffs\\system\\WORK_STATUS_UPDATE_2026-04-13_2007.md",
+      "published_at": null,
+      "snippet": "## 2026-04-13 20:07 \u2014 Added Step 3 formatter fallback bridge - Scope: `jeff.cognitive.research` Slice 4 formatter fallback wiring - Done: - added `formatter.py` for Step 3 formatter request building and hard output validation - added `fallback_policy.py` for explicit formatter el",
+      "source_id": "document-2aa5f41f2df4",
+      "source_type": "document",
+      "title": "WORK_STATUS_UPDATE_2026-04-13_2007.md"
+    },
+    {
+      "discovery_rank": 4,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\jeff\\cognitive\\research\\HANDOFF.md",
+      "published_at": null,
+      "snippet": "# Submodule Name - `jeff.cognitive.research` # Parent Module - `jeff.cognitive` # Submodule Purpose - Own bounded research contracts and the shared research pipeline from explicit inputs to source-aware support outputs, including acquisition, synthesis, persistence, and selective",
+      "source_id": "document-af8bdc633365",
+      "source_type": "document",
+      "title": "HANDOFF.md"
+    }
+  ],
+  "source_mode": "local_documents",
+  "summary": "The research pipeline has transitioned from JSON mode to a bounded Step 1 text mode, integrating a deterministic Step 2 transformer and a Step 3 formatter fallback bridge. While the core synthesis path is implemented, several areas including the web path, persistence inspection, and research-to-memory gating remain basic or unimplemented.",
+  "uncertainties": [
+    "The exact threshold for when `legacy.py` can be removed is unknown, as it depends on when callers and tests move off `ResearchResult`."
+  ],
+  "work_unit_id": "research-docs-what-is-the-intended-primary-3-step-research-9f3b5914"
+}

@@ -27,7 +27,7 @@ from jeff.infrastructure import (
 def test_runtime_formatter_fallback_recovers_from_deterministic_transform_failure() -> None:
     primary_adapter = _ScriptedAdapter(script=(_valid_bounded_text(),))
     formatter_adapter = _ScriptedAdapter(
-        adapter_id="research-repair",
+        adapter_id="research-formatter-bridge",
         model_name="formatter-model",
         script=(_valid_formatter_json(),),
     )
@@ -44,14 +44,14 @@ def test_runtime_formatter_fallback_recovers_from_deterministic_transform_failur
             evidence_pack=_evidence_pack(),
             infrastructure_services=_services(
                 primary_adapter,
-                repair_adapter=formatter_adapter,
+                formatter_adapter=formatter_adapter,
                 purpose_overrides=PurposeOverrides(research=primary_adapter.adapter_id, research_repair=formatter_adapter.adapter_id),
             ),
         )
     finally:
         research_synthesis_module.transform_step1_bounded_text_to_candidate_payload = original_transform
 
-    assert artifact.summary == "Repaired summary."
+    assert artifact.summary == "Formatted summary."
     assert artifact.findings[0].source_refs == ("source-a",)
     assert len(primary_adapter.requests) == 1
     assert len(formatter_adapter.requests) == 1
@@ -61,7 +61,7 @@ def test_runtime_formatter_fallback_recovers_from_deterministic_transform_failur
 def test_runtime_formatter_fallback_uses_bounded_text_not_original_evidence_pack() -> None:
     primary_adapter = _ScriptedAdapter(script=(_valid_bounded_text(),))
     formatter_adapter = _ScriptedAdapter(
-        adapter_id="research-repair",
+        adapter_id="research-formatter-bridge",
         model_name="formatter-model",
         script=(_valid_formatter_json(),),
     )
@@ -77,7 +77,7 @@ def test_runtime_formatter_fallback_uses_bounded_text_not_original_evidence_pack
             evidence_pack=_evidence_pack(),
             infrastructure_services=_services(
                 primary_adapter,
-                repair_adapter=formatter_adapter,
+                formatter_adapter=formatter_adapter,
                 purpose_overrides=PurposeOverrides(research=primary_adapter.adapter_id, research_repair=formatter_adapter.adapter_id),
             ),
         )
@@ -94,11 +94,11 @@ def test_runtime_formatter_fallback_uses_bounded_text_not_original_evidence_pack
 def test_runtime_formatter_fallback_fails_closed_when_formatter_output_is_invalid() -> None:
     primary_adapter = _ScriptedAdapter(script=(_valid_bounded_text(),))
     formatter_adapter = _ScriptedAdapter(
-        adapter_id="research-repair",
+        adapter_id="research-formatter-bridge",
         model_name="formatter-model",
         script=(
             {
-                "summary": "Repaired summary.",
+                "summary": "Formatted summary.",
                 "findings": [{"text": "Observed fact", "source_refs": ["S9"]}],
                 "inferences": ["A bounded next step remains supported."],
                 "uncertainties": ["No live validation was performed."],
@@ -120,7 +120,7 @@ def test_runtime_formatter_fallback_fails_closed_when_formatter_output_is_invali
                 evidence_pack=_evidence_pack(),
                 infrastructure_services=_services(
                     primary_adapter,
-                    repair_adapter=formatter_adapter,
+                    formatter_adapter=formatter_adapter,
                     purpose_overrides=PurposeOverrides(research=primary_adapter.adapter_id, research_repair=formatter_adapter.adapter_id),
                 ),
                 debug_emitter=events.append,
@@ -173,13 +173,13 @@ def _evidence_pack() -> EvidencePack:
 def _services(
     adapter,
     *,
-    repair_adapter=None,
+    formatter_adapter=None,
     purpose_overrides: PurposeOverrides | None = None,
 ) -> InfrastructureServices:
     registry = AdapterRegistry()
     registry.register(adapter)
-    if repair_adapter is not None:
-        registry.register(repair_adapter)
+    if formatter_adapter is not None:
+        registry.register(formatter_adapter)
     return InfrastructureServices(
         model_adapter_registry=registry,
         default_model_adapter_id=adapter.adapter_id,
@@ -190,9 +190,9 @@ def _services(
 @dataclass(slots=True)
 class _ScriptedAdapter:
     script: tuple[object, ...]
-    adapter_id: str = "repair-scripted"
+    adapter_id: str = "formatter-scripted"
     provider_name: str = "fake"
-    model_name: str = "repair-model"
+    model_name: str = "formatter-model"
     requests: list[ModelRequest] = field(default_factory=list)
 
     def invoke(self, request_model: ModelRequest) -> ModelResponse:
@@ -253,7 +253,7 @@ def _valid_bounded_text() -> str:
 
 def _valid_formatter_json() -> dict[str, object]:
     return {
-        "summary": "Repaired summary.",
+        "summary": "Formatted summary.",
         "findings": [{"text": "Observed fact", "source_refs": ["S1"]}],
         "inferences": ["A bounded next step remains supported."],
         "uncertainties": ["No live validation was performed."],

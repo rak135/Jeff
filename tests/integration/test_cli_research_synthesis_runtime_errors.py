@@ -18,6 +18,7 @@ from jeff.interface import InterfaceContext, JeffCLI
 from jeff.memory import InMemoryMemoryStore
 
 from tests.fixtures.cli import build_state_with_runs
+from tests.fixtures.research import bounded_research_text_from_payload
 
 
 def test_cli_docs_failure_shows_bounded_useful_reason_instead_of_generic_invocation_failure(tmp_path: Path) -> None:
@@ -108,13 +109,15 @@ def test_runtime_configured_research_adapter_timeout_is_respected(tmp_path: Path
     _install_ollama_stub(
         monkeypatch,
         captured_timeouts=captured_timeouts,
-        output_json={
+        output_text=bounded_research_text_from_payload(
+            {
             "summary": "The documents support a bounded rollout.",
             "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
             "inferences": [],
             "uncertainties": [],
             "recommendation": None,
-        },
+            }
+        ),
     )
     _write_runtime_config(tmp_path)
 
@@ -185,13 +188,15 @@ def _build_research_context(
                         adapter_id="fake-default",
                         model_name="fallback-model",
                         provider_name="fake",
-                        fake_json_response={
+                        fake_text_response=bounded_research_text_from_payload(
+                            {
                             "summary": "Fallback should not be used.",
-                            "findings": [],
+                            "findings": [{"text": "Fallback should not be used.", "source_refs": ["S1"]}],
                             "inferences": [],
                             "uncertainties": [],
                             "recommendation": None,
-                        },
+                            }
+                        ),
                     ),
                     failing_adapter,
                 ),
@@ -238,19 +243,19 @@ def _install_ollama_stub(
     monkeypatch: pytest.MonkeyPatch,
     *,
     captured_timeouts: list[int | None],
-    output_json: dict[str, object],
+    output_text: str,
 ) -> None:
     def _fake_urlopen(http_request, timeout=None):  # type: ignore[no-untyped-def]
         captured_timeouts.append(timeout)
         if http_request.full_url.endswith("/api/chat"):
             response_payload = {
-                "message": {"content": json.dumps(output_json)},
+                "message": {"content": output_text},
                 "prompt_eval_count": 11,
                 "eval_count": 17,
             }
         else:
             response_payload = {
-                "response": json.dumps(output_json),
+                "response": output_text,
                 "prompt_eval_count": 11,
                 "eval_count": 17,
             }

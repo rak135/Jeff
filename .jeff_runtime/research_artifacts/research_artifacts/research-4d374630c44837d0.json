@@ -1,0 +1,147 @@
+{
+  "artifact_id": "research-4d374630c44837d0",
+  "created_at": "2026-04-13T19:20:20.253121+00:00",
+  "evidence_items": [
+    {
+      "source_refs": [
+        "web-90e325ef980e"
+      ],
+      "text": "Structured Output | Langflow Documentation Skip to main content Search Get started Flows Agents Model Context Protocol (MCP) Develop Deploy Components reference Components overview Core components Input / Output Processing Data Source Files and Knowledge Flow Controls LLM Operati"
+    },
+    {
+      "source_refs": [
+        "web-7199becdb97c"
+      ],
+      "text": "Structured model outputs | OpenAI API Home API Docs Guides and concepts for the OpenAI API API reference Endpoints, parameters, and responses Codex Docs Guides, concepts, and product docs for Codex Use cases Example workflows and tasks teams hand to Codex ChatGPT Apps SDK Build a"
+    },
+    {
+      "source_refs": [
+        "web-f8056e4f5dbf"
+      ],
+      "text": "Reliable Structured Output from Local LLMs: JSON Extraction Without Hallucination | Markaicode Main About Community Contact Search Sign In User Dashboard Sign Out Menu Main About Contact Search Home / Local LLM / Reliable Structured Output from Local LLMs: JSON Extraction Without"
+    },
+    {
+      "source_refs": [
+        "web-c8c3835256b2"
+      ],
+      "text": "Structured output - Docs by LangChain Skip to main content Join us May 13th & May 14th at Interrupt, the Agent Conference by LangChain."
+    },
+    {
+      "source_refs": [
+        "web-1de437ca0d6b"
+      ],
+      "text": "Structured output - Koog Skip to content Koog Structured output Initializing search Support Issue Tracker Koog on GitHub Documentation Why Koog Examples API reference Koog Koog on GitHub Documentation Documentation Overview Overview Key features LLM providers Glossary Quickstart"
+    },
+    {
+      "source_refs": [
+        "web-c8c3835256b2"
+      ],
+      "text": "Buy tickets > Docs by LangChain home page Open source Search..."
+    }
+  ],
+  "findings": [
+    {
+      "source_refs": [
+        "web-90e325ef980e",
+        "web-7199becdb97c",
+        "web-c8c3835256b2",
+        "web-1de437ca0d6b"
+      ],
+      "text": "Structured model outputs are documented across multiple platforms, including Langflow [E1], OpenAI API documentation [E2], LangChain [E4], and Koog [E5]."
+    },
+    {
+      "source_refs": [
+        "web-f8056e4f5dbf"
+      ],
+      "text": "There is specific documentation available detailing reliable structured output techniques, including JSON extraction, applicable to local LLMs [E3]."
+    }
+  ],
+  "inferences": [
+    "* Structured output is treated as an advanced feature requiring specific integration across development workflows rather than just relying on plain text generation."
+  ],
+  "project_id": "general_research",
+  "question": "What do the official docs say about structured output versus plain text generation for local model workflows?",
+  "recommendation": null,
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_ids": [
+    "web-90e325ef980e",
+    "web-7199becdb97c",
+    "web-c8c3835256b2",
+    "web-1de437ca0d6b",
+    "web-f8056e4f5dbf"
+  ],
+  "source_items": [
+    {
+      "discovery_rank": 0,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "https://docs.langflow.org/structured-output",
+      "published_at": null,
+      "snippet": "Structured Output | Langflow Documentation Skip to main content Search Get started Flows Agents Model Context Protocol (MCP) Develop Deploy Components reference Components overview Core components Input / Output Processing Data Source Files and Knowledge Flow Controls LLM Operati",
+      "source_id": "web-90e325ef980e",
+      "source_type": "web",
+      "title": "Structured Output | Langflow Documentation"
+    },
+    {
+      "discovery_rank": 1,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "https://developers.openai.com/api/docs/guides/structured-outputs",
+      "published_at": null,
+      "snippet": "Structured model outputs | OpenAI API Home API Docs Guides and concepts for the OpenAI API API reference Endpoints, parameters, and responses Codex Docs Guides, concepts, and product docs for Codex Use cases Example workflows and tasks teams hand to Codex ChatGPT Apps SDK Build a",
+      "source_id": "web-7199becdb97c",
+      "source_type": "web",
+      "title": "Structured model outputs - OpenAI API"
+    },
+    {
+      "discovery_rank": 2,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "https://markaicode.com/ollama-structured-output-pipeline/",
+      "published_at": "2026-03-02T00:00:00+00:00",
+      "snippet": "Reliable Structured Output from Local LLMs: JSON Extraction Without Hallucination | Markaicode Main About Community Contact Search Sign In User Dashboard Sign Out Menu Main About Contact Search Home / Local LLM / Reliable Structured Output from Local LLMs: JSON Extraction Without",
+      "source_id": "web-f8056e4f5dbf",
+      "source_type": "web",
+      "title": "Reliable Structured Output from Local LLMs: JSON Extraction Without ..."
+    },
+    {
+      "discovery_rank": 3,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "https://docs.langchain.com/oss/python/langchain/structured-output",
+      "published_at": null,
+      "snippet": "Structured output - Docs by LangChain Skip to main content Join us May 13th & May 14th at Interrupt, the Agent Conference by LangChain. Buy tickets > Docs by LangChain home page Open source Search... \u2318 K Ask AI GitHub Try LangSmith Try LangSmith Search... Navigation Core componen",
+      "source_id": "web-c8c3835256b2",
+      "source_type": "web",
+      "title": "Structured output - Docs by LangChain"
+    },
+    {
+      "discovery_rank": 4,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "https://docs.koog.ai/structured-output/",
+      "published_at": null,
+      "snippet": "Structured output - Koog Skip to content Koog Structured output Initializing search Support Issue Tracker Koog on GitHub Documentation Why Koog Examples API reference Koog Koog on GitHub Documentation Documentation Overview Overview Key features LLM providers Glossary Quickstart",
+      "source_id": "web-1de437ca0d6b",
+      "source_type": "web",
+      "title": "Structured output - Koog"
+    }
+  ],
+  "source_mode": "web",
+  "summary": "Multiple documentation sources indicate that structured output is a specialized and implemented capability across various development frameworks, including Langflow [E1], LangChain [E4], and Koog [E5]. Guidance is available for achieving reliable structured outputs, such as JSON extraction, which is particularly detailed in the context of local LLMs [E3], suggesting it is a mechanism distinct from general plain text generation.",
+  "uncertainties": [
+    "* A direct, comparative analysis detailing the trade-offs or inherent limitations when choosing between structured output vs. plain text generation specifically for a local model workflow is not present in the provided evidence."
+  ],
+  "work_unit_id": "research-web-what-do-the-official-docs-say-about-structured-31d73457"
+}

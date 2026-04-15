@@ -13,6 +13,7 @@ from jeff.interface import InterfaceContext, JeffCLI
 from jeff.memory import InMemoryMemoryStore
 
 from tests.fixtures.cli import build_state_with_runs
+from tests.fixtures.research import bounded_research_text_from_payload
 
 
 def test_cli_docs_research_runs_end_to_end_with_persistence_and_rendered_result(tmp_path: Path) -> None:
@@ -101,13 +102,15 @@ def test_explicit_memory_handoff_surfaces_write_reject_and_defer_outcomes_withou
         question="What risk does the bounded rollout carry?",
         query="bounded rollout risk",
         monkeypatch=monkeypatch,
-        fake_json_response={
+        step1_text=bounded_research_text_from_payload(
+            {
             "summary": "The fetched web source warns about bounded rollout risk.",
-            "findings": [{"text": "The article flags unresolved risk.", "source_refs": []}],
+            "findings": [{"text": "The article flags unresolved risk.", "source_refs": ["S1"]}],
             "inferences": [],
             "uncertainties": ["Risk remains unresolved."],
             "recommendation": None,
-        },
+            }
+        ),
         snippet="The bounded rollout remains risky.",
         excerpt="The bounded rollout remains risky and uncertain.",
     )
@@ -169,13 +172,15 @@ def _build_docs_cli(tmp_path: Path, *, question: str) -> tuple[JeffCLI, Path]:
     return JeffCLI(
         context=_build_research_context(
             tmp_path,
-            fake_json_response={
+            step1_text=bounded_research_text_from_payload(
+                {
                 "summary": "The documents support a bounded rollout.",
                 "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
                 "inferences": ["A narrow implementation remains better supported."],
                 "uncertainties": ["No external validation was performed."],
                 "recommendation": "Proceed with the bounded path.",
-            },
+                }
+            ),
         )
     ), document
 
@@ -186,7 +191,7 @@ def _build_web_cli(
     question: str,
     query: str,
     monkeypatch,
-    fake_json_response: dict[str, object] | None = None,
+    step1_text: str | None = None,
     snippet: str = "The bounded rollout remains stable.",
     excerpt: str = "The bounded rollout remains stable and avoids widening scope.",
 ) -> JeffCLI:
@@ -213,28 +218,25 @@ def _build_web_cli(
             source_mode="web",
         )
     )[0].source_id
-    if fake_json_response is None:
-        fake_json_response = {
+    if step1_text is None:
+        step1_text = bounded_research_text_from_payload(
+            {
             "summary": "The fetched web source supports a bounded rollout.",
             "findings": [{"text": "The article supports the bounded rollout.", "source_refs": ["S1"]}],
             "inferences": ["A narrow path remains better supported."],
             "uncertainties": ["Only one fetched source was considered."],
             "recommendation": "Keep the rollout bounded.",
-        }
-    else:
-        fake_json_response = {
-            **fake_json_response,
-            "findings": [{"text": fake_json_response["findings"][0]["text"], "source_refs": ["S1"]}],
-        }
+            }
+        )
     return JeffCLI(
         context=_build_research_context(
             tmp_path,
-            fake_json_response=fake_json_response,
+            step1_text=step1_text,
         )
     )
 
 
-def _build_research_context(tmp_path: Path, *, fake_json_response: dict[str, object]) -> InterfaceContext:
+def _build_research_context(tmp_path: Path, *, step1_text: str) -> InterfaceContext:
     state, _ = build_state_with_runs(run_specs=())
     return InterfaceContext(
         state=state,
@@ -246,7 +248,7 @@ def _build_research_context(tmp_path: Path, *, fake_json_response: dict[str, obj
                         provider_kind=AdapterProviderKind.FAKE,
                         adapter_id="fake-default",
                         model_name="fake-model",
-                        fake_json_response=fake_json_response,
+                        fake_text_response=step1_text,
                     ),
                 ),
             )

@@ -23,6 +23,7 @@ from jeff.interface.json_views import research_result_json
 from jeff.memory import InMemoryMemoryStore
 
 from tests.fixtures.cli import build_state_with_runs
+from tests.fixtures.research import bounded_research_text_from_payload
 
 
 def test_cli_document_research_accepts_citation_key_model_output_and_keeps_real_source_ids(
@@ -58,13 +59,15 @@ def test_qwen_like_invented_citation_key_fails_closed_cleanly(tmp_path: Path) ->
     request = _document_request(tmp_path / "drift")
 
     services = _build_services(
-        {
-            "summary": "This should fail closed.",
-            "findings": [{"text": "Unsupported claim", "source_refs": ["S9"]}],
-            "inferences": [],
-            "uncertainties": [],
-            "recommendation": None,
-        }
+        bounded_research_text_from_payload(
+            {
+                "summary": "This should fail closed.",
+                "findings": [{"text": "Unsupported claim", "source_refs": ["S9"]}],
+                "inferences": [],
+                "uncertainties": [],
+                "recommendation": None,
+            }
+        )
     )
 
     with pytest.raises(ResearchSynthesisValidationError, match="unknown citation refs"):
@@ -86,13 +89,15 @@ def test_provenance_validator_still_accepts_remapped_real_source_ids_after_synth
     sources = collect_document_sources(request)
     evidence_pack = build_document_evidence_pack(request, sources)
     services = _build_services(
-        {
-            "summary": "The second note is the strongest support.",
-            "findings": [{"text": "The second note confirms the safer path.", "source_refs": ["S2"]}],
-            "inferences": ["The narrower rollout is better supported."],
-            "uncertainties": ["No external validation was performed."],
-            "recommendation": None,
-        }
+        bounded_research_text_from_payload(
+            {
+                "summary": "The second note is the strongest support.",
+                "findings": [{"text": "The second note confirms the safer path.", "source_refs": ["S2"]}],
+                "inferences": ["The narrower rollout is better supported."],
+                "uncertainties": ["No external validation was performed."],
+                "recommendation": None,
+            }
+        )
     )
 
     artifact = run_document_research(request, services)
@@ -115,13 +120,15 @@ def _build_docs_cli(tmp_path: Path, *, question: str) -> tuple[JeffCLI, Path, st
     return JeffCLI(
         context=_build_context(
             tmp_path,
-            {
-                "summary": "The documents support a bounded rollout.",
-                "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
-                "inferences": ["A narrow implementation remains better supported."],
-                "uncertainties": ["No external validation was performed."],
-                "recommendation": "Proceed with the bounded path.",
-            },
+            bounded_research_text_from_payload(
+                {
+                    "summary": "The documents support a bounded rollout.",
+                    "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
+                    "inferences": ["A narrow implementation remains better supported."],
+                    "uncertainties": ["No external validation was performed."],
+                    "recommendation": "Proceed with the bounded path.",
+                }
+            ),
         )
     ), document, source_id
 
@@ -141,17 +148,17 @@ def _document_request(root: Path, *, question: str = "What does the bounded plan
     )
 
 
-def _build_context(tmp_path: Path, fake_json_response: dict[str, object]) -> InterfaceContext:
+def _build_context(tmp_path: Path, step1_text: str) -> InterfaceContext:
     state, _ = build_state_with_runs(run_specs=())
     return InterfaceContext(
         state=state,
-        infrastructure_services=_build_services(fake_json_response),
+        infrastructure_services=_build_services(step1_text),
         research_artifact_store=ResearchArtifactStore(tmp_path),
         memory_store=InMemoryMemoryStore(),
     )
 
 
-def _build_services(fake_json_response: dict[str, object]):
+def _build_services(step1_text: str):
     return build_infrastructure_services(
         ModelAdapterRuntimeConfig(
             default_adapter_id="fake-default",
@@ -160,7 +167,7 @@ def _build_services(fake_json_response: dict[str, object]):
                     provider_kind=AdapterProviderKind.FAKE,
                     adapter_id="fake-default",
                     model_name="fake-model",
-                    fake_json_response=fake_json_response,
+                    fake_text_response=step1_text,
                 ),
             ),
         )

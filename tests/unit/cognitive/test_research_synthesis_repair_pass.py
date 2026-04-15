@@ -12,15 +12,19 @@ from jeff.cognitive import (
     synthesize_research,
 )
 from jeff.cognitive.research import synthesis as research_synthesis_module
-from jeff.cognitive.research.synthesis import build_research_model_request, build_research_repair_model_request
+from jeff.cognitive.research.synthesis import (
+    build_research_formatter_bridge_model_request,
+    build_research_model_request,
+    build_research_repair_model_request,
+)
 from jeff.infrastructure import ModelInvocationStatus, ModelMalformedOutputError, ModelRequest, ModelResponse, ModelUsage
 
 
 def test_live_bounded_text_path_does_not_invoke_formatter_adapter_when_primary_succeeds() -> None:
     primary_adapter = _ScriptedAdapter(script=(_valid_bounded_text(),))
-    formatter_adapter = _ScriptedAdapter(adapter_id="repair-formatter", script=(_valid_formatter_json(),))
+    formatter_adapter = _ScriptedAdapter(adapter_id="formatter-bridge", script=(_valid_formatter_json(),))
 
-    artifact = synthesize_research(_research_request(), _evidence_pack(), primary_adapter, repair_adapter=formatter_adapter)
+    artifact = synthesize_research(_research_request(), _evidence_pack(), primary_adapter, formatter_adapter=formatter_adapter)
 
     assert artifact.summary == "Observed summary."
     assert len(primary_adapter.requests) == 1
@@ -29,7 +33,7 @@ def test_live_bounded_text_path_does_not_invoke_formatter_adapter_when_primary_s
 
 def test_formatter_fallback_runs_after_deterministic_transform_failure_only() -> None:
     primary_adapter = _ScriptedAdapter(script=(_valid_bounded_text(),))
-    formatter_adapter = _ScriptedAdapter(adapter_id="repair-formatter", script=(_valid_formatter_json(),))
+    formatter_adapter = _ScriptedAdapter(adapter_id="formatter-bridge", script=(_valid_formatter_json(),))
     events: list[dict[str, object]] = []
 
     original_transform = research_synthesis_module.transform_step1_bounded_text_to_candidate_payload
@@ -43,7 +47,7 @@ def test_formatter_fallback_runs_after_deterministic_transform_failure_only() ->
             _research_request(),
             _evidence_pack(),
             primary_adapter,
-            repair_adapter=formatter_adapter,
+            formatter_adapter=formatter_adapter,
             debug_emitter=events.append,
         )
     finally:
@@ -61,7 +65,7 @@ def test_formatter_fallback_runs_after_deterministic_transform_failure_only() ->
 
 def test_formatter_request_uses_bounded_text_not_full_evidence_input() -> None:
     primary_adapter = _ScriptedAdapter(script=(_valid_bounded_text(),))
-    formatter_adapter = _ScriptedAdapter(adapter_id="repair-formatter", script=(_valid_formatter_json(),))
+    formatter_adapter = _ScriptedAdapter(adapter_id="formatter-bridge", script=(_valid_formatter_json(),))
     original_transform = research_synthesis_module.transform_step1_bounded_text_to_candidate_payload
 
     def failing_transform(_: str) -> dict[str, object]:
@@ -69,7 +73,7 @@ def test_formatter_request_uses_bounded_text_not_full_evidence_input() -> None:
 
     research_synthesis_module.transform_step1_bounded_text_to_candidate_payload = failing_transform
     try:
-        synthesize_research(_research_request(), _evidence_pack(), primary_adapter, repair_adapter=formatter_adapter)
+        synthesize_research(_research_request(), _evidence_pack(), primary_adapter, formatter_adapter=formatter_adapter)
     finally:
         research_synthesis_module.transform_step1_bounded_text_to_candidate_payload = original_transform
 
@@ -85,7 +89,7 @@ def test_formatter_request_uses_bounded_text_not_full_evidence_input() -> None:
 def test_formatter_output_is_validated_hard_before_downstream_handoff() -> None:
     primary_adapter = _ScriptedAdapter(script=(_valid_bounded_text(),))
     formatter_adapter = _ScriptedAdapter(
-        adapter_id="repair-formatter",
+        adapter_id="formatter-bridge",
         script=(
             {
                 "summary": "Observed summary.",
@@ -109,7 +113,7 @@ def test_formatter_output_is_validated_hard_before_downstream_handoff() -> None:
                 _research_request(),
                 _evidence_pack(),
                 primary_adapter,
-                repair_adapter=formatter_adapter,
+                formatter_adapter=formatter_adapter,
                 debug_emitter=events.append,
             )
     finally:
@@ -125,7 +129,7 @@ def test_formatter_output_is_validated_hard_before_downstream_handoff() -> None:
 def test_formatter_cannot_introduce_invented_citation_keys() -> None:
     primary_adapter = _ScriptedAdapter(script=(_valid_bounded_text(),))
     formatter_adapter = _ScriptedAdapter(
-        adapter_id="repair-formatter",
+        adapter_id="formatter-bridge",
         script=(
             {
                 "summary": "Observed summary.",
@@ -148,39 +152,56 @@ def test_formatter_cannot_introduce_invented_citation_keys() -> None:
                 _research_request(),
                 _evidence_pack(),
                 primary_adapter,
-                repair_adapter=formatter_adapter,
+                formatter_adapter=formatter_adapter,
             )
     finally:
         research_synthesis_module.transform_step1_bounded_text_to_candidate_payload = original_transform
 
 
-def test_compatibility_repair_request_helper_can_still_build_json_contract_from_text_mode_primary_request() -> None:
+def test_formatter_bridge_request_helper_builds_json_contract_from_text_mode_primary_request() -> None:
     request = _research_request()
     evidence_pack = _evidence_pack()
     primary_request = build_research_model_request(request, evidence_pack, adapter_id="research-primary")
 
-    repair_request = build_research_repair_model_request(
+    formatter_request = build_research_formatter_bridge_model_request(
         request,
         evidence_pack,
         '```json {"summary":"Observed","findings":[{"text":"Observed fact","source_refs":"S1"}]} ```',
         primary_request=primary_request,
-        adapter_id="repair-formatter",
+        adapter_id="formatter-bridge",
     )
 
-    assert repair_request.purpose == "research_synthesis_repair"
-    assert repair_request.response_mode.value == "JSON"
-    assert repair_request.json_schema is not None
-    assert "Output exactly one JSON object matching json_schema." in repair_request.prompt
-    assert "source-a" not in repair_request.prompt
-    assert "source-b" not in repair_request.prompt
+    assert formatter_request.purpose == "research_synthesis_repair"
+    assert formatter_request.response_mode.value == "JSON"
+    assert formatter_request.json_schema is not None
+    assert "Output exactly one JSON object matching json_schema." in formatter_request.prompt
+    assert "source-a" not in formatter_request.prompt
+    assert "source-b" not in formatter_request.prompt
+
+
+def test_legacy_repair_request_helper_still_maps_to_formatter_bridge_contract() -> None:
+    request = _research_request()
+    evidence_pack = _evidence_pack()
+    primary_request = build_research_model_request(request, evidence_pack, adapter_id="research-primary")
+
+    legacy_request = build_research_repair_model_request(
+        request,
+        evidence_pack,
+        "SUMMARY:\nObserved summary.",
+        primary_request=primary_request,
+        adapter_id="formatter-bridge",
+    )
+
+    assert legacy_request.purpose == "research_synthesis_repair"
+    assert legacy_request.metadata["formatter_input_kind"] == "step1_bounded_text"
 
 
 def test_malformed_primary_output_does_not_trigger_formatter_attempt() -> None:
     primary_adapter = _ScriptedAdapter(script=(ModelMalformedOutputError("primary malformed", raw_output="SUMMARY: bad"),))
-    formatter_adapter = _ScriptedAdapter(adapter_id="repair-formatter", script=(_valid_formatter_json(),))
+    formatter_adapter = _ScriptedAdapter(adapter_id="formatter-bridge", script=(_valid_formatter_json(),))
 
     with pytest.raises(ResearchSynthesisRuntimeError, match="malformed_output"):
-        synthesize_research(_research_request(), _evidence_pack(), primary_adapter, repair_adapter=formatter_adapter)
+        synthesize_research(_research_request(), _evidence_pack(), primary_adapter, formatter_adapter=formatter_adapter)
 
     assert len(primary_adapter.requests) == 1
     assert len(formatter_adapter.requests) == 0

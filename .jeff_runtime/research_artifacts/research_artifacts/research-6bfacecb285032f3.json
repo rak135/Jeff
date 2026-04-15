@@ -1,0 +1,259 @@
+{
+  "artifact_id": "research-6bfacecb285032f3",
+  "created_at": "2026-04-13T18:58:46.028521+00:00",
+  "evidence_items": [
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "Status: working build plan for the Jeff 3-step transition Authority: subordinate to `3step_transition.md`, Jeff canon in `v1_doc/`, and current repo reality Purpose: define the concrete, step-by-step implementation plan for moving Jeff Research from the current JSON-first synthesis/repair flow to the new 3-step transition without broad rewrite"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "This build plan is designed to: - preserve what already works - avoid broad rewrite - keep research semantics in `jeff/cognitive/research/` - keep runtime/config and execution posture in `jeff/infrastructure/` - make the new infrastructure reusable later for proposal and evaluation"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "- `synthesis.py` - keep and modify - remains research pipeline orchestrator - should stop being the dumping ground for every helper - should orchestrate Step 1 -> Step 2 -> Step 3 -> downstream handoff"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "# 3step_transition_buildplan.md"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "- research remains support, not truth - evidence-first research remains - fail-closed provenance remains - citation-key remap remains - remap from `S1..Sn` back to internal `source_id` remains downstream - persistence, projection/render, and memory handoff remain downstream - Interface remains downstream - Orchestrator does not own research business logic - Infrastructure owns runtime/config and t"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "- a dedicated `jeff/cognitive/research/` package - acquisition split across `documents.py` and `web.py` - current `synthesis.py` with JSON-first synthesis and bounded repair behavior - fail-closed citation-key remap and provenance validation - downstream `persistence.py` and `memory_handoff.py` - `errors.py` - `legacy.py` compatibility surface - debug checkpoint support through `debug.py` - `jeff/"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "#### Research owns - Step 1 syntax contract - Step 1 prompt/request builder - Step 1 bounded-text artifact definitions - Step 2 deterministic parsing/normalization - Step 2 research-local validation rules - Step 3 formatter request builder - Step 3 fallback eligibility policy - research debug checkpoints - research-local exceptions"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "```text jeff/cognitive/research/ \u251c\u2500\u2500 __init__.py \u251c\u2500\u2500 contracts.py \u251c\u2500\u2500 bounded_syntax.py \u251c\u2500\u2500 synthesis.py \u251c\u2500\u2500 deterministic_transformer.py \u251c\u2500\u2500 formatter.py \u251c\u2500\u2500 validators.py \u251c\u2500\u2500 fallback_policy.py \u251c\u2500\u2500 debug.py \u251c\u2500\u2500 documents.py \u251c\u2500\u2500 web.py \u251c\u2500\u2500 persistence.py \u251c\u2500\u2500 memory_handoff.py \u251c\u2500\u2500 errors.py \u2514\u2500\u2500 legacy.py # temporary only, retired later ```"
+    },
+    {
+      "source_refs": [
+        "document-2aa5f41f2df4"
+      ],
+      "text": "- Scope: `jeff.cognitive.research` Slice 4 formatter fallback wiring - Done: - added `formatter.py` for Step 3 formatter request building and hard output validation - added `fallback_policy.py` for explicit formatter eligibility after deterministic-transform failure - wired formatter fallback into live synthesis after Step 2 failure while keeping downstream remap/provenance unchanged - updated deb"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "## 1. Build-plan purpose"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "This document is not a fresh architecture spec. It is the practical implementation plan for migrating the real current repo."
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "1. **Step 1 \u2014 bounded text generation** 2. **Step 2 \u2014 deterministic transformer** 3. **Step 3 \u2014 formatter fallback** 4. existing downstream unchanged: - citation remap - provenance validation - persistence - projection/render - optional memory handoff"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "## 3. Current repo reality we are building from"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "The current repo already has:"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "`evidence pack -> Step 1 bounded text -> Step 2 deterministic transformer -> Step 3 formatter fallback if needed -> remap -> provenance -> persistence/render -> optional memory handoff`"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "#### Downstream remains unchanged - citation remap - provenance validation - persistence - projection/render - memory handoff semantics"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "- `contracts.py` - keep and extend - continues to own research request/evidence/final artifact contracts - add Step 1 bounded-text artifact contract types"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "- `bounded_syntax.py` - new - owns Step 1 hard syntax specification and request-builder helpers - no provider/runtime ownership"
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "- `formatter.py` - new - owns Step 3 formatter request builder and formatter-stage call wrapper - may initially use existing runtime/adapters directly - later may use Instructor-backed typed calls through Infrastructure"
+    },
+    {
+      "source_refs": [
+        "document-b17dd0e33441"
+      ],
+      "text": "- Scope: `jeff.cognitive.research` Slice 1 contract-only transition work - Done: - added `Step1BoundedFinding` and `Step1BoundedArtifact` contract types in research contracts - added `bounded_syntax.py` with canonical Step 1 section constants and fail-closed structural validators - added focused unit tests for valid structure, malformed sections, citation-key shape, duplicate citations, empty requ"
+    }
+  ],
+  "findings": [
+    {
+      "source_refs": [
+        "document-b17dd0e33441"
+      ],
+      "text": "Step 1 implementation included adding Step1BoundedFinding and Step1BoundedArtifact contract types and creating bounded_syntax.py for section constants and structural validators."
+    },
+    {
+      "source_refs": [
+        "document-9ceed72fc44f"
+      ],
+      "text": "Step 2 implementation included the creation of deterministic_transformer.py to parse Step 1 bounded text into a citation-key candidate research payload."
+    },
+    {
+      "source_refs": [
+        "document-721b1632f4ef"
+      ],
+      "text": "The live research synthesis has been switched from JSON mode to bounded Step 1 text mode and wired through syntax precheck."
+    },
+    {
+      "source_refs": [
+        "document-2aa5f41f2df4"
+      ],
+      "text": "Step 3 implementation included adding formatter.py for request building and output validation, and fallback_policy.py for eligibility after Step 2 failure."
+    },
+    {
+      "source_refs": [
+        "document-60e057d2083d"
+      ],
+      "text": "The build plan identifies legacy.py as a temporary file to be retired later."
+    }
+  ],
+  "inferences": [
+    "The primary-path transition from JSON-first synthesis to the bounded 3-step flow is functionally complete as the components are now wired into live synthesis."
+  ],
+  "project_id": "general_research",
+  "question": "Compare the build plan, the current research handoff, and the recent status updates. What is already implemented, what remains temporary, and what is the next most logical step?",
+  "recommendation": "Retire legacy.py.",
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_ids": [
+    "document-b17dd0e33441",
+    "document-9ceed72fc44f",
+    "document-721b1632f4ef",
+    "document-2aa5f41f2df4",
+    "document-60e057d2083d"
+  ],
+  "source_items": [
+    {
+      "discovery_rank": 0,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\v1_doc\\additional\\3step_transition_buildplan.md",
+      "published_at": null,
+      "snippet": "# 3step_transition_buildplan.md Status: working build plan for the Jeff 3-step transition Authority: subordinate to `3step_transition.md`, Jeff canon in `v1_doc/`, and current repo reality Purpose: define the concrete, step-by-step implementation plan for moving Jeff Research fro",
+      "source_id": "document-60e057d2083d",
+      "source_type": "document",
+      "title": "3step_transition_buildplan.md"
+    },
+    {
+      "discovery_rank": 1,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\handoffs\\system\\WORK_STATUS_UPDATE_2026-04-13_1936.md",
+      "published_at": null,
+      "snippet": "## 2026-04-13 19:36 \u2014 Added Step 1 bounded syntax contract foundation - Scope: `jeff.cognitive.research` Slice 1 contract-only transition work - Done: - added `Step1BoundedFinding` and `Step1BoundedArtifact` contract types in research contracts - added `bounded_syntax.py` with ca",
+      "source_id": "document-b17dd0e33441",
+      "source_type": "document",
+      "title": "WORK_STATUS_UPDATE_2026-04-13_1936.md"
+    },
+    {
+      "discovery_rank": 2,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\handoffs\\system\\WORK_STATUS_UPDATE_2026-04-13_1943.md",
+      "published_at": null,
+      "snippet": "## 2026-04-13 19:43 \u2014 Added deterministic Step 2 bounded-text transformer - Scope: `jeff.cognitive.research` Slice 2 deterministic transformation layer - Done: - added `deterministic_transformer.py` to parse Step 1 bounded text into a citation-key candidate research payload - add",
+      "source_id": "document-9ceed72fc44f",
+      "source_type": "document",
+      "title": "WORK_STATUS_UPDATE_2026-04-13_1943.md"
+    },
+    {
+      "discovery_rank": 3,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\handoffs\\system\\WORK_STATUS_UPDATE_2026-04-13_1956.md",
+      "published_at": null,
+      "snippet": "## 2026-04-13 19:56 \u2014 Wired Step 1 and Step 2 into live research synthesis - Scope: `jeff.cognitive.research` Slice 3 primary-path transition - Done: - switched `research_synthesis` requests from JSON mode to bounded Step 1 text mode - wired live synthesis through syntax precheck",
+      "source_id": "document-721b1632f4ef",
+      "source_type": "document",
+      "title": "WORK_STATUS_UPDATE_2026-04-13_1956.md"
+    },
+    {
+      "discovery_rank": 4,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\handoffs\\system\\WORK_STATUS_UPDATE_2026-04-13_2007.md",
+      "published_at": null,
+      "snippet": "## 2026-04-13 20:07 \u2014 Added Step 3 formatter fallback bridge - Scope: `jeff.cognitive.research` Slice 4 formatter fallback wiring - Done: - added `formatter.py` for Step 3 formatter request building and hard output validation - added `fallback_policy.py` for explicit formatter el",
+      "source_id": "document-2aa5f41f2df4",
+      "source_type": "document",
+      "title": "WORK_STATUS_UPDATE_2026-04-13_2007.md"
+    },
+    {
+      "discovery_rank": 5,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\jeff\\cognitive\\research\\HANDOFF.md",
+      "published_at": null,
+      "snippet": "# Submodule Name - `jeff.cognitive.research` # Parent Module - `jeff.cognitive` # Submodule Purpose - Own bounded research contracts and the shared research pipeline from explicit inputs to source-aware support outputs, including acquisition, synthesis, persistence, and selective",
+      "source_id": "document-af8bdc633365",
+      "source_type": "document",
+      "title": "HANDOFF.md"
+    }
+  ],
+  "source_mode": "local_documents",
+  "summary": "The Jeff research transition has implemented the core 3-step pipeline, including Step 1 bounded syntax contracts and validators, the Step 2 deterministic transformer, and the Step 3 formatter fallback bridge with its associated policy. These components are wired into live research synthesis, replacing the previous JSON-first mode.",
+  "uncertainties": [
+    "It is unclear if the formatter.py is currently using existing runtime/adapters directly or if it has transitioned to Instructor-backed typed calls through Infrastructure."
+  ],
+  "work_unit_id": "research-docs-compare-the-build-plan-the-current-research-hand-f32071e7"
+}

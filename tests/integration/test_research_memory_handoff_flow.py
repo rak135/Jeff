@@ -15,6 +15,7 @@ from jeff.infrastructure import (
     build_infrastructure_services,
 )
 from jeff.memory import InMemoryMemoryStore
+from tests.fixtures.research import bounded_research_text_from_payload
 
 
 def test_document_research_persisted_artifact_can_handoff_to_current_memory_pipeline(tmp_path: Path) -> None:
@@ -41,13 +42,15 @@ def test_document_research_persisted_artifact_can_handoff_to_current_memory_pipe
                     provider_kind=AdapterProviderKind.FAKE,
                     adapter_id="fake-default",
                     model_name="fake-model",
-                    fake_json_response={
+                    fake_text_response=bounded_research_text_from_payload(
+                        {
                         "summary": "The documents support a bounded rollout.",
                         "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
                         "inferences": ["A narrow implementation remains better supported."],
                         "uncertainties": ["No external validation was performed."],
                         "recommendation": "Proceed with the bounded path.",
-                    },
+                        }
+                    ),
                 ),
             ),
         )
@@ -99,13 +102,15 @@ def test_web_research_persisted_artifact_can_handoff_to_current_memory_pipeline_
                     provider_kind=AdapterProviderKind.FAKE,
                     adapter_id="fake-default",
                     model_name="fake-model",
-                    fake_json_response={
+                    fake_text_response=bounded_research_text_from_payload(
+                        {
                         "summary": "The fetched web source warns about bounded rollout risk.",
                         "findings": [{"text": "The article flags unresolved risk.", "source_refs": ["S1"]}],
                         "inferences": [],
                         "uncertainties": ["Risk remains unresolved."],
                         "recommendation": None,
-                    },
+                        }
+                    ),
                 ),
             ),
         )
