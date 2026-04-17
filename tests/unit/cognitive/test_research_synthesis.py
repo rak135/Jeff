@@ -140,6 +140,27 @@ def test_synthesize_research_returns_research_artifact_not_model_response() -> N
     assert not hasattr(result, "output_json")
 
 
+def test_synthesis_accepts_sentinel_uncertainty_bullet() -> None:
+    """Test that synthesis properly handles the sentinel uncertainty bullet."""
+    text_with_sentinel = _valid_step1_text().replace(
+        "- External conditions were not observed directly.",
+        "- No explicit uncertainties identified from the provided evidence.",
+    )
+    
+    artifact = synthesize_research(
+        research_request=_research_request(),
+        evidence_pack=_evidence_pack(),
+        adapter=FakeModelAdapter(
+            adapter_id="fake-text",
+            default_text_response=text_with_sentinel,
+        ),
+    )
+
+    assert artifact.uncertainties == ("No explicit uncertainties identified from the provided evidence.",)
+    assert artifact.summary == "The prepared evidence supports a bounded conclusion."
+    assert len(artifact.findings) > 0
+
+
 def _valid_step1_text() -> str:
     return "\n".join(
         [

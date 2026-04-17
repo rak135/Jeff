@@ -1,54 +1,75 @@
 import pytest
 
-from jeff.cognitive.proposal import ProposalOption, ProposalSet
-from jeff.cognitive.selection import SelectionResult, select_from_proposals
+from jeff.cognitive import SelectionDisposition, SelectionRequest, SelectionResult
+from jeff.cognitive.proposal import ProposalResult, ProposalResultOption
 from jeff.core.schemas import Scope
 from jeff.governance import may_start_now
 
 
-def _proposal_set() -> ProposalSet:
+def _proposal_result() -> ProposalResult:
     scope = Scope(project_id="project-1", work_unit_id="wu-1")
-    return ProposalSet(
+    return ProposalResult(
+        request_id="proposal-request-1",
         scope=scope,
         options=(
-            ProposalOption(
+            ProposalResultOption(
+                option_index=1,
                 proposal_id="proposal-1",
                 proposal_type="direct_action",
-                option_summary="Implement the bounded change",
-                scope=scope,
+                title="Implement the bounded change",
+                why_now="The bounded path is ready.",
+                summary="Implement the bounded change",
             ),
-            ProposalOption(
+            ProposalResultOption(
+                option_index=2,
                 proposal_id="proposal-2",
                 proposal_type="investigate",
-                option_summary="Investigate the missing edge case first",
-                scope=scope,
+                title="Investigate the missing edge case first",
+                why_now="Remaining uncertainty matters.",
+                summary="Investigate the missing edge case first",
             ),
         ),
     )
 
 
 def test_selection_can_choose_one_proposal() -> None:
-    result = select_from_proposals(
-        proposal_set=_proposal_set(),
+    request = SelectionRequest(
+        request_id="selection-request-1",
+        proposal_result=_proposal_result(),
+    )
+    result = SelectionResult(
         selection_id="selection-1",
-        selected_proposal_id="proposal-1",
+        considered_proposal_ids=request.considered_proposal_ids,
+        selected_proposal_id=request.considered_proposal_ids[0],
         rationale="This path fits the current scope with the lowest assumption burden",
     )
 
     assert result.selected_proposal_id == "proposal-1"
     assert result.non_selection_outcome is None
+    assert result.disposition == "selected"
 
 
 def test_selection_non_selection_outcomes_remain_explicit() -> None:
-    result = select_from_proposals(
-        proposal_set=_proposal_set(),
+    request = SelectionRequest(
+        request_id="selection-request-2",
+        proposal_result=_proposal_result(),
+    )
+    result = SelectionResult(
         selection_id="selection-2",
+        considered_proposal_ids=request.considered_proposal_ids,
         non_selection_outcome="defer",
         rationale="Current uncertainty is too high for an honest choice",
     )
 
     assert result.selected_proposal_id is None
     assert result.non_selection_outcome == "defer"
+    assert result.disposition == "defer"
+
+
+def test_selection_disposition_values_stay_bounded() -> None:
+    dispositions: tuple[SelectionDisposition, ...] = ("selected", "reject_all", "defer", "escalate")
+
+    assert dispositions == ("selected", "reject_all", "defer", "escalate")
 
 
 def test_selection_cannot_choose_more_than_one_path_or_become_permission() -> None:
@@ -62,10 +83,14 @@ def test_selection_cannot_choose_more_than_one_path_or_become_permission() -> No
         )
 
     with pytest.raises(TypeError, match="ActionEntryDecision"):
+        request = SelectionRequest(
+            request_id="selection-request-4",
+            proposal_result=_proposal_result(),
+        )
         may_start_now(
-            select_from_proposals(
-                proposal_set=_proposal_set(),
+            SelectionResult(
                 selection_id="selection-4",
+                considered_proposal_ids=request.considered_proposal_ids,
                 selected_proposal_id="proposal-1",
                 rationale="Choice is not permission",
             ),

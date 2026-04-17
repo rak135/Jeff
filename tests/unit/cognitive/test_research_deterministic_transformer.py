@@ -115,6 +115,30 @@ def test_live_research_synthesis_request_now_uses_bounded_text_first() -> None:
     assert "FINDINGS:" in request.prompt
 
 
+def test_transformer_accepts_sentinel_uncertainty_bullet() -> None:
+    """Test that the canonical sentinel uncertainty bullet is properly parsed."""
+    text_with_sentinel = _valid_step1_text().replace(
+        "- External verification was not performed.",
+        "- No explicit uncertainties identified from the provided evidence.",
+    )
+    
+    payload = transform_step1_bounded_text_to_candidate_payload(text_with_sentinel)
+    
+    assert payload["uncertainties"] == ["No explicit uncertainties identified from the provided evidence."]
+
+
+def test_parser_extracts_sentinel_uncertainty_to_artifact() -> None:
+    """Test that sentinel uncertainty is correctly extracted to Step1BoundedArtifact."""
+    text_with_sentinel = _valid_step1_text().replace(
+        "- External verification was not performed.",
+        "- No explicit uncertainties identified from the provided evidence.",
+    )
+    
+    artifact = parse_step1_bounded_text(text_with_sentinel)
+    
+    assert artifact.uncertainties == ("No explicit uncertainties identified from the provided evidence.",)
+
+
 def _valid_step1_text() -> str:
     return "\n".join(
         [

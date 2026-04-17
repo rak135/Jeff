@@ -22,7 +22,6 @@ from .errors import (
     ResearchSynthesisRuntimeError,
     ResearchSynthesisValidationError,
 )
-from .legacy import ResearchResult
 from .memory_handoff import (
     ResearchMemoryHandoffInput,
     build_research_memory_handoff_input,
@@ -53,7 +52,6 @@ __all__ = [
     "ResearchMemoryHandoffInput",
     "ResearchProvenanceValidationError",
     "ResearchRequest",
-    "ResearchResult",
     "ResearchSynthesisError",
     "ResearchSynthesisRuntimeError",
     "ResearchSynthesisValidationError",

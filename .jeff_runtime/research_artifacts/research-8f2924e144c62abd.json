@@ -1,0 +1,118 @@
+{
+  "artifact_id": "research-8f2924e144c62abd",
+  "created_at": "2026-04-16T21:11:09.818323+00:00",
+  "evidence_items": [
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "# Jeff"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "Jeff currently ships as a CLI-first, in-memory v1 backbone. It is useful for operator inspection, contract validation, orchestration tracing, and truthful surface testing. It is not yet a GUI product, a broad API product, an autonomous continuation system, or an advanced memory platform."
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text python -m jeff ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "- startup bootstraps an explicit in-memory demo workspace - startup can also load explicit local runtime config from `jeff.runtime.toml` when present - the demo workspace contains one project, one work unit, one run, and one bounded flow trace - no daemon, GUI, or background continuation is started - one-shot mode is available for deterministic smoke and automation-safe checks"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text python -m jeff --help ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text python -m jeff --bootstrap-check ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text python -m jeff --command \"/help\" python -m jeff --command \"/project list\" python -m jeff --command \"/show run-1\" --json ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text python -m jeff ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "The primary implemented operator surface is the CLI under `jeff.interface`."
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "- startup always uses explicit demo truth state; research runtime becomes available only when local `jeff.runtime.toml` is present - the canonical semantics still live in `v1_doc/`, not in this README"
+    }
+  ],
+  "findings": [
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "Jeff is a CLI-first, in-memory v1 backbone tool for operator inspection, contract validation, orchestration tracing, and truthful surface testing. It is not a GUI product, broad API product, autonomous continuation system, or advanced memory platform."
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "Jeff's demo workspace includes one project, one work unit, one run, and one bounded flow trace, with no daemon, GUI, or background continuation. One-shot mode supports deterministic checks."
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "The primary operator surface is the CLI under `jeff.interface`, with commands like `/help`, `/project list`, and `/show run-1` available for interaction."
+    }
+  ],
+  "inferences": [
+    "Jeff's design prioritizes deterministic, automation-safe operations through its one-shot mode and explicit demo workspace, suggesting it is tailored for testing and development environments."
+  ],
+  "project_id": "general_research",
+  "question": "What is Jeff?",
+  "recommendation": null,
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_ids": [
+    "document-81eea87a35d7"
+  ],
+  "source_items": [
+    {
+      "discovery_rank": 0,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\README.md",
+      "published_at": null,
+      "snippet": "# Jeff Jeff currently ships as a CLI-first, in-memory v1 backbone. It is useful for operator inspection, contract validation, orchestration tracing, and truthful surface testing. It is not yet a GUI product, a broad API product, an autonomous continuation system, or an advanced m",
+      "source_id": "document-81eea87a35d7",
+      "source_type": "document",
+      "title": "README.md"
+    }
+  ],
+  "source_mode": "local_documents",
+  "summary": "Jeff is a CLI-first, in-memory v1 backbone tool designed for operator inspection, contract validation, orchestration tracing, and truthful surface testing. It operates in a demo workspace with one project, work unit, run, and bounded flow trace, without GUI, daemon, or background continuation features. The primary interface is the CLI under `jeff.interface`, and its canonical semantics reside in `v1_doc/` rather than the README.",
+  "uncertainties": [
+    "The exact capabilities beyond the described CLI features and demo workspace remain unclear, as the canonical semantics are referenced externally in `v1_doc/`."
+  ],
+  "work_unit_id": "research-docs-what-is-jeff-fe174394"
+}

@@ -15,15 +15,40 @@ from jeff.cognitive import (
     ResearchArtifactStore,
     ResearchRequest,
     ResearchSynthesisRuntimeError,
+    SelectionResult,
     handoff_persisted_research_record_to_memory,
     run_and_persist_document_research,
     run_and_persist_web_research,
 )
+from jeff.cognitive.action_formation import ActionFormationRequest, FormedActionResult, form_action_from_materialized_proposal
+from jeff.cognitive.action_governance_handoff import (
+    ActionGovernanceHandoffRequest,
+    GovernedActionHandoffResult,
+    handoff_action_to_governance,
+)
+from jeff.cognitive.proposal import ProposalResult
 from jeff.cognitive.research.debug import finding_source_refs_summary, summarize_values
+from jeff.cognitive.selection_action_resolution import (
+    ResolvedSelectionActionBasis,
+    SelectionActionResolutionRequest,
+    resolve_selection_action_basis,
+)
+from jeff.cognitive.selection_effective_proposal import (
+    MaterializedEffectiveProposal,
+    SelectionEffectiveProposalRequest,
+    materialize_effective_proposal,
+)
+from jeff.cognitive.selection_override import (
+    OperatorSelectionOverride,
+    OperatorSelectionOverrideRequest,
+    build_operator_selection_override,
+)
+from jeff.cognitive.types import require_text
 from jeff.core.containers.models import Project, Run, WorkUnit
 from jeff.core.schemas import Scope
 from jeff.core.state.models import GlobalState
 from jeff.core.transition import TransitionRequest, apply_transition
+from jeff.governance import Approval, CurrentTruthSnapshot, Policy
 from jeff.infrastructure import InfrastructureServices
 from jeff.memory import InMemoryMemoryStore, MemoryWriteDecision
 from jeff.orchestrator import FlowRunResult
@@ -36,6 +61,8 @@ from .json_views import (
     request_receipt_json,
     run_list_json,
     run_show_json,
+    selection_override_receipt_json,
+    selection_review_json,
     session_scope_json,
     trace_json,
     work_unit_list_json,
@@ -50,6 +77,8 @@ from .render import (
     render_run_list,
     render_run_show,
     render_scope,
+    render_selection_override_receipt,
+    render_selection_review,
     render_trace,
     render_work_unit_list,
 )
@@ -57,9 +86,26 @@ from .session import CliSession
 
 
 @dataclass(frozen=True, slots=True)
+class SelectionReviewRecord:
+    selection_result: SelectionResult | None = None
+    operator_override: OperatorSelectionOverride | None = None
+    resolved_basis: ResolvedSelectionActionBasis | None = None
+    materialized_effective_proposal: MaterializedEffectiveProposal | None = None
+    formed_action_result: FormedActionResult | None = None
+    governance_handoff_result: GovernedActionHandoffResult | None = None
+    proposal_result: ProposalResult | None = None
+    action_scope: Scope | None = None
+    basis_state_version: int | None = None
+    governance_policy: Policy | None = None
+    governance_approval: Approval | None = None
+    governance_truth: CurrentTruthSnapshot | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class InterfaceContext:
     state: GlobalState
     flow_runs: Mapping[str, FlowRunResult] = field(default_factory=dict)
+    selection_reviews: Mapping[str, SelectionReviewRecord] = field(default_factory=dict)
     infrastructure_services: InfrastructureServices | None = None
     research_artifact_store: ResearchArtifactStore | None = None
     memory_store: InMemoryMemoryStore | None = None
@@ -118,6 +164,9 @@ def execute_command(
         return _apply_json_mode(result, json_output=json_output)
     if tokens[0] == "show":
         result = _show_command(tokens=tokens, session=session, context=context)
+        return _apply_json_mode(result, json_output=json_output)
+    if tokens[0] == "selection":
+        result = _selection_command(tokens=tokens, session=session, context=context)
         return _apply_json_mode(result, json_output=json_output)
     if tokens[0] == "trace":
         result = _trace_command(tokens=tokens, session=session, context=context)
@@ -300,6 +349,214 @@ def _show_command(*, tokens: list[str], session: CliSession, context: InterfaceC
     if notice is not None:
         text = f"{notice}\n{text}"
     return CommandResult(context=context, session=next_session, text=text, json_payload=payload)
+
+
+def _selection_command(*, tokens: list[str], session: CliSession, context: InterfaceContext) -> CommandResult:
+    if len(tokens) < 2:
+        raise ValueError(
+            "selection command must be 'selection show [run_id]' or "
+            "'selection override <proposal_id> --why \"operator rationale\" [run_id]'"
+        )
+
+    if tokens[1] == "show":
+        return _selection_show_command(tokens=tokens, session=session, context=context)
+    if tokens[1] == "override":
+        return _selection_override_command(tokens=tokens, session=session, context=context)
+
+    raise ValueError(
+        "selection command must be 'selection show [run_id]' or "
+        "'selection override <proposal_id> --why \"operator rationale\" [run_id]'"
+    )
+
+
+def _selection_show_command(*, tokens: list[str], session: CliSession, context: InterfaceContext) -> CommandResult:
+    if len(tokens) > 3:
+        raise ValueError("selection show must be 'selection show [run_id]'")
+    run, next_session, notice = _resolve_historical_run(
+        tokens=["selection", *tokens[2:]],
+        session=session,
+        context=context,
+        command_name="selection show",
+    )
+    project = _require_project_for_run(context, run.project_id)
+    work_unit = project.work_units[run.work_unit_id]
+    flow_run = context.flow_runs.get(str(run.run_id))
+    selection_review = context.selection_reviews.get(str(run.run_id))
+    payload = selection_review_json(
+        project=project,
+        work_unit=work_unit,
+        run=run,
+        flow_run=flow_run,
+        selection_review=selection_review,
+    )
+    text = render_selection_review(payload)
+    if notice is not None:
+        text = f"{notice}\n{text}"
+    return CommandResult(context=context, session=next_session, text=text, json_payload=payload)
+
+
+def _selection_override_command(*, tokens: list[str], session: CliSession, context: InterfaceContext) -> CommandResult:
+    proposal_id, operator_rationale, run_token = _parse_selection_override_tokens(tokens)
+    run_tokens = ["selection override"] if run_token is None else ["selection override", run_token]
+    run, next_session, notice = _resolve_historical_run(
+        tokens=run_tokens,
+        session=session,
+        context=context,
+        command_name="selection override",
+    )
+    run_id = str(run.run_id)
+    existing_review = context.selection_reviews.get(run_id)
+    if existing_review is None:
+        raise ValueError(f"no selection review data is available for run {run_id}")
+
+    flow_run = context.flow_runs.get(run_id)
+    selection_result = existing_review.selection_result
+    if selection_result is None and flow_run is not None:
+        candidate = flow_run.outputs.get("selection")
+        if isinstance(candidate, SelectionResult):
+            selection_result = candidate
+    if selection_result is None:
+        raise ValueError(f"no original SelectionResult is available for run {run_id}")
+
+    operator_override = build_operator_selection_override(
+        OperatorSelectionOverrideRequest(
+            request_id=f"selection-override:{run_id}:{proposal_id}",
+            selection_result=selection_result,
+            chosen_proposal_id=proposal_id,
+            operator_rationale=operator_rationale,
+        )
+    )
+    updated_review = _recompute_selection_review_record(
+        existing_review=existing_review,
+        selection_result=selection_result,
+        operator_override=operator_override,
+    )
+    next_context = _replace_selection_review(context=context, run_id=run_id, selection_review=updated_review)
+    payload = selection_override_receipt_json(
+        run_id=run_id,
+        selection_review=updated_review,
+    )
+    text = render_selection_override_receipt(payload)
+    if notice is not None:
+        text = f"{notice}\n{text}"
+    return CommandResult(context=next_context, session=next_session, text=text, json_payload=payload)
+
+
+def _parse_selection_override_tokens(tokens: list[str]) -> tuple[str, str, str | None]:
+    if len(tokens) not in {5, 6}:
+        raise ValueError(
+            "selection override must be 'selection override <proposal_id> --why \"operator rationale\" [run_id]'"
+        )
+    if tokens[3] != "--why":
+        raise ValueError(
+            "selection override must be 'selection override <proposal_id> --why \"operator rationale\" [run_id]'"
+        )
+
+    proposal_id = require_text(tokens[2], field_name="proposal_id")
+    operator_rationale = require_text(tokens[4], field_name="operator_rationale")
+    run_token = tokens[5] if len(tokens) == 6 else None
+    return proposal_id, operator_rationale, run_token
+
+
+def _recompute_selection_review_record(
+    *,
+    existing_review: SelectionReviewRecord,
+    selection_result: SelectionResult,
+    operator_override: OperatorSelectionOverride,
+) -> SelectionReviewRecord:
+    resolved_basis = resolve_selection_action_basis(
+        SelectionActionResolutionRequest(
+            request_id=f"selection-review-resolution:{selection_result.selection_id}",
+            selection_result=selection_result,
+            operator_override=operator_override,
+        )
+    )
+
+    proposal_result = existing_review.proposal_result
+    action_scope = existing_review.action_scope
+    materialized_effective_proposal = None
+    formed_action_result = None
+    governance_handoff_result = None
+
+    if proposal_result is not None:
+        materialized_effective_proposal = materialize_effective_proposal(
+            SelectionEffectiveProposalRequest(
+                request_id=f"selection-review-materialization:{selection_result.selection_id}",
+                proposal_result=proposal_result,
+                resolved_basis=resolved_basis,
+            )
+        )
+
+        action_scope = action_scope or proposal_result.scope
+        formed_action_result = form_action_from_materialized_proposal(
+            ActionFormationRequest(
+                request_id=f"selection-review-action-formation:{selection_result.selection_id}",
+                materialized_effective_proposal=materialized_effective_proposal,
+                scope=action_scope,
+                basis_state_version=_selection_review_basis_state_version(existing_review),
+            )
+        )
+
+        if existing_review.governance_policy is not None and existing_review.governance_truth is not None:
+            governance_handoff_result = handoff_action_to_governance(
+                ActionGovernanceHandoffRequest(
+                    request_id=f"selection-review-governance-handoff:{selection_result.selection_id}",
+                    formed_action_result=formed_action_result,
+                    policy=existing_review.governance_policy,
+                    approval=existing_review.governance_approval,
+                    truth=existing_review.governance_truth,
+                )
+            )
+
+    return SelectionReviewRecord(
+        selection_result=selection_result,
+        operator_override=operator_override,
+        resolved_basis=resolved_basis,
+        materialized_effective_proposal=materialized_effective_proposal,
+        formed_action_result=formed_action_result,
+        governance_handoff_result=governance_handoff_result,
+        proposal_result=proposal_result,
+        action_scope=action_scope,
+        basis_state_version=_selection_review_basis_state_version(existing_review),
+        governance_policy=existing_review.governance_policy,
+        governance_approval=existing_review.governance_approval,
+        governance_truth=existing_review.governance_truth,
+    )
+
+
+def _selection_review_basis_state_version(selection_review: SelectionReviewRecord) -> int:
+    if selection_review.basis_state_version is not None:
+        return selection_review.basis_state_version
+    if (
+        selection_review.formed_action_result is not None
+        and selection_review.formed_action_result.action is not None
+    ):
+        return selection_review.formed_action_result.action.basis_state_version
+    if (
+        selection_review.governance_handoff_result is not None
+        and selection_review.governance_handoff_result.action is not None
+    ):
+        return selection_review.governance_handoff_result.action.basis_state_version
+    return 0
+
+
+def _replace_selection_review(
+    *,
+    context: InterfaceContext,
+    run_id: str,
+    selection_review: SelectionReviewRecord,
+) -> InterfaceContext:
+    next_reviews = dict(context.selection_reviews)
+    next_reviews[run_id] = selection_review
+    return InterfaceContext(
+        state=context.state,
+        flow_runs=context.flow_runs,
+        selection_reviews=next_reviews,
+        infrastructure_services=context.infrastructure_services,
+        research_artifact_store=context.research_artifact_store,
+        memory_store=context.memory_store,
+        research_memory_handoff_enabled=context.research_memory_handoff_enabled,
+    )
 
 
 def _trace_command(*, tokens: list[str], session: CliSession, context: InterfaceContext) -> CommandResult:
@@ -977,6 +1234,7 @@ def _replace_context_state(context: InterfaceContext, state: GlobalState) -> Int
     return InterfaceContext(
         state=state,
         flow_runs=context.flow_runs,
+        selection_reviews=context.selection_reviews,
         infrastructure_services=context.infrastructure_services,
         research_artifact_store=context.research_artifact_store,
         memory_store=context.memory_store,

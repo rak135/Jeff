@@ -4,8 +4,8 @@ import pytest
 
 from jeff.action import GovernedExecutionRequest, normalize_outcome
 from jeff.action.execution import ExecutionResult
-from jeff.cognitive import ProposalOption, ProposalSet
 from jeff.cognitive.evaluation import evaluate_outcome
+from jeff.cognitive import ProposalResult, ProposalResultOption
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
 from jeff.core.state import GlobalState, bootstrap_global_state
@@ -263,26 +263,18 @@ def test_orchestrator_invalidates_instead_of_synthesizing_missing_outputs() -> N
         flow_family="bounded_proposal_selection_action",
         scope=scope,
         stage_handlers={
-            "context": lambda _input: ProposalSet(  # type: ignore[return-value]
+            "context": lambda _input: "invalid_context_output",  # type: ignore[return-value]
+            "proposal": lambda _input: ProposalResult(
+                request_id="proposal-request-1",
                 scope=scope,
                 options=(
-                    ProposalOption(
+                    ProposalResultOption(
+                        option_index=1,
                         proposal_id="proposal-1",
                         proposal_type="direct_action",
-                        option_summary="Wrong output family for context.",
-                        scope=scope,
-                    ),
-                ),
-                scarcity_reason="Only one option is present.",
-            ),
-            "proposal": lambda _input: ProposalSet(
-                scope=scope,
-                options=(
-                    ProposalOption(
-                        proposal_id="proposal-1",
-                        proposal_type="direct_action",
-                        option_summary="Bounded action.",
-                        scope=scope,
+                        title="Bounded action.",
+                        why_now="Test proposal.",
+                        summary="Bounded action.",
                     ),
                 ),
                 scarcity_reason="Only one option is present.",

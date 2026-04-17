@@ -20,7 +20,7 @@ context_length = 8192
 adapter_id = "ollama_research"
 provider_kind = "ollama"
 provider_name = "ollama"
-model_name = "qwen3:8b"
+model_name = "gemma4:31b-cloud"
 base_url = "http://127.0.0.1:11434"
 timeout_seconds = 120
 
@@ -40,7 +40,7 @@ context_length = 8192
 
 [purpose_overrides]
 research = "ollama_research"
-research_repair = "ollama_formatter"
+formatter_bridge = "ollama_formatter"
 proposal = "ollama_default"
 planning = "ollama_default"
 evaluation = "ollama_default"

@@ -133,6 +133,136 @@ def render_run_show(payload: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def render_selection_review(payload: dict[str, Any]) -> str:
+    truth = payload["truth"]
+    selection = payload["selection"]
+    override = payload["override"]
+    resolved = payload["resolved_choice"]
+    action_formation = payload["action_formation"]
+    governance_handoff = payload["governance_handoff"]
+    support = payload["support"]
+
+    lines = [
+        f"SELECTION REVIEW run_id={truth['run_id']}",
+        f"[truth] project_id={truth['project_id']} work_unit_id={truth['work_unit_id']}",
+    ]
+
+    if selection["available"]:
+        lines.append(
+            f"[selection] disposition={selection['disposition']} "
+            f"selected_proposal_id={selection['selected_proposal_id'] or '-'} "
+            f"non_selection_outcome={selection['non_selection_outcome'] or '-'}"
+        )
+    else:
+        lines.append(f"[selection] missing={selection['missing_reason']}")
+
+    if override["available"]:
+        lines.append(
+            f"[override] exists={override['exists']} "
+            f"chosen_proposal_id={override['chosen_proposal_id'] or '-'}"
+        )
+        if override["missing_reason"] is not None:
+            lines.append(f"[override] note={override['missing_reason']}")
+    else:
+        lines.append(f"[override] missing={override['missing_reason']}")
+
+    if resolved["available"]:
+        lines.append(
+            f"[resolved_choice] effective_source={resolved['effective_source']} "
+            f"effective_proposal_id={resolved['effective_proposal_id'] or '-'} "
+            f"non_selection_outcome={resolved['non_selection_outcome'] or '-'}"
+        )
+    else:
+        lines.append(f"[resolved_choice] missing={resolved['missing_reason']}")
+
+    if action_formation["available"]:
+        lines.append(
+            f"[action_formation] action_formed={action_formation['action_formed']} "
+            f"action_id={action_formation['action_id'] or '-'} "
+            f"proposal_type={action_formation['proposal_type'] or '-'}"
+        )
+        if action_formation["no_action_reason"] is not None:
+            lines.append(f"[action_formation] note={action_formation['no_action_reason']}")
+    else:
+        lines.append(f"[action_formation] missing={action_formation['missing_reason']}")
+
+    if governance_handoff["available"]:
+        lines.append(
+            f"[governance_handoff] governance_evaluated={governance_handoff['governance_evaluated']} "
+            f"governance_outcome={governance_handoff['governance_outcome'] or '-'} "
+            f"allowed_now={governance_handoff['allowed_now']}"
+        )
+        if governance_handoff["no_governance_reason"] is not None:
+            lines.append(f"[governance_handoff] note={governance_handoff['no_governance_reason']}")
+    else:
+        lines.append(f"[governance_handoff] missing={governance_handoff['missing_reason']}")
+
+    lines.append(
+        f"[support] selection_review_attached={support['selection_review_attached']} "
+        f"materialized_effective_proposal_available={support['materialized_effective_proposal_available']}"
+    )
+    return "\n".join(lines)
+
+
+def render_selection_override_receipt(payload: dict[str, Any]) -> str:
+    truth = payload["truth"]
+    derived = payload["derived"]
+    override = payload["override"]
+    resolved = payload["resolved_choice"]
+    action_formation = payload["action_formation"]
+    governance_handoff = payload["governance_handoff"]
+    support = payload["support"]
+
+    lines = [
+        f"SELECTION OVERRIDE RECORDED run_id={truth['run_id']}",
+        (
+            f"[selection] original_disposition={truth['original_selection_disposition'] or '-'} "
+            f"original_selected_proposal_id={truth['original_selected_proposal_id'] or '-'}"
+        ),
+        (
+            f"[override] override_created={derived['override_created']} "
+            f"chosen_proposal_id={override['chosen_proposal_id'] or '-'}"
+        ),
+    ]
+
+    if resolved["available"]:
+        lines.append(
+            f"[resolved_choice] resolved_choice_updated={derived['resolved_choice_updated']} "
+            f"effective_source={resolved['effective_source']} "
+            f"effective_proposal_id={resolved['effective_proposal_id'] or '-'}"
+        )
+    else:
+        lines.append(f"[resolved_choice] missing={resolved['missing_reason']}")
+
+    if action_formation["available"]:
+        lines.append(
+            f"[action_formation] action_formed={action_formation['action_formed']} "
+            f"action_id={action_formation['action_id'] or '-'}"
+        )
+        if action_formation["no_action_reason"] is not None:
+            lines.append(f"[action_formation] note={action_formation['no_action_reason']}")
+    else:
+        lines.append(f"[action_formation] missing={action_formation['missing_reason']}")
+
+    if governance_handoff["available"]:
+        lines.append(
+            f"[governance_handoff] governance_evaluated={governance_handoff['governance_evaluated']} "
+            f"governance_outcome={governance_handoff['governance_outcome'] or '-'} "
+            f"allowed_now={governance_handoff['allowed_now']}"
+        )
+        if governance_handoff["no_governance_reason"] is not None:
+            lines.append(f"[governance_handoff] note={governance_handoff['no_governance_reason']}")
+    else:
+        lines.append(f"[governance_handoff] missing={governance_handoff['missing_reason']}")
+
+    lines.append(
+        f"[support] original_selection_unchanged={truth['original_selection_unchanged']} "
+        "override_is_separate_support=True execution_started=False"
+    )
+    lines.append(f"[support] note={support['note']}")
+    return "\n".join(lines)
+
+
 def render_lifecycle(payload: dict[str, Any]) -> str:
     derived = payload["derived"]
     telemetry = payload["telemetry"]
@@ -277,6 +407,8 @@ def render_help() -> str:
             "- /run list",
             "- /run use <run_id>",
             "- /show [run_id]",
+            "- /selection show [run_id]",
+            '- /selection override <proposal_id> --why "<operator rationale>" [run_id]',
             "Research:",
             '- /research docs "<question>" <path1> [<path2> ...] [--handoff-memory]',
             '- /research web "<question>" <query1> [<query2> ...] [--handoff-memory]',
@@ -293,6 +425,8 @@ def render_help() -> str:
             "/scope show",
             "/scope clear",
             "/show [run_id]",
+            "/selection show [run_id]",
+            '/selection override <proposal_id> --why "<operator rationale>" [run_id]',
             "/trace [run_id]",
             "/lifecycle [run_id]",
             '/research docs "<question>" <path1> [<path2> ...] [--handoff-memory]',

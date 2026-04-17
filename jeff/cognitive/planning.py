@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from jeff.core.schemas import ProposalId, coerce_proposal_id
 
-from .proposal import ProposalOption
+from .proposal import ProposalResultOption
 from .types import PlanStep, normalize_text_list, require_text
 
 
@@ -69,7 +69,7 @@ class PlanArtifact:
 
 def should_plan(
     *,
-    selected_option: ProposalOption | None,
+    selected_option: ProposalResultOption | None,
     operator_requested: bool = False,
     multi_step: bool = False,
     review_heavy: bool = False,
@@ -93,7 +93,7 @@ def should_plan(
 
 def create_plan(
     *,
-    selected_option: ProposalOption,
+    selected_option: ProposalResultOption,
     intended_steps: tuple[PlanStep, ...],
     operator_requested: bool = False,
     multi_step: bool = False,
@@ -118,7 +118,7 @@ def create_plan(
         raise ValueError("planning is conditional and must not run for simple unjustified work")
 
     return PlanArtifact(
-        bounded_objective=selected_option.option_summary,
+        bounded_objective=selected_option.summary,
         intended_steps=intended_steps,
         assumptions=assumptions,
         dependencies=dependencies,

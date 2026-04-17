@@ -18,8 +18,9 @@ class Purpose(str, Enum):
     """
 
     RESEARCH = "research"
-    RESEARCH_REPAIR = "research_repair"
+    FORMATTER_BRIDGE = "formatter_bridge"
     PROPOSAL = "proposal"
+    SELECTION = "selection"
     PLANNING = "planning"
     EVALUATION = "evaluation"
 
@@ -27,7 +28,3 @@ class Purpose(str, Enum):
     def known_names(cls) -> frozenset[str]:
         """Return the set of known purpose string values."""
         return frozenset(member.value for member in cls)
-
-    def is_repair_variant(self) -> bool:
-        """Return True if this purpose is a repair/retry variant of another."""
-        return self == Purpose.RESEARCH_REPAIR

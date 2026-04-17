@@ -6,7 +6,8 @@ from pathlib import Path
 
 from jeff.action import GovernedExecutionRequest, normalize_outcome
 from jeff.action.execution import ExecutionResult
-from jeff.cognitive import ProposalOption, ProposalSet, ResearchArtifactStore, SelectionResult, evaluate_outcome
+from jeff.cognitive import ResearchArtifactStore, SelectionResult, evaluate_outcome
+from jeff.cognitive.proposal.contracts import ProposalResult, ProposalResultOption
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
 from jeff.core.state import GlobalState, bootstrap_global_state
@@ -102,21 +103,17 @@ def build_demo_state() -> tuple[GlobalState, Scope]:
 
 
 def build_demo_flow_run(scope: Scope) -> FlowRunResult:
-    proposal_set = ProposalSet(
-        scope=scope,
-        options=(
-            ProposalOption(
-                proposal_id="proposal-1",
-                proposal_type="direct_action",
-                option_summary="Inspect the bounded Jeff demo flow.",
-                scope=scope,
-            ),
-        ),
-        scarcity_reason="Only one serious bounded demo option is available.",
+    result_option = ProposalResultOption(
+        option_index=1,
+        proposal_id="proposal-1",
+        proposal_type="direct_action",
+        title="Inspect the bounded Jeff demo flow",
+        why_now="Testing the current v1 backbone end-to-end.",
+        summary="Inspect the bounded Jeff demo flow.",
     )
     selection = SelectionResult(
         selection_id="selection-1",
-        considered_proposal_ids=tuple(option.proposal_id for option in proposal_set.options),
+        considered_proposal_ids=(result_option.proposal_id,),
         selected_proposal_id="proposal-1",
         rationale="The bounded operator-inspection path is the active demo selection.",
     )

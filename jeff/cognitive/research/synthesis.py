@@ -24,6 +24,7 @@ from jeff.infrastructure.contract_runtime import ContractCallRequest, ContractRu
 
 from ..types import require_text
 from .bounded_syntax import STEP1_BOUNDED_SYNTAX_DESCRIPTION, validate_step1_bounded_text
+from .prompt_files import load_prompt_file, render_prompt
 from .contracts import EvidencePack, ResearchArtifact, ResearchFinding, ResearchRequest, validate_research_provenance
 from .deterministic_transformer import transform_step1_bounded_text_to_candidate_payload
 from .debug import ResearchDebugEmitter, emit_research_debug_event
@@ -97,17 +98,11 @@ def synthesize_research(
     formatter_adapter: ModelAdapter | None = None,
     debug_emitter: ResearchDebugEmitter | None = None,
     contract_runtime: ContractRuntime | None = None,
-    **legacy_kwargs: Any,
 ) -> ResearchArtifact:
     if not evidence_pack.evidence_items:
         raise ResearchSynthesisValidationError("research synthesis requires at least one evidence item")
 
-    compatibility_formatter_adapter = legacy_kwargs.pop("repair_adapter", None)
-    if legacy_kwargs:
-        unexpected = ", ".join(sorted(legacy_kwargs))
-        raise TypeError(f"synthesize_research() got unexpected keyword argument(s): {unexpected}")
-
-    effective_formatter_adapter = formatter_adapter or compatibility_formatter_adapter or adapter
+    effective_formatter_adapter = formatter_adapter or adapter
     citation_key_map = build_citation_key_map(evidence_pack)
     emit_research_debug_event(
         debug_emitter,
@@ -189,7 +184,7 @@ def synthesize_research_with_runtime(
         raise _runtime_error_from_exception(
             exc,
             adapter=None,
-            adapter_id_hint=infrastructure_services.purpose_overrides.research_repair or adapter_id or adapter.adapter_id,
+            adapter_id_hint=infrastructure_services.purpose_overrides.formatter_bridge or adapter_id or adapter.adapter_id,
         ) from exc
     return synthesize_research(
         research_request=research_request,
@@ -485,24 +480,6 @@ def build_research_formatter_bridge_model_request(
     )
 
 
-def build_research_repair_model_request(
-    request: ResearchRequest,
-    evidence_pack: EvidencePack,
-    malformed_output: str,
-    *,
-    primary_request: ModelRequest,
-    adapter_id: str | None = None,
-) -> ModelRequest:
-    """Legacy compatibility wrapper for older repair-era helper callers."""
-
-    return build_research_formatter_bridge_model_request(
-        request=request,
-        evidence_pack=evidence_pack,
-        bounded_text=malformed_output,
-        primary_request=primary_request,
-        adapter_id=adapter_id,
-    )
-
 
 def _attempt_formatter_fallback(
     *,
@@ -595,14 +572,8 @@ def _attempt_formatter_fallback(
 
 
 def _primary_synthesis_system_instructions() -> str:
-    return (
-        "Use only the provided evidence. "
-        "Return bounded plain text in the declared section syntax. "
-        "No markdown, no code fences, no commentary. "
-        "Do not invent facts, sources, or certainty. "
-        "Use only the allowed citation keys in FINDINGS cites lines. "
-        "Do not return JSON."
-    )
+    system_instructions, _ = load_prompt_file("research/STEP1_SYNTHESIS.md")
+    return system_instructions
 
 
 def _build_primary_synthesis_prompt(
@@ -640,32 +611,17 @@ def _build_primary_synthesis_prompt(
         for index, item in enumerate(evidence_pack.evidence_items, start=1)
     ] or ["none"]
 
-    return "\n".join(
-        [
-            "TASK: bounded research synthesis",
-            "Output bounded plain text using the exact section syntax below.",
-            "Use only provided evidence and allowed citation keys.",
-            "Keep findings, inferences, and uncertainties distinct.",
-            "Do not output markdown, code fences, or extra prose.",
-            "Each required section must appear exactly once in canonical order.",
-            "Each finding must use paired '- text:' and '  cites:' lines.",
-            "INFERENCES and UNCERTAINTIES must each contain at least one bullet line.",
-            "RECOMMENDATION must be plain text or NONE.",
-            f"QUESTION: {request.question}",
-            f"ALLOWED_CITATION_KEYS: {', '.join(allowed_citation_keys)}",
-            "REQUIRED_BOUNDED_SYNTAX:",
-            STEP1_BOUNDED_SYNTAX_DESCRIPTION,
-            "CONSTRAINTS:",
-            *constraint_lines,
-            "SOURCES:",
-            *source_lines,
-            "EVIDENCE:",
-            *evidence_lines,
-            "CONTRADICTIONS:",
-            *contradiction_lines,
-            "UNCERTAINTIES:",
-            *uncertainty_lines,
-        ]
+    _, template = load_prompt_file("research/STEP1_SYNTHESIS.md")
+    return render_prompt(
+        template,
+        QUESTION=request.question,
+        ALLOWED_CITATION_KEYS=", ".join(allowed_citation_keys),
+        BOUNDED_SYNTAX=STEP1_BOUNDED_SYNTAX_DESCRIPTION,
+        CONSTRAINTS="\n".join(constraint_lines),
+        SOURCES="\n".join(source_lines),
+        EVIDENCE="\n".join(evidence_lines),
+        CONTRADICTIONS="\n".join(contradiction_lines),
+        UNCERTAINTIES="\n".join(uncertainty_lines),
     )
 
 def _compact_section_lines(values: tuple[str, ...], *, prefix: str) -> list[str]:

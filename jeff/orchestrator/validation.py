@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from jeff.action import ExecutionResult, Outcome
-from jeff.cognitive import ContextPackage, EvaluationResult, PlanArtifact, ProposalSet, ResearchResult, SelectionResult
+from jeff.cognitive import ContextPackage, EvaluationResult, PlanArtifact, ProposalResult, ResearchArtifact, SelectionResult
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
 from jeff.core.transition import TransitionResult
@@ -46,8 +46,8 @@ _ALLOWED_PREDECESSORS: dict[StageName, tuple[StageName, ...]] = {
 
 _EXPECTED_OUTPUT_TYPES: dict[StageName, type[object]] = {
     "context": ContextPackage,
-    "research": ResearchResult,
-    "proposal": ProposalSet,
+    "research": ResearchArtifact,
+    "proposal": ProposalResult,
     "selection": SelectionResult,
     "planning": PlanArtifact,
     "action": Action,
@@ -123,10 +123,10 @@ def validate_handoff(
     if not output_validation.valid:
         return output_validation
 
-    if previous_stage == "proposal" and next_stage == "selection" and not previous_output.options:
+    if previous_stage == "proposal" and next_stage == "selection" and previous_output.proposal_count == 0:
         return ValidationResult(
             valid=False,
-            code="empty_proposal_set",
+            code="empty_proposal_result",
             reason="selection cannot run when proposal generation returned no serious options",
         )
 
@@ -165,9 +165,9 @@ def validate_handoff(
 def _scope_from_output(output: object) -> Scope | None:
     if isinstance(output, ContextPackage):
         return output.scope
-    if isinstance(output, ResearchResult):
-        return output.request.scope
-    if isinstance(output, ProposalSet):
+    if isinstance(output, ResearchArtifact):
+        return None
+    if isinstance(output, ProposalResult):
         return output.scope
     if isinstance(output, Action):
         return output.scope

@@ -1,6 +1,7 @@
 from jeff.action import GovernedExecutionRequest, normalize_outcome
 from jeff.action.execution import ExecutionResult
-from jeff.cognitive import ProposalOption, ProposalSet, SelectionResult, evaluate_outcome
+from jeff.cognitive import SelectionResult, evaluate_outcome
+from jeff.cognitive.proposal.contracts import ProposalResultOption
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
 from jeff.core.state import bootstrap_global_state
@@ -83,21 +84,17 @@ def build_flow_run(
     reason_summary: str | None = None,
     selected_proposal_id: str = "proposal-1",
 ) -> FlowRunResult:
-    proposal_set = ProposalSet(
-        scope=scope,
-        options=(
-            ProposalOption(
-                proposal_id=selected_proposal_id,
-                proposal_type="direct_action",
-                option_summary="Bounded CLI-visible action",
-                scope=scope,
-            ),
-        ),
-        scarcity_reason="Only one serious bounded option is available.",
+    result_option = ProposalResultOption(
+        option_index=1,
+        proposal_id=selected_proposal_id,
+        proposal_type="direct_action",
+        title="Bounded CLI-visible action",
+        why_now="Testing the bounded flow.",
+        summary="Bounded CLI-visible action",
     )
     selection = SelectionResult(
         selection_id="selection-1",
-        considered_proposal_ids=tuple(option.proposal_id for option in proposal_set.options),
+        considered_proposal_ids=(result_option.proposal_id,),
         selected_proposal_id=selected_proposal_id,
         rationale="One bounded option remains under review.",
     )

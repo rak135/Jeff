@@ -42,6 +42,7 @@ STEP1_BOUNDED_SYNTAX_DESCRIPTION = "\n".join(
         "",
         "UNCERTAINTIES:",
         "- <uncertainty 1>",
+        "- or if no uncertainties identified: No explicit uncertainties identified from the provided evidence.",
         "",
         "RECOMMENDATION:",
         "<text or NONE>",

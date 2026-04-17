@@ -352,7 +352,7 @@ def test_runtime_path_formatter_fallback_also_routes_through_contract_runtime() 
             ),
             purpose_overrides=PurposeOverrides(
                 research="fake-research",
-                research_repair="fake-formatter",
+                formatter_bridge="fake-formatter",
             ),
         )
     )
@@ -447,5 +447,5 @@ def test_step3_intentionally_stays_on_invoke_with_request() -> None:
     assert len(runtime.invoke_calls) == 1
     assert len(runtime.invoke_with_request_calls) == 1
     formatter_request, formatter_adapter_id = runtime.invoke_with_request_calls[0]
-    assert formatter_request.purpose == "research_synthesis_repair"
+    assert formatter_request.purpose == "research_synthesis_formatter"
     assert formatter_adapter_id == "formatter-adapter"

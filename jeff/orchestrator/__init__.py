@@ -3,7 +3,7 @@
 from .flows import FlowFamily, StageName, stage_order_for_flow
 from .lifecycle import FlowLifecycle, FlowLifecycleState
 from .routing import RoutingDecision, route_evaluation_followup, route_governance_outcome
-from .runner import FlowRunResult, run_flow
+from .runner import FlowRunResult, HybridSelectionStageConfig, run_flow
 from .trace import OrchestrationEvent
 from .validation import ValidationResult, validate_handoff, validate_stage_output, validate_stage_sequence
 
@@ -12,6 +12,7 @@ __all__ = [
     "FlowLifecycle",
     "FlowLifecycleState",
     "FlowRunResult",
+    "HybridSelectionStageConfig",
     "OrchestrationEvent",
     "RoutingDecision",
     "StageName",

@@ -65,17 +65,17 @@ model_name = "fake-repair-model"
 
 [purpose_overrides]
 research = "fake-research"
-research_repair = "fake-repair"
+formatter_bridge = "fake-repair"
 """.strip(),
     )
 
     context = build_startup_interface_context(base_dir=tmp_path)
     research_adapter = context.infrastructure_services.get_adapter_for_purpose("research")
-    repair_adapter = context.infrastructure_services.get_adapter_for_purpose("research_repair")
+    formatter_adapter = context.infrastructure_services.get_adapter_for_purpose("formatter_bridge")
     default_adapter = context.infrastructure_services.get_default_model_adapter()
 
     assert research_adapter.adapter_id == "fake-research"
-    assert repair_adapter.adapter_id == "fake-repair"
+    assert formatter_adapter.adapter_id == "fake-repair"
     assert default_adapter.adapter_id == "fake-default"
 
 

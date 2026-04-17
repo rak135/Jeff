@@ -7,7 +7,10 @@
       "Bash(python -c \"from jeff.bootstrap import run_startup_preflight; [print\\(check\\) for check in run_startup_preflight\\(\\)]\")",
       "Bash(python -m pytest tests/unit/infrastructure tests/unit/cognitive/test_research_bounded_syntax.py tests/unit/cognitive/test_research_deterministic_transformer.py tests/unit/cognitive/test_research_synthesis.py tests/unit/cognitive/test_research_contract_runtime_adoption.py -q)",
       "Bash(python -m pytest tests/unit tests/integration -q --no-header)",
-      "Bash(python -m pytest tests/unit/interface/test_research_commands.py::test_docs_command_parses_correctly -x)"
+      "Bash(python -m pytest tests/unit/interface/test_research_commands.py::test_docs_command_parses_correctly -x)",
+      "Bash(ls *)",
+      "Bash(xargs grep *)",
+      "Bash(python *)"
     ]
   }
 }

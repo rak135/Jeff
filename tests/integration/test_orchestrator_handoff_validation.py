@@ -1,6 +1,6 @@
 from jeff.action import Outcome
-from jeff.cognitive import EvaluationResult, ResearchRequest, ResearchResult, SelectionResult, assemble_context_package
-from jeff.cognitive.types import Recommendation, SourceSummary, TriggerInput
+from jeff.cognitive import EvaluationResult, ResearchArtifact, ResearchFinding, SelectionResult, assemble_context_package
+from jeff.cognitive.types import TriggerInput
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
 from jeff.core.state import bootstrap_global_state
@@ -148,6 +148,24 @@ def test_non_memory_candidate_is_not_a_valid_memory_stage_output() -> None:
     assert result.code == "wrong_stage_output_type"
 
 
+def _research_artifact() -> ResearchArtifact:
+    return ResearchArtifact(
+        question="What does the evidence support?",
+        summary="The evidence supports a stable bounded path.",
+        findings=(ResearchFinding(text="Source A confirms stability.", source_refs=("source-a",)),),
+        inferences=("The current constraint still holds.",),
+        uncertainties=("No live validation was performed.",),
+        recommendation="Proceed with the bounded approach.",
+        source_ids=("source-a",),
+    )
+
+
+def test_research_artifact_is_valid_research_stage_output() -> None:
+    result = validate_stage_output(stage="research", output=_research_artifact(), flow_scope=_scope())
+
+    assert result.valid is True
+
+
 def test_malformed_handoff_invalidates_instead_of_getting_patched() -> None:
     scope = _scope()
     state = _state()
@@ -161,23 +179,7 @@ def test_malformed_handoff_invalidates_instead_of_getting_patched() -> None:
         )
 
     def proposal_stage(_context):
-        return ResearchResult(
-            request=ResearchRequest(
-                objective="Wrong object family",
-                scope=scope,
-                research_mode="decision_support",
-            ),
-            sources=(
-                SourceSummary(
-                    source_id="source-1",
-                    source_family="research",
-                    scope=scope,
-                    summary="This is intentionally the wrong stage output.",
-                ),
-            ),
-            findings=(),
-            recommendation=Recommendation(summary="Do not treat research as proposal output here."),
-        )
+        return _research_artifact()
 
     result = run_flow(
         flow_id="flow-invalid",

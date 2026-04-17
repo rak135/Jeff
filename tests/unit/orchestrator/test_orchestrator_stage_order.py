@@ -1,6 +1,13 @@
 from jeff.action import GovernedExecutionRequest, normalize_outcome
 from jeff.action.execution import ExecutionResult
-from jeff.cognitive import PlanArtifact, ProposalOption, ProposalSet, SelectionResult, assemble_context_package, evaluate_outcome
+from jeff.cognitive import (
+    PlanArtifact,
+    ProposalResult,
+    ProposalResultOption,
+    SelectionResult,
+    assemble_context_package,
+    evaluate_outcome,
+)
 from jeff.cognitive.types import PlanStep, TriggerInput
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
@@ -9,6 +16,32 @@ from jeff.core.transition import TransitionRequest, TransitionResult, apply_tran
 from jeff.governance import CurrentTruthSnapshot, Policy, evaluate_action_entry
 from jeff.memory import InMemoryMemoryStore, MemorySupportRef, create_memory_candidate, write_memory_candidate
 from jeff.orchestrator import run_flow, stage_order_for_flow, validate_stage_sequence
+
+
+def _proposal_result(
+    *,
+    scope: Scope,
+    option_summary: str,
+    scarcity_reason: str,
+    proposal_type: str = "direct_action",
+    planning_needed: bool = False,
+) -> ProposalResult:
+    return ProposalResult(
+        request_id="proposal-request-1",
+        scope=scope,
+        options=(
+            ProposalResultOption(
+                option_index=1,
+                proposal_id="proposal-1",
+                proposal_type=proposal_type,  # type: ignore[arg-type]
+                title=option_summary,
+                why_now="This is the only honest bounded option for the current test flow.",
+                summary=option_summary,
+                planning_needed=planning_needed,
+            ),
+        ),
+        scarcity_reason=scarcity_reason,
+    )
 
 
 def _state_with_scope(scope: Scope):
@@ -59,24 +92,16 @@ def _standard_stage_handlers(scope: Scope):
         )
 
     def proposal_stage(context):
-        return ProposalSet(
+        return _proposal_result(
             scope=context.scope,
-            options=(
-                ProposalOption(
-                    proposal_id="proposal-1",
-                    proposal_type="direct_action",
-                    option_summary="Apply the bounded orchestration slice",
-                    scope=scope,
-                    planning_needed=False,
-                ),
-            ),
+            option_summary="Apply the bounded orchestration slice",
             scarcity_reason="Only one bounded direct action path is honest here.",
         )
 
-    def selection_stage(proposal_set):
+    def selection_stage(proposal_result):
         return SelectionResult(
             selection_id="selection-1",
-            considered_proposal_ids=tuple(option.proposal_id for option in proposal_set.options),
+            considered_proposal_ids=tuple(option.proposal_id for option in proposal_result.options),
             selected_proposal_id="proposal-1",
             rationale="The direct bounded option is the only serious fit.",
         )
@@ -233,24 +258,18 @@ def test_conditional_planning_flow_runs_with_explicit_planning_stage() -> None:
         )
 
     def proposal_stage(_context):
-        return ProposalSet(
+        return _proposal_result(
             scope=scope,
-            options=(
-                ProposalOption(
-                    proposal_id="proposal-1",
-                    proposal_type="planning_insertion",
-                    option_summary="Take the explicit planned path",
-                    scope=scope,
-                    planning_needed=True,
-                ),
-            ),
+            option_summary="Take the explicit planned path",
             scarcity_reason="Only the planned bounded path is honest here.",
+            proposal_type="planning_insertion",
+            planning_needed=True,
         )
 
-    def selection_stage(proposal_set):
+    def selection_stage(proposal_result):
         return SelectionResult(
             selection_id="selection-1",
-            considered_proposal_ids=tuple(option.proposal_id for option in proposal_set.options),
+            considered_proposal_ids=tuple(option.proposal_id for option in proposal_result.options),
             selected_proposal_id="proposal-1",
             rationale="The work is multi-step enough to justify planning.",
         )

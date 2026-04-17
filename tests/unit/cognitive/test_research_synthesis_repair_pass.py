@@ -15,7 +15,6 @@ from jeff.cognitive.research import synthesis as research_synthesis_module
 from jeff.cognitive.research.synthesis import (
     build_research_formatter_bridge_model_request,
     build_research_model_request,
-    build_research_repair_model_request,
 )
 from jeff.infrastructure import ModelInvocationStatus, ModelMalformedOutputError, ModelRequest, ModelResponse, ModelUsage
 
@@ -60,7 +59,7 @@ def test_formatter_fallback_runs_after_deterministic_transform_failure_only() ->
     assert "formatter_fallback_started" in checkpoints
     assert "formatter_fallback_succeeded" in checkpoints
     assert checkpoints.index("deterministic_transform_failed") < checkpoints.index("formatter_fallback_started")
-    assert formatter_adapter.requests[0].purpose == "research_synthesis_repair"
+    assert formatter_adapter.requests[0].purpose == "research_synthesis_formatter"
 
 
 def test_formatter_request_uses_bounded_text_not_full_evidence_input() -> None:
@@ -171,7 +170,7 @@ def test_formatter_bridge_request_helper_builds_json_contract_from_text_mode_pri
         adapter_id="formatter-bridge",
     )
 
-    assert formatter_request.purpose == "research_synthesis_repair"
+    assert formatter_request.purpose == "research_synthesis_formatter"
     assert formatter_request.response_mode.value == "JSON"
     assert formatter_request.json_schema is not None
     assert "Output exactly one JSON object matching json_schema." in formatter_request.prompt
@@ -179,12 +178,12 @@ def test_formatter_bridge_request_helper_builds_json_contract_from_text_mode_pri
     assert "source-b" not in formatter_request.prompt
 
 
-def test_legacy_repair_request_helper_still_maps_to_formatter_bridge_contract() -> None:
+def test_formatter_bridge_request_helper_builds_correct_purpose_and_metadata() -> None:
     request = _research_request()
     evidence_pack = _evidence_pack()
     primary_request = build_research_model_request(request, evidence_pack, adapter_id="research-primary")
 
-    legacy_request = build_research_repair_model_request(
+    formatter_request = build_research_formatter_bridge_model_request(
         request,
         evidence_pack,
         "SUMMARY:\nObserved summary.",
@@ -192,8 +191,8 @@ def test_legacy_repair_request_helper_still_maps_to_formatter_bridge_contract() 
         adapter_id="formatter-bridge",
     )
 
-    assert legacy_request.purpose == "research_synthesis_repair"
-    assert legacy_request.metadata["formatter_input_kind"] == "step1_bounded_text"
+    assert formatter_request.purpose == "research_synthesis_formatter"
+    assert formatter_request.metadata["formatter_input_kind"] == "step1_bounded_text"
 
 
 def test_malformed_primary_output_does_not_trigger_formatter_attempt() -> None:

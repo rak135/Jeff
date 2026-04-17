@@ -106,13 +106,14 @@ class RuntimeDefaults:
 @dataclass(frozen=True, slots=True)
 class PurposeOverrides:
     research: str | None = None
-    research_repair: str | None = None
+    formatter_bridge: str | None = None
     proposal: str | None = None
+    selection: str | None = None
     planning: str | None = None
     evaluation: str | None = None
 
     def __post_init__(self) -> None:
-        for field_name in ("research", "research_repair", "proposal", "planning", "evaluation"):
+        for field_name in ("research", "formatter_bridge", "proposal", "selection", "planning", "evaluation"):
             object.__setattr__(
                 self,
                 field_name,
@@ -120,7 +121,7 @@ class PurposeOverrides:
             )
 
     def for_purpose(self, purpose: str) -> str | None:
-        if purpose not in {"research", "research_repair", "proposal", "planning", "evaluation"}:
+        if purpose not in {"research", "formatter_bridge", "proposal", "selection", "planning", "evaluation"}:
             return None
         return getattr(self, purpose)
 
@@ -179,6 +180,15 @@ def load_runtime_config(path: str | Path) -> JeffRuntimeConfig:
     if not isinstance(purpose_overrides_table, dict):
         raise ValueError("purpose_overrides must be a TOML table when provided")
 
+    # Validate that purpose_overrides contains only known keys
+    known_purpose_keys = {"research", "formatter_bridge", "proposal", "selection", "planning", "evaluation"}
+    unknown_keys = set(purpose_overrides_table.keys()) - known_purpose_keys
+    if unknown_keys:
+        raise ValueError(
+            f"unknown purpose_overrides keys in runtime config: {sorted(unknown_keys)}. "
+            f"Known keys are: {sorted(known_purpose_keys)}"
+        )
+
     adapters_payload = payload.get("adapters")
     if not isinstance(adapters_payload, list) or not adapters_payload:
         raise ValueError("runtime config requires at least one [[adapters]] entry")
@@ -189,8 +199,9 @@ def load_runtime_config(path: str | Path) -> JeffRuntimeConfig:
         adapters=adapters,
         purpose_overrides=PurposeOverrides(
             research=purpose_overrides_table.get("research"),
-            research_repair=purpose_overrides_table.get("research_repair"),
+            formatter_bridge=purpose_overrides_table.get("formatter_bridge"),
             proposal=purpose_overrides_table.get("proposal"),
+            selection=purpose_overrides_table.get("selection"),
             planning=purpose_overrides_table.get("planning"),
             evaluation=purpose_overrides_table.get("evaluation"),
         ),

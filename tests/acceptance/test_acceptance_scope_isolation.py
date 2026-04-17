@@ -1,6 +1,6 @@
 import pytest
 
-from jeff.cognitive import ProposalOption, ProposalSet, SelectionResult, assemble_context_package
+from jeff.cognitive import ProposalResult, ProposalResultOption, SelectionResult, assemble_context_package
 from jeff.cognitive.types import TriggerInput
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
@@ -8,6 +8,25 @@ from jeff.core.state import bootstrap_global_state
 from jeff.core.transition import TransitionRequest, apply_transition
 from jeff.interface import InterfaceContext, JeffCLI
 from jeff.orchestrator import run_flow
+
+
+def _proposal_result(*, scope):
+    return ProposalResult(
+        request_id="proposal-request-1",
+        scope=scope,
+        options=(
+            ProposalResultOption(
+                option_index=1,
+                proposal_id="proposal-1",
+                proposal_type="direct_action",
+                title="Attempt the action.",
+                why_now="This is the only bounded path under current scope.",
+                summary="Attempt the action.",
+                constraints=("Stay inside current project scope",),
+            ),
+        ),
+        scarcity_reason="Only one serious bounded option is available.",
+    )
 
 
 def _state_with_projects_and_runs(*, duplicate_run_ids: bool) -> object:
@@ -66,18 +85,7 @@ def test_wrong_scope_flow_is_invalidated_cleanly() -> None:
                 scope=flow_scope,
                 state=state,
             ),
-            "proposal": lambda _context: ProposalSet(
-                scope=flow_scope,
-                options=(
-                    ProposalOption(
-                        proposal_id="proposal-1",
-                        proposal_type="direct_action",
-                        option_summary="Attempt the action.",
-                        scope=flow_scope,
-                    ),
-                ),
-                scarcity_reason="Only one serious bounded option is available.",
-            ),
+            "proposal": lambda _context: _proposal_result(scope=flow_scope),
             "selection": lambda _proposal: SelectionResult(
                 selection_id="selection-1",
                 considered_proposal_ids=("proposal-1",),

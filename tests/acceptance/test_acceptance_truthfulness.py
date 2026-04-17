@@ -1,6 +1,6 @@
 import json
 
-from jeff.cognitive import ProposalOption, ProposalSet, SelectionResult, assemble_context_package
+from jeff.cognitive import ProposalResult, ProposalResultOption, SelectionResult, assemble_context_package
 from jeff.cognitive.types import TriggerInput
 from jeff.contracts import Action
 from jeff.governance import CurrentTruthSnapshot, Policy, evaluate_action_entry
@@ -8,6 +8,25 @@ from jeff.interface import JeffCLI
 from jeff.orchestrator import run_flow
 
 from tests.fixtures.cli import build_interface_context_with_flow, build_state_with_run
+
+
+def _proposal_result(*, scope):
+    return ProposalResult(
+        request_id="proposal-request-1",
+        scope=scope,
+        options=(
+            ProposalResultOption(
+                option_index=1,
+                proposal_id="proposal-1",
+                proposal_type="direct_action",
+                title="Attempt the governed action.",
+                why_now="This is the only bounded path under current truth.",
+                summary="Attempt the governed action.",
+                constraints=("Stay inside current scope",),
+            ),
+        ),
+        scarcity_reason="Only one serious bounded option is available.",
+    )
 
 
 def test_approval_gated_flow_stops_honestly_before_execution() -> None:
@@ -24,18 +43,7 @@ def test_approval_gated_flow_stops_honestly_before_execution() -> None:
                 scope=scope,
                 state=state,
             ),
-            "proposal": lambda _context: ProposalSet(
-                scope=scope,
-                options=(
-                    ProposalOption(
-                        proposal_id="proposal-1",
-                        proposal_type="direct_action",
-                        option_summary="Attempt the governed action.",
-                        scope=scope,
-                    ),
-                ),
-                scarcity_reason="Only one serious bounded option is available.",
-            ),
+            "proposal": lambda _context: _proposal_result(scope=scope),
             "selection": lambda _proposal: SelectionResult(
                 selection_id="selection-1",
                 considered_proposal_ids=("proposal-1",),

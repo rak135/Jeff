@@ -108,6 +108,36 @@ def test_live_research_synthesis_request_now_uses_bounded_text_first() -> None:
     assert "FINDINGS:" in request.prompt
 
 
+def test_step1_bounded_text_accepts_sentinel_uncertainty_bullet() -> None:
+    """Test that the canonical sentinel uncertainty bullet is accepted."""
+    text_with_sentinel = _valid_step1_text().replace(
+        "- External verification was not performed.",
+        "- No explicit uncertainties identified from the provided evidence.",
+    )
+    
+    validate_step1_bounded_text(text_with_sentinel)
+    
+    # Should not raise
+
+
+def test_step1_bounded_artifact_with_sentinel_uncertainty() -> None:
+    """Test that Step1BoundedArtifact accepts the sentinel uncertainty."""
+    artifact = Step1BoundedArtifact(
+        summary="The evidence is consistent.",
+        findings=(
+            Step1BoundedFinding(
+                text="Source A supports the analysis.",
+                citation_keys=("S1",),
+            ),
+        ),
+        inferences=("The conclusion follows directly from the evidence.",),
+        uncertainties=("No explicit uncertainties identified from the provided evidence.",),
+        recommendation="Accept the conclusion.",
+    )
+
+    assert artifact.uncertainties == ("No explicit uncertainties identified from the provided evidence.",)
+
+
 def _valid_step1_text() -> str:
     return "\n".join(
         [

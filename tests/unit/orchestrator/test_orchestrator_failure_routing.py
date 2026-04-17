@@ -1,7 +1,7 @@
 import pytest
 
 from jeff.action import Outcome
-from jeff.cognitive import EvaluationResult, ProposalOption, ProposalSet, SelectionResult, assemble_context_package
+from jeff.cognitive import EvaluationResult, ProposalResult, ProposalResultOption, SelectionResult, assemble_context_package
 from jeff.cognitive.types import TriggerInput
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
@@ -10,6 +10,25 @@ from jeff.core.transition import TransitionRequest, apply_transition
 from jeff.governance import CurrentTruthSnapshot, Policy, evaluate_action_entry
 from jeff.orchestrator import run_flow
 from jeff.orchestrator.routing import route_evaluation_followup
+
+
+def _proposal_result(*, scope: Scope, option_summary: str, scarcity_reason: str) -> ProposalResult:
+    return ProposalResult(
+        request_id="proposal-request-1",
+        scope=scope,
+        options=(
+            ProposalResultOption(
+                option_index=1,
+                proposal_id="proposal-1",
+                proposal_type="direct_action",
+                title=option_summary,
+                why_now="This is the only honest bounded option for the routing test.",
+                summary=option_summary,
+                constraints=("Stay inside current scope",),
+            ),
+        ),
+        scarcity_reason=scarcity_reason,
+    )
 
 
 def _scope() -> Scope:
@@ -65,23 +84,16 @@ def _blocked_flow_handlers():
         )
 
     def proposal_stage(_context):
-        return ProposalSet(
+        return _proposal_result(
             scope=scope,
-            options=(
-                ProposalOption(
-                    proposal_id="proposal-1",
-                    proposal_type="direct_action",
-                    option_summary="Attempt the blocked action",
-                    scope=scope,
-                ),
-            ),
+            option_summary="Attempt the blocked action",
             scarcity_reason="Only one blocked bounded option exists.",
         )
 
-    def selection_stage(proposal_set):
+    def selection_stage(proposal_result):
         return SelectionResult(
             selection_id="selection-1",
-            considered_proposal_ids=tuple(option.proposal_id for option in proposal_set.options),
+            considered_proposal_ids=tuple(option.proposal_id for option in proposal_result.options),
             selected_proposal_id="proposal-1",
             rationale="The blocked option is still the only bounded path.",
         )
@@ -145,23 +157,16 @@ def test_escalated_governance_routes_with_reason_and_scope() -> None:
         )
 
     def proposal_stage(_context):
-        return ProposalSet(
+        return _proposal_result(
             scope=scope,
-            options=(
-                ProposalOption(
-                    proposal_id="proposal-1",
-                    proposal_type="direct_action",
-                    option_summary="Attempt the escalated action",
-                    scope=scope,
-                ),
-            ),
+            option_summary="Attempt the escalated action",
             scarcity_reason="Only one escalated bounded option exists.",
         )
 
-    def selection_stage(proposal_set):
+    def selection_stage(proposal_result):
         return SelectionResult(
             selection_id="selection-1",
-            considered_proposal_ids=tuple(option.proposal_id for option in proposal_set.options),
+            considered_proposal_ids=tuple(option.proposal_id for option in proposal_result.options),
             selected_proposal_id="proposal-1",
             rationale="The escalated option is still the only bounded path.",
         )

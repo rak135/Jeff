@@ -117,7 +117,7 @@ class _TrackingServices:
 
 def test_resolve_purpose_string_returns_value_for_enum() -> None:
     assert _resolve_purpose_string(Purpose.RESEARCH) == "research"
-    assert _resolve_purpose_string(Purpose.RESEARCH_REPAIR) == "research_repair"
+    assert _resolve_purpose_string(Purpose.FORMATTER_BRIDGE) == "formatter_bridge"
     assert _resolve_purpose_string(Purpose.PROPOSAL) == "proposal"
 
 
@@ -383,7 +383,7 @@ def test_invoke_with_adapter_uses_specified_adapter() -> None:
 
     response = runtime.invoke_with_adapter(
         ContractCallRequest(
-            purpose=Purpose.RESEARCH_REPAIR,
+            purpose=Purpose.FORMATTER_BRIDGE,
             output_strategy=OutputStrategy.BOUNDED_TEXT_THEN_FORMATTER,
             prompt="repair prompt",
         ),
@@ -399,7 +399,7 @@ def test_invoke_with_adapter_preserves_purpose_in_response_request_id() -> None:
 
     response = runtime.invoke_with_adapter(
         ContractCallRequest(
-            purpose=Purpose.RESEARCH_REPAIR,
+            purpose=Purpose.FORMATTER_BRIDGE,
             output_strategy=OutputStrategy.BOUNDED_TEXT_THEN_FORMATTER,
             prompt="repair prompt",
             request_id="trace-id-123",

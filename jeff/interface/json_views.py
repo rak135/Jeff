@@ -115,6 +115,208 @@ def run_show_json(
     return payload
 
 
+def selection_review_json(
+    *,
+    project: Project,
+    work_unit: WorkUnit,
+    run: Run,
+    flow_run: FlowRunResult | None,
+    selection_review: object | None,
+) -> dict[str, Any]:
+    selection_result = None
+    if selection_review is not None:
+        selection_result = getattr(selection_review, "selection_result", None)
+    if selection_result is None and flow_run is not None:
+        selection_result = flow_run.outputs.get("selection")
+
+    operator_override = None if selection_review is None else getattr(selection_review, "operator_override", None)
+    resolved_basis = None if selection_review is None else getattr(selection_review, "resolved_basis", None)
+    materialized = None if selection_review is None else getattr(selection_review, "materialized_effective_proposal", None)
+    formed_action = None if selection_review is None else getattr(selection_review, "formed_action_result", None)
+    governance_handoff = None if selection_review is None else getattr(selection_review, "governance_handoff_result", None)
+
+    return {
+        "view": "selection_review",
+        "truth": {
+            "project_id": str(project.project_id),
+            "work_unit_id": str(work_unit.work_unit_id),
+            "run_id": str(run.run_id),
+        },
+        "selection": {
+            "available": selection_result is not None,
+            "selection_id": None if selection_result is None else str(selection_result.selection_id),
+            "disposition": None if selection_result is None else selection_result.disposition,
+            "selected_proposal_id": None if selection_result is None or selection_result.selected_proposal_id is None else str(selection_result.selected_proposal_id),
+            "non_selection_outcome": None if selection_result is None else selection_result.non_selection_outcome,
+            "rationale": None if selection_result is None else selection_result.rationale,
+            "missing_reason": None if selection_result is not None else "no selection result is visible for this run",
+        },
+        "override": {
+            "available": selection_review is not None,
+            "exists": operator_override is not None,
+            "override_id": None if operator_override is None else operator_override.override_id,
+            "chosen_proposal_id": None if operator_override is None else str(operator_override.chosen_proposal_id),
+            "operator_rationale": None if operator_override is None else operator_override.operator_rationale,
+            "missing_reason": _missing_review_reason(
+                review_available=selection_review is not None,
+                object_present=operator_override is not None,
+                absent_reason="no override recorded",
+            ),
+        },
+        "resolved_choice": {
+            "available": resolved_basis is not None,
+            "effective_source": None if resolved_basis is None else resolved_basis.effective_source,
+            "effective_proposal_id": None if resolved_basis is None or resolved_basis.effective_proposal_id is None else str(resolved_basis.effective_proposal_id),
+            "operator_override_present": None if resolved_basis is None else resolved_basis.operator_override_present,
+            "non_selection_outcome": None if resolved_basis is None else resolved_basis.non_selection_outcome,
+            "summary": None if resolved_basis is None else resolved_basis.summary,
+            "missing_reason": _missing_review_reason(
+                review_available=selection_review is not None,
+                object_present=resolved_basis is not None,
+                absent_reason="no resolved downstream basis available",
+            ),
+        },
+        "action_formation": {
+            "available": formed_action is not None,
+            "action_formed": None if formed_action is None else formed_action.action_formed,
+            "proposal_type": None if formed_action is None else formed_action.proposal_type,
+            "action_id": None if formed_action is None or formed_action.action is None else str(formed_action.action.action_id),
+            "effective_source": None if formed_action is None else formed_action.effective_source,
+            "no_action_reason": None if formed_action is None else formed_action.no_action_reason,
+            "summary": None if formed_action is None else formed_action.summary,
+            "missing_reason": _missing_review_reason(
+                review_available=selection_review is not None,
+                object_present=formed_action is not None,
+                absent_reason="no Action formation result available",
+            ),
+        },
+        "governance_handoff": {
+            "available": governance_handoff is not None,
+            "governance_evaluated": None if governance_handoff is None else governance_handoff.governance_evaluated,
+            "governance_outcome": (
+                None
+                if governance_handoff is None or governance_handoff.governance_result is None
+                else governance_handoff.governance_result.governance_outcome
+            ),
+            "allowed_now": (
+                None
+                if governance_handoff is None or governance_handoff.governance_result is None
+                else governance_handoff.governance_result.allowed_now
+            ),
+            "approval_verdict": (
+                None
+                if governance_handoff is None or governance_handoff.governance_result is None
+                else governance_handoff.governance_result.approval_verdict
+            ),
+            "no_governance_reason": None if governance_handoff is None else governance_handoff.no_governance_reason,
+            "summary": None if governance_handoff is None else governance_handoff.summary,
+            "missing_reason": _missing_review_reason(
+                review_available=selection_review is not None,
+                object_present=governance_handoff is not None,
+                absent_reason="governance handoff has not been recorded",
+            ),
+        },
+        "support": {
+            "flow_visible": flow_run is not None,
+            "selection_review_attached": selection_review is not None,
+            "materialized_effective_proposal_available": materialized is not None,
+            "materialized_effective_proposal_id": (
+                None
+                if materialized is None or materialized.effective_proposal_id is None
+                else str(materialized.effective_proposal_id)
+            ),
+            "materialized_effective_source": None if materialized is None else materialized.effective_source,
+            "materialized_missing_reason": _missing_review_reason(
+                review_available=selection_review is not None,
+                object_present=materialized is not None,
+                absent_reason="no materialized effective proposal is available",
+            ),
+        },
+    }
+
+
+def selection_override_receipt_json(
+    *,
+    run_id: str,
+    selection_review: object,
+) -> dict[str, Any]:
+    selection_result = getattr(selection_review, "selection_result", None)
+    operator_override = getattr(selection_review, "operator_override", None)
+    resolved_basis = getattr(selection_review, "resolved_basis", None)
+    formed_action = getattr(selection_review, "formed_action_result", None)
+    governance_handoff = getattr(selection_review, "governance_handoff_result", None)
+
+    return {
+        "view": "selection_override_receipt",
+        "truth": {
+            "run_id": run_id,
+            "selection_id": None if selection_result is None else str(selection_result.selection_id),
+            "original_selection_disposition": None if selection_result is None else selection_result.disposition,
+            "original_selected_proposal_id": (
+                None
+                if selection_result is None or selection_result.selected_proposal_id is None
+                else str(selection_result.selected_proposal_id)
+            ),
+            "original_selection_unchanged": True,
+        },
+        "derived": {
+            "override_created": operator_override is not None,
+            "resolved_choice_updated": resolved_basis is not None,
+            "action_formed": None if formed_action is None else formed_action.action_formed,
+            "governance_evaluated": None if governance_handoff is None else governance_handoff.governance_evaluated,
+        },
+        "override": {
+            "exists": operator_override is not None,
+            "override_id": None if operator_override is None else operator_override.override_id,
+            "chosen_proposal_id": None if operator_override is None else str(operator_override.chosen_proposal_id),
+            "operator_rationale": None if operator_override is None else operator_override.operator_rationale,
+        },
+        "resolved_choice": {
+            "available": resolved_basis is not None,
+            "effective_source": None if resolved_basis is None else resolved_basis.effective_source,
+            "effective_proposal_id": (
+                None
+                if resolved_basis is None or resolved_basis.effective_proposal_id is None
+                else str(resolved_basis.effective_proposal_id)
+            ),
+            "missing_reason": None if resolved_basis is not None else "no resolved downstream basis available",
+        },
+        "action_formation": {
+            "available": formed_action is not None,
+            "action_formed": None if formed_action is None else formed_action.action_formed,
+            "action_id": (
+                None
+                if formed_action is None or formed_action.action is None
+                else str(formed_action.action.action_id)
+            ),
+            "no_action_reason": None if formed_action is None else formed_action.no_action_reason,
+            "missing_reason": None if formed_action is not None else "no Action formation result available",
+        },
+        "governance_handoff": {
+            "available": governance_handoff is not None,
+            "governance_evaluated": None if governance_handoff is None else governance_handoff.governance_evaluated,
+            "governance_outcome": (
+                None
+                if governance_handoff is None or governance_handoff.governance_result is None
+                else governance_handoff.governance_result.governance_outcome
+            ),
+            "allowed_now": (
+                None
+                if governance_handoff is None or governance_handoff.governance_result is None
+                else governance_handoff.governance_result.allowed_now
+            ),
+            "no_governance_reason": None if governance_handoff is None else governance_handoff.no_governance_reason,
+            "missing_reason": None if governance_handoff is not None else "governance handoff has not been recorded",
+        },
+        "support": {
+            "note": (
+                "Override recorded as a separate downstream support object. "
+                "Original SelectionResult remains unchanged, and no execution starts here."
+            ),
+        },
+    }
+
+
 def lifecycle_json(flow_run: FlowRunResult) -> dict[str, Any]:
     return {
         "view": "lifecycle",
@@ -376,3 +578,11 @@ def _memory_handoff_json(memory_handoff_result: MemoryWriteDecision | None) -> d
     else:
         payload["committed_record"] = None
     return payload
+
+
+def _missing_review_reason(*, review_available: bool, object_present: bool, absent_reason: str) -> str | None:
+    if object_present:
+        return None
+    if not review_available:
+        return "no selection review chain is available for this run"
+    return absent_reason

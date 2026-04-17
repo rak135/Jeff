@@ -1,6 +1,6 @@
 from jeff.action import GovernedExecutionRequest, normalize_outcome
 from jeff.action.execution import ExecutionResult
-from jeff.cognitive import ProposalOption, ProposalSet, SelectionResult, assemble_context_package, evaluate_outcome
+from jeff.cognitive import ProposalResult, ProposalResultOption, SelectionResult, assemble_context_package, evaluate_outcome
 from jeff.cognitive.types import TriggerInput
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
@@ -9,6 +9,25 @@ from jeff.core.transition import TransitionRequest, apply_transition
 from jeff.governance import CurrentTruthSnapshot, Policy, evaluate_action_entry
 from jeff.memory import InMemoryMemoryStore, MemorySupportRef, create_memory_candidate, write_memory_candidate
 from jeff.orchestrator import run_flow
+
+
+def _proposal_result(*, scope):
+    return ProposalResult(
+        request_id="proposal-request-1",
+        scope=scope,
+        options=(
+            ProposalResultOption(
+                option_index=1,
+                proposal_id="proposal-1",
+                proposal_type="direct_action",
+                title="Create the bounded acceptance run.",
+                why_now="This is the only honest bounded path here.",
+                summary="Create the bounded acceptance run.",
+                constraints=("Stay inside current scope",),
+            ),
+        ),
+        scarcity_reason="Only one serious bounded option is available.",
+    )
 
 
 def _base_state() -> object:
@@ -51,18 +70,7 @@ def test_bounded_backbone_flow_stays_lawful_end_to_end() -> None:
         )
 
     def proposal_stage(_context):
-        return ProposalSet(
-            scope=scope,
-            options=(
-                ProposalOption(
-                    proposal_id="proposal-1",
-                    proposal_type="direct_action",
-                    option_summary="Create the bounded acceptance run.",
-                    scope=scope,
-                ),
-            ),
-            scarcity_reason="Only one serious bounded option is available.",
-        )
+        return _proposal_result(scope=scope)
 
     def selection_stage(_proposal):
         return SelectionResult(

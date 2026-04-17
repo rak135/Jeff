@@ -8,10 +8,11 @@ from typing import Any
 from jeff.infrastructure import ModelRequest, ModelResponseMode
 
 from .contracts import EvidencePack, ResearchRequest
+from .prompt_files import load_prompt_file, render_prompt
 from .validators import build_candidate_research_json_schema, validate_candidate_research_payload
 
-FORMATTER_BRIDGE_RUNTIME_OVERRIDE = "research_repair"
-FORMATTER_BRIDGE_REQUEST_PURPOSE = "research_synthesis_repair"
+FORMATTER_BRIDGE_RUNTIME_OVERRIDE = "formatter_bridge"
+FORMATTER_BRIDGE_REQUEST_PURPOSE = "research_synthesis_formatter"
 
 
 def build_research_formatter_model_request(
@@ -76,12 +77,8 @@ def build_citation_key_map(evidence_pack: EvidencePack) -> dict[str, str]:
 
 
 def _formatter_system_instructions() -> str:
-    return (
-        "Format the provided bounded text artifact into exactly one JSON object that matches json_schema. "
-        "No markdown, no code fences, no commentary. "
-        "Do not add claims, citations, evidence, or certainty. "
-        "Preserve only content already materially present in the bounded artifact."
-    )
+    system_instructions, _ = load_prompt_file("research/STEP3_FORMATTER.md")
+    return system_instructions
 
 
 def _build_formatter_prompt(
@@ -93,22 +90,14 @@ def _build_formatter_prompt(
     transform_failure_reason: str,
 ) -> str:
     compact_schema = json.dumps(json_schema, sort_keys=True, separators=(",", ":"))
-    return "\n".join(
-        [
-            "TASK: formatter fallback over bounded research text",
-            "Use only the provided bounded text artifact.",
-            "Do not use or reconstruct the original evidence pack.",
-            "Reformat only the content already present.",
-            "Do not add claims, citations, evidence, or certainty.",
-            "Output exactly one JSON object matching json_schema.",
-            "Do not output markdown, code fences, or extra prose.",
-            f"QUESTION: {request.question}",
-            f"ALLOWED_CITATION_KEYS: {', '.join(allowed_citation_keys)}",
-            f"TRANSFORM_FAILURE: {transform_failure_reason}",
-            f"JSON_SCHEMA: {compact_schema}",
-            "BOUNDED_CONTENT:",
-            bounded_text,
-        ]
+    _, template = load_prompt_file("research/STEP3_FORMATTER.md")
+    return render_prompt(
+        template,
+        QUESTION=request.question,
+        ALLOWED_CITATION_KEYS=", ".join(allowed_citation_keys),
+        TRANSFORM_FAILURE=transform_failure_reason,
+        JSON_SCHEMA=compact_schema,
+        BOUNDED_CONTENT=bounded_text,
     )
 
 

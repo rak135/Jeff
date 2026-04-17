@@ -29,7 +29,7 @@ context_length = 8192
 
 [purpose_overrides]
 research = "ollama_default"
-research_repair = "ollama_default"
+formatter_bridge = "ollama_default"
 proposal = "ollama_default"
 planning = "ollama_default"
 evaluation = "ollama_default"
@@ -44,7 +44,7 @@ evaluation = "ollama_default"
     assert config.research.enable_memory_handoff is True
     assert config.adapters[0].provider_kind == "ollama"
     assert config.adapters[0].provider_options.context_length == 8192
-    assert config.purpose_overrides.research_repair == "ollama_default"
+    assert config.purpose_overrides.formatter_bridge == "ollama_default"
 
 
 def test_malformed_toml_fails_closed(tmp_path: Path) -> None:
@@ -96,7 +96,7 @@ model_name = "fake-research-model"
 
 [purpose_overrides]
 research = "fake-research"
-research_repair = "fake-default"
+formatter_bridge = "fake-default"
 planning = "fake-default"
 """.strip(),
         encoding="utf-8",
@@ -105,7 +105,7 @@ planning = "fake-default"
     config = load_runtime_config(config_path)
 
     assert config.purpose_overrides.research == "fake-research"
-    assert config.purpose_overrides.research_repair == "fake-default"
+    assert config.purpose_overrides.formatter_bridge == "fake-default"
     assert config.purpose_overrides.planning == "fake-default"
     assert config.purpose_overrides.proposal is None
 

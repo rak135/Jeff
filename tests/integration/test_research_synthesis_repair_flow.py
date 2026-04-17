@@ -45,7 +45,7 @@ def test_runtime_formatter_fallback_recovers_from_deterministic_transform_failur
             infrastructure_services=_services(
                 primary_adapter,
                 formatter_adapter=formatter_adapter,
-                purpose_overrides=PurposeOverrides(research=primary_adapter.adapter_id, research_repair=formatter_adapter.adapter_id),
+                purpose_overrides=PurposeOverrides(research=primary_adapter.adapter_id, formatter_bridge=formatter_adapter.adapter_id),
             ),
         )
     finally:
@@ -55,7 +55,7 @@ def test_runtime_formatter_fallback_recovers_from_deterministic_transform_failur
     assert artifact.findings[0].source_refs == ("source-a",)
     assert len(primary_adapter.requests) == 1
     assert len(formatter_adapter.requests) == 1
-    assert formatter_adapter.requests[0].purpose == "research_synthesis_repair"
+    assert formatter_adapter.requests[0].purpose == "research_synthesis_formatter"
 
 
 def test_runtime_formatter_fallback_uses_bounded_text_not_original_evidence_pack() -> None:
@@ -78,7 +78,7 @@ def test_runtime_formatter_fallback_uses_bounded_text_not_original_evidence_pack
             infrastructure_services=_services(
                 primary_adapter,
                 formatter_adapter=formatter_adapter,
-                purpose_overrides=PurposeOverrides(research=primary_adapter.adapter_id, research_repair=formatter_adapter.adapter_id),
+                purpose_overrides=PurposeOverrides(research=primary_adapter.adapter_id, formatter_bridge=formatter_adapter.adapter_id),
             ),
         )
     finally:
@@ -121,7 +121,7 @@ def test_runtime_formatter_fallback_fails_closed_when_formatter_output_is_invali
                 infrastructure_services=_services(
                     primary_adapter,
                     formatter_adapter=formatter_adapter,
-                    purpose_overrides=PurposeOverrides(research=primary_adapter.adapter_id, research_repair=formatter_adapter.adapter_id),
+                    purpose_overrides=PurposeOverrides(research=primary_adapter.adapter_id, formatter_bridge=formatter_adapter.adapter_id),
                 ),
                 debug_emitter=events.append,
             )
