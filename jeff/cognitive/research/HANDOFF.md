@@ -68,6 +68,7 @@
 - `memory_handoff.py` distills validated research artifacts into bounded memory-worthy inputs and delegates final write/reject/defer authority to the current Memory write pipeline.
 - `legacy.py` still exists because real callers/tests still use `ResearchResult` and the compatibility request path; it is intentionally isolated and not the main path.
 - CLI research integration now exists and has been verified against the live runtime; the CLI remains a thin operator surface over this package rather than the owner of research semantics.
+- Orchestrator-integrated research continuation now exists in one bounded form: post-selection `research_followup` can enter the existing research stage, preserve a `ResearchArtifact`, and then pass that artifact through an explicit downstream sufficiency evaluation before stopping truthfully at the research boundary.
 
 # Local Invariants / Contract Notes
 
@@ -81,6 +82,8 @@
 - Persistence stores only validated research outputs plus bounded supporting context; it does not store raw provider payloads.
 - Document and web acquisition are bounded, deterministic enough for tests, and must stay explicit instead of becoming hidden crawl/search loops.
 - Memory handoff is selective, distilled, and thin; it must not dump whole research artifacts into Memory or bypass the current Memory write pipeline.
+- Orchestrator entry into research does not make research output permission, truth, action, governance, or execution authority.
+- Research sufficiency evaluation downstream of orchestrator entry does not upgrade research into permission or truth; it only distinguishes decision-support-ready output from explicit unresolved gaps.
 - Future research work must stay inside this package instead of reintroducing flat blob modules.
 
 # Active Risks / Blockers / Unresolved Issues
@@ -90,7 +93,7 @@
 - Research-to-memory gating is intentionally simple and could still over- or under-select some artifacts until more real usage sharpens the boundary.
 - The legacy surface still exists and can drift if future work updates only the active path without checking remaining callers/tests.
 - The temporary `research_repair` formatter bridge naming can mislead readers unless they check the actual 3-step runtime path.
-- Orchestrator-integrated research workflow is still not present; current verified usage is through the existing CLI/operator surface and direct backend calls.
+- Orchestrator-integrated research continuation now exists only as a bounded research-plus-sufficiency boundary stop; there is still no hidden research-to-governance or research-to-execution shortcut.
 
 # Next Continuation Steps
 
@@ -101,7 +104,7 @@
   - Research owns Step 1 syntax, Step 2 deterministic parsing, Step 3 fallback policy, and research semantics.
   - Infrastructure owns runtime/config and adapter routing.
   - Interface stays downstream.
-- Add broader orchestrator integration only after preserving the current separation between research artifacts, memory, and truth.
+- Add any broader downstream research bridge only after preserving the current separation between research artifacts, memory, truth, and permission.
 
 # Related Handoffs
 

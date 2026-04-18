@@ -1,4 +1,8 @@
-"""Memory-layer candidate, record, and decision models."""
+"""Memory-layer candidate, record, and decision models.
+
+Canonical home of committed memory dataclasses.  schemas.py re-exports these
+plus extended v1 schemas (links, events, maintenance).
+"""
 
 from __future__ import annotations
 
@@ -9,13 +13,17 @@ from jeff.core.schemas import MemoryId, Scope, coerce_memory_id
 from .types import (
     CANDIDATE_STATUSES,
     CONFLICT_POSTURES,
+    DEFER_REASON_CODES,
+    FRESHNESS_SENSITIVITIES,
     MEMORY_RECORD_STATUSES,
     MEMORY_TYPES,
+    RECORD_STABILITY_POSTURES,
+    STABILITY_POSTURES,
     SUPPORT_QUALITIES,
     SUPPORT_REF_KINDS,
-    STABILITY_POSTURES,
     WRITE_OUTCOMES,
     MemoryCandidateId,
+    assert_not_global_scope,
     coerce_memory_candidate_id,
     normalize_text_list,
     require_concise_text,
@@ -58,7 +66,9 @@ class MemoryCandidate:
 
     def __post_init__(self) -> None:
         if self._origin_token is not _MEMORY_CANDIDATE_TOKEN:
-            raise ValueError("memory candidates must be created by jeff.memory.write_pipeline")
+            raise ValueError(
+                "memory candidates must be created by jeff.memory.candidate_builder"
+            )
         if self.memory_type not in MEMORY_TYPES:
             raise ValueError(f"unsupported memory_type: {self.memory_type}")
         if self.support_quality not in SUPPORT_QUALITIES:
@@ -101,6 +111,9 @@ class MemoryCandidate:
         if not self.support_refs:
             raise ValueError("memory candidates must carry at least one support_ref")
 
+        # Hard-reject global/system scope at candidate creation time
+        assert_not_global_scope(str(self.scope.project_id))
+
 
 @dataclass(frozen=True, slots=True)
 class CommittedMemoryRecord:
@@ -113,22 +126,31 @@ class CommittedMemoryRecord:
     support_quality: str
     stability: str
     record_status: str = "active"
-    conflict_posture: str = "aligned"
+    conflict_posture: str = "none"
     created_at: str = ""
     updated_at: str = ""
     support_refs: tuple[MemorySupportRef, ...] = ()
+    # v1 extended fields (all optional with defaults for backward compat)
+    freshness_sensitivity: str = "low"
+    created_from_run_id: str | None = None
+    schema_version: str = "1.0"
+    supersedes_memory_id: str | None = None
+    superseded_by_memory_id: str | None = None
+    merged_into_memory_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.memory_type not in MEMORY_TYPES:
             raise ValueError(f"unsupported memory_type: {self.memory_type}")
         if self.support_quality not in SUPPORT_QUALITIES:
             raise ValueError(f"unsupported support_quality: {self.support_quality}")
-        if self.stability not in STABILITY_POSTURES:
-            raise ValueError(f"unsupported stability: {self.stability}")
+        if self.stability not in RECORD_STABILITY_POSTURES:
+            raise ValueError(f"unsupported stability for committed record: {self.stability}")
         if self.record_status not in MEMORY_RECORD_STATUSES:
             raise ValueError(f"unsupported record_status: {self.record_status}")
         if self.conflict_posture not in CONFLICT_POSTURES:
             raise ValueError(f"unsupported conflict_posture: {self.conflict_posture}")
+        if self.freshness_sensitivity not in FRESHNESS_SENSITIVITIES:
+            raise ValueError(f"unsupported freshness_sensitivity: {self.freshness_sensitivity}")
         object.__setattr__(self, "memory_id", coerce_memory_id(str(self.memory_id)))
         object.__setattr__(
             self,
@@ -160,6 +182,9 @@ class CommittedMemoryRecord:
         if not self.support_refs:
             raise ValueError("committed memory requires support_refs for inspectable grounding")
 
+        # Hard-reject global/system scope
+        assert_not_global_scope(str(self.scope.project_id))
+
 
 @dataclass(frozen=True, slots=True)
 class MemoryWriteDecision:
@@ -168,6 +193,8 @@ class MemoryWriteDecision:
     memory_id: MemoryId | None = None
     committed_record: CommittedMemoryRecord | None = None
     reasons: tuple[str, ...] = ()
+    defer_reason_code: str | None = None
+    superseded_memory_id: MemoryId | None = None
 
     def __post_init__(self) -> None:
         if self.write_outcome not in WRITE_OUTCOMES:
@@ -179,15 +206,22 @@ class MemoryWriteDecision:
         )
         object.__setattr__(self, "reasons", normalize_text_list(self.reasons, field_name="reasons"))
 
-        if self.write_outcome == "write":
+        if self.defer_reason_code is not None and self.defer_reason_code not in DEFER_REASON_CODES:
+            raise ValueError(f"unsupported defer_reason_code: {self.defer_reason_code}")
+
+        _commit_outcomes = {"write", "merge_into_existing", "supersede_existing"}
+        if self.write_outcome in _commit_outcomes:
             if self.memory_id is None or self.committed_record is None:
-                raise ValueError("write decisions require memory_id and committed_record")
+                raise ValueError(f"{self.write_outcome} decisions require memory_id and committed_record")
             object.__setattr__(self, "memory_id", coerce_memory_id(str(self.memory_id)))
         else:
+            # reject / defer — no committed memory exposed
             if self.memory_id is not None or self.committed_record is not None:
                 raise ValueError("reject/defer decisions must not expose committed memory")
             if not self.reasons:
                 raise ValueError("reject/defer decisions must include reasons")
+            if self.write_outcome == "defer" and self.defer_reason_code is None:
+                raise ValueError("defer decisions must include a defer_reason_code")
 
 
 def make_memory_candidate(

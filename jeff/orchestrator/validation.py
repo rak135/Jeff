@@ -31,7 +31,7 @@ class ValidationResult:
 
 _ALLOWED_PREDECESSORS: dict[StageName, tuple[StageName, ...]] = {
     "context": (),
-    "research": ("context",),
+    "research": ("context", "selection"),
     "proposal": ("context", "research"),
     "selection": ("proposal",),
     "planning": ("selection",),
@@ -130,12 +130,12 @@ def validate_handoff(
             reason="selection cannot run when proposal generation returned no serious options",
         )
 
-    if previous_stage == "selection" and next_stage in {"planning", "action"}:
+    if previous_stage == "selection" and next_stage in {"planning", "research", "action"}:
         if previous_output.selected_proposal_id is None:
             return ValidationResult(
                 valid=False,
                 code="selection_is_not_permission",
-                reason="selection must choose a proposal before planning or action may proceed",
+                reason="selection must choose a proposal before research, planning, or action may proceed",
             )
 
     if previous_stage == "planning" and next_stage == "action" and previous_output.selected_proposal_id is None:

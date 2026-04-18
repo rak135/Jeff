@@ -39,12 +39,17 @@
 
 - The current orchestrator is deterministic and bounded.
 - It validates stage order and semantic handoffs rather than generating business meaning itself.
+- It can now enter the existing planning stage for planning-routed selections, preserve the produced `PlanArtifact`, and either stop truthfully at the planning boundary or bridge one explicit bounded planned step into `Action` before governance.
+- It can now also enter the existing research stage for research-followup-routed selections, preserve the produced `ResearchArtifact`, evaluate that artifact through an explicit research-output sufficiency bridge, and then stop truthfully at the research boundary.
 - Acceptance and anti-drift tests already cover several cross-layer failure cases and truthfulness expectations.
 
 # Important Invariants
 
 - Orchestrator does not absorb business logic.
 - Orchestrator does not synthesize missing outputs.
+- Orchestrator does not treat a plan as permission and only bridges planning into `Action` through the explicit fail-closed bridge contract.
+- Orchestrator does not treat research output as truth or permission and does not invent a hidden research-to-downstream bridge.
+- Research sufficiency evaluation is structural only: insufficient research must preserve explicit unresolved items, and decision-support-ready research still does not authorize action, governance, or execution.
 - Blocked or approval-gated flows stop honestly.
 - Routing decisions stay distinct from semantic stage outputs.
 

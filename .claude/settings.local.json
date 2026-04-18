@@ -10,7 +10,8 @@
       "Bash(python -m pytest tests/unit/interface/test_research_commands.py::test_docs_command_parses_correctly -x)",
       "Bash(ls *)",
       "Bash(xargs grep *)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(grep -E \"\\\\.md$\")"
     ]
   }
 }

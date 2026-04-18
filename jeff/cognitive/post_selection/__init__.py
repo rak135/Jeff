@@ -23,6 +23,14 @@ from .governance_handoff import (
     GovernedActionHandoffResult,
     handoff_action_to_governance,
 )
+from .next_stage_resolution import (
+    NextStageResolutionError,
+    NextStageResolutionIssue,
+    NextStageResolutionRequest,
+    NextStageResolutionResult,
+    NextStageTarget,
+    resolve_next_stage,
+)
 from .override import (
     OperatorSelectionOverride,
     OperatorSelectionOverrideRequest,
@@ -30,6 +38,20 @@ from .override import (
     OperatorSelectionOverrideValidationIssue,
     build_operator_selection_override,
     validate_operator_selection_override,
+)
+from .plan_action_bridge import (
+    PlanActionBridgeError,
+    PlanActionBridgeIssue,
+    PlanActionBridgeRequest,
+    PlannedActionBridgeResult,
+    bridge_plan_to_action,
+)
+from .research_output_sufficiency_bridge import (
+    ResearchOutputSufficiencyError,
+    ResearchOutputSufficiencyIssue,
+    ResearchOutputSufficiencyRequest,
+    ResearchOutputSufficiencyResult,
+    evaluate_research_output_sufficiency,
 )
 
 __all__ = [
@@ -42,10 +64,23 @@ __all__ = [
     "FormedActionResult",
     "GovernedActionHandoffResult",
     "MaterializedEffectiveProposal",
+    "NextStageResolutionError",
+    "NextStageResolutionIssue",
+    "NextStageResolutionRequest",
+    "NextStageResolutionResult",
+    "NextStageTarget",
     "OperatorSelectionOverride",
     "OperatorSelectionOverrideRequest",
     "OperatorSelectionOverrideValidationError",
     "OperatorSelectionOverrideValidationIssue",
+    "PlanActionBridgeError",
+    "PlanActionBridgeIssue",
+    "PlanActionBridgeRequest",
+    "PlannedActionBridgeResult",
+    "ResearchOutputSufficiencyError",
+    "ResearchOutputSufficiencyIssue",
+    "ResearchOutputSufficiencyRequest",
+    "ResearchOutputSufficiencyResult",
     "ResolvedSelectionActionBasis",
     "SelectionActionResolutionError",
     "SelectionActionResolutionIssue",
@@ -55,9 +90,12 @@ __all__ = [
     "SelectionEffectiveProposalMaterializationIssue",
     "SelectionEffectiveProposalRequest",
     "build_operator_selection_override",
+    "bridge_plan_to_action",
+    "evaluate_research_output_sufficiency",
     "form_action_from_materialized_proposal",
     "handoff_action_to_governance",
     "materialize_effective_proposal",
+    "resolve_next_stage",
     "resolve_selection_action_basis",
     "validate_operator_selection_override",
 ]

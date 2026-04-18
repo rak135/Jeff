@@ -133,7 +133,7 @@ def handoff_research_to_memory(
 
     candidate = create_memory_candidate(
         candidate_id=_candidate_id_for(handoff_input),
-        memory_type="directional" if handoff_input.recommendation is not None else "semantic",
+        memory_type="semantic",
         scope=Scope(
             project_id=handoff_input.project_id,
             work_unit_id=handoff_input.work_unit_id,

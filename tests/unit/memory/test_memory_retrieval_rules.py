@@ -87,7 +87,7 @@ def test_retrieval_stays_local_first_inside_project_scope() -> None:
     project_level = write_memory_candidate(
         candidate=create_memory_candidate(
             candidate_id="candidate-1",
-            memory_type="directional",
+            memory_type="semantic",
             scope=Scope(project_id="project-1"),
             summary="Truth-first discipline is a project-wide anchor",
             remembered_points=("All later support stays subordinate to current truth.",),
@@ -154,7 +154,7 @@ def test_retrieval_preserves_stale_or_conflicting_labels_as_support_only() -> No
             why_it_matters="It can explain why a contradiction emerged without becoming truth.",
             support_quality="strong",
             stability="stable",
-            conflict_posture="stale",
+            conflict_posture="stale_support",
             created_at="2026-04-10T20:05:00+00:00",
             updated_at="2026-04-10T20:05:00+00:00",
             support_refs=(_support_ref("research-9"),),
@@ -169,6 +169,6 @@ def test_retrieval_preserves_stale_or_conflicting_labels_as_support_only() -> No
         store=store,
     )
 
-    assert result.records[0].conflict_posture == "stale"
+    assert result.records[0].conflict_posture == "stale_support"
     assert "support only" in result.notes[0]
     assert "stale or conflicting support" in result.notes[1]

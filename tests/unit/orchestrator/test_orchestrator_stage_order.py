@@ -1,9 +1,13 @@
+import pytest
+
 from jeff.action import GovernedExecutionRequest, normalize_outcome
 from jeff.action.execution import ExecutionResult
 from jeff.cognitive import (
     PlanArtifact,
     ProposalResult,
     ProposalResultOption,
+    ResearchArtifact,
+    ResearchFinding,
     SelectionResult,
     assemble_context_package,
     evaluate_outcome,
@@ -198,6 +202,7 @@ def _standard_stage_handlers(scope: Scope):
 
 def test_flow_family_stage_orders_are_explicit() -> None:
     stages = stage_order_for_flow("bounded_proposal_selection_action")
+    research_followup_stages = stage_order_for_flow("conditional_research_followup")
 
     assert stages == (
         "context",
@@ -214,6 +219,18 @@ def test_flow_family_stage_orders_are_explicit() -> None:
     assert validate_stage_sequence(
         flow_family="bounded_proposal_selection_action",
         stages=stages,
+    ).valid is True
+    assert research_followup_stages == (
+        "context",
+        "proposal",
+        "selection",
+        "research",
+        "action",
+        "governance",
+    )
+    assert validate_stage_sequence(
+        flow_family="conditional_research_followup",
+        stages=research_followup_stages,
     ).valid is True
 
 
@@ -244,7 +261,7 @@ def test_lawful_stage_order_runs_to_transition_completion() -> None:
     )
 
 
-def test_conditional_planning_flow_runs_with_explicit_planning_stage() -> None:
+def test_conditional_planning_flow_enters_planning_and_holds_at_planning_boundary() -> None:
     scope = Scope(project_id="project-1", work_unit_id="wu-1", run_id="run-1")
     state = _state_with_scope(scope)
     store = InMemoryMemoryStore()
@@ -379,7 +396,196 @@ def test_conditional_planning_flow_runs_with_explicit_planning_stage() -> None:
         },
     )
 
-    assert result.lifecycle.lifecycle_state == "completed"
-    assert [event.stage for event in result.events if event.event_type == "stage_entered"] == list(
-        stage_order_for_flow("conditional_planning_insertion")
+    assert result.lifecycle.lifecycle_state == "waiting"
+    assert result.lifecycle.current_stage == "planning"
+    assert result.routing_decision is not None
+    assert result.routing_decision.routed_outcome == "planning"
+    assert result.routing_decision.source_stage == "planning"
+    assert "Planning entered and produced a bounded plan artifact" in result.routing_decision.reason_summary
+    assert "no Action could be formed from the current plan output because" in result.routing_decision.reason_summary
+    assert "planning" in result.outputs
+    assert [event.stage for event in result.events if event.event_type == "stage_entered"] == [
+        "context",
+        "proposal",
+        "selection",
+        "planning",
+    ]
+
+
+def test_conditional_planning_flow_can_bridge_single_bounded_step_into_action_and_reach_governance() -> None:
+    scope = Scope(project_id="project-1", work_unit_id="wu-1", run_id="run-1")
+    state = _state_with_scope(scope)
+
+    def context_stage(_):
+        return assemble_context_package(
+            trigger=TriggerInput(trigger_summary="Run the bridgeable planning path"),
+            purpose="proposal support",
+            scope=scope,
+            state=state,
+        )
+
+    def proposal_stage(_context):
+        return _proposal_result(
+            scope=scope,
+            option_summary="Take the bridgeable planned path",
+            scarcity_reason="Only the bridgeable planned path is honest here.",
+            proposal_type="planning_insertion",
+            planning_needed=True,
+        )
+
+    def selection_stage(proposal_result):
+        return SelectionResult(
+            selection_id="selection-planning-bridge-1",
+            considered_proposal_ids=tuple(option.proposal_id for option in proposal_result.options),
+            selected_proposal_id="proposal-1",
+            rationale="The next bounded move should be planned and then bridged into governance.",
+        )
+
+    def planning_stage(_selection):
+        return PlanArtifact(
+            bounded_objective="Take the bridgeable planned path",
+            intended_steps=(PlanStep(summary="Apply the bounded implementation"),),
+            selected_proposal_id="proposal-1",
+        )
+
+    def action_stage(_plan):
+        return Action(
+            action_id="action-should-not-run",
+            scope=scope,
+            intent_summary="The planning bridge should synthesize action instead",
+            basis_state_version=3,
+        )
+
+    def governance_stage(action):
+        return evaluate_action_entry(
+            action=action,
+            policy=Policy(approval_required=True),
+            approval=None,
+            truth=CurrentTruthSnapshot(scope=scope, state_version=0),
+        )
+
+    result = run_flow(
+        flow_id="flow-planning-bridge-2",
+        flow_family="conditional_planning_insertion",
+        scope=scope,
+        stage_handlers={
+            "context": context_stage,
+            "proposal": proposal_stage,
+            "selection": selection_stage,
+            "planning": planning_stage,
+            "action": action_stage,
+            "governance": governance_stage,
+            "execution": lambda _governance: pytest.fail("execution should not run"),
+            "outcome": lambda _execution: pytest.fail("outcome should not run"),
+            "evaluation": lambda _outcome: pytest.fail("evaluation should not run"),
+            "memory": lambda _evaluation: pytest.fail("memory should not run"),
+            "transition": lambda _memory: pytest.fail("transition should not run"),
+        },
     )
+
+    assert result.lifecycle.lifecycle_state == "waiting"
+    assert result.lifecycle.current_stage == "governance"
+    assert result.routing_decision is not None
+    assert result.routing_decision.routed_outcome == "approval_required"
+    assert "planning" in result.outputs
+    assert "action" in result.outputs
+    assert result.outputs["action"].intent_summary == "Apply the bounded implementation"
+    assert str(result.outputs["action"].action_id) != "action-should-not-run"
+    assert "governance" in result.outputs
+    assert [event.stage for event in result.events if event.event_type == "stage_entered"][:5] == [
+        "context",
+        "proposal",
+        "selection",
+        "planning",
+        "action",
+    ]
+
+
+def test_conditional_research_flow_enters_research_and_holds_at_research_boundary() -> None:
+    scope = Scope(project_id="project-1", work_unit_id="wu-1", run_id="run-1")
+    state = _state_with_scope(scope)
+
+    def context_stage(_):
+        return assemble_context_package(
+            trigger=TriggerInput(trigger_summary="Run the research follow-up path"),
+            purpose="proposal support",
+            scope=scope,
+            state=state,
+        )
+
+    def proposal_stage(_context):
+        return _proposal_result(
+            scope=scope,
+            option_summary="Take the explicit research follow-up path",
+            scarcity_reason="Only the research follow-up path is honest here.",
+            proposal_type="clarify",
+        )
+
+    def selection_stage(proposal_result):
+        return SelectionResult(
+            selection_id="selection-research-1",
+            considered_proposal_ids=tuple(option.proposal_id for option in proposal_result.options),
+            selected_proposal_id="proposal-1",
+            rationale="The next bounded move is follow-up research.",
+        )
+
+    def research_stage(_selection):
+        return ResearchArtifact(
+            question="What bounded follow-up research is still needed?",
+            summary="The evidence narrows the bounded comparison without granting authority.",
+            findings=(
+                ResearchFinding(
+                    text="One bounded follow-up source can reduce the current ambiguity.",
+                    source_refs=("source-1",),
+                ),
+            ),
+            inferences=("Research remains support-only in this flow.",),
+            uncertainties=(),
+            recommendation="Pause after research until a later lawful downstream slice exists.",
+            source_ids=("source-1",),
+        )
+
+    def action_stage(_research):
+        return Action(
+            action_id="action-research-1",
+            scope=scope,
+            intent_summary="This action should not start from research in the current slice",
+            basis_state_version=3,
+        )
+
+    def governance_stage(action):
+        return evaluate_action_entry(
+            action=action,
+            policy=Policy(),
+            approval=None,
+            truth=CurrentTruthSnapshot(scope=scope, state_version=3),
+        )
+
+    result = run_flow(
+        flow_id="flow-research-3",
+        flow_family="conditional_research_followup",
+        scope=scope,
+        stage_handlers={
+            "context": context_stage,
+            "proposal": proposal_stage,
+            "selection": selection_stage,
+            "research": research_stage,
+            "action": action_stage,
+            "governance": governance_stage,
+        },
+    )
+
+    assert result.lifecycle.lifecycle_state == "waiting"
+    assert result.lifecycle.current_stage == "research"
+    assert result.routing_decision is not None
+    assert result.routing_decision.routed_outcome == "research_followup"
+    assert result.routing_decision.source_stage == "research"
+    assert "Research entered and produced a bounded research artifact" in result.routing_decision.reason_summary
+    assert "Sufficiency evaluation: decision_support_ready." in result.routing_decision.reason_summary
+    assert "research" in result.outputs
+    assert [event.stage for event in result.events if event.event_type == "stage_entered"] == [
+        "context",
+        "proposal",
+        "selection",
+        "research",
+    ]

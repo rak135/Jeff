@@ -30,7 +30,7 @@ def test_memory_candidate_has_one_primary_type_and_pending_review_status() -> No
 
 
 def test_memory_candidate_cannot_be_created_outside_memory_pipeline() -> None:
-    with pytest.raises(ValueError, match="created by jeff.memory.write_pipeline"):
+    with pytest.raises(ValueError, match="created by jeff.memory"):
         MemoryCandidate(
             candidate_id="candidate-1",
             memory_type="episodic",

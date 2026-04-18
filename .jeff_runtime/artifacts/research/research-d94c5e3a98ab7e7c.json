@@ -1,0 +1,134 @@
+{
+  "artifact_id": "research-d94c5e3a98ab7e7c",
+  "created_at": "2026-04-18T17:17:56.850239+00:00",
+  "evidence_items": [
+    {
+      "source_refs": [
+        "web-55c99a76413c"
+      ],
+      "text": "Responses Overview | OpenAI API Reference Skip to content Home API Docs Guides and concepts for the OpenAI API API reference Endpoints, parameters, and responses Codex Docs Guides, concepts, and product docs for Codex Use cases Example workflows and tasks teams hand to Codex Chat"
+    },
+    {
+      "source_refs": [
+        "web-28e0ef971e32"
+      ],
+      "text": "OpenAI Responses API: The Ultimate Developer Guide | DataCamp Skip to main content EN English Espa\u00f1ol Portugu\u00eas Deutsch Beta Fran\u00e7ais"
+    },
+    {
+      "source_refs": [
+        "web-ad679e91a4f5"
+      ],
+      "text": "Use the Azure OpenAI Responses API - Microsoft Foundry | Microsoft Learn Skip to main content Skip to Ask Learn chat experience This browser is no longer supported."
+    },
+    {
+      "source_refs": [
+        "web-99bbb9cf9a85"
+      ],
+      "text": "Responses API Reference | openai/completions-responses-migration-pack | DeepWiki Loading..."
+    },
+    {
+      "source_refs": [
+        "web-d4831635165c"
+      ],
+      "text": "GitHub - Azure-Samples/azure-openai-responses-api-samples: Responses API on Azure OpenAI samples \u00b7 GitHub Skip to content Navigation Menu Toggle navigation"
+    },
+    {
+      "source_refs": [
+        "web-99bbb9cf9a85"
+      ],
+      "text": "Index your code with Devin DeepWiki DeepWiki openai/completions-responses-migration-pack Index your code with Devin Edit Wiki Share Loading..."
+    }
+  ],
+  "findings": [
+    {
+      "source_refs": [
+        "web-55c99a76413c"
+      ],
+      "text": "The OpenAI API Reference includes a Responses Overview page."
+    }
+  ],
+  "inferences": [
+    "The Responses Overview page is the primary official resource for understanding the Responses API within the OpenAI API Reference ecosystem."
+  ],
+  "project_id": "project-1",
+  "question": "What official OpenAI docs are relevant to the Responses API?",
+  "recommendation": null,
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_ids": [
+    "web-55c99a76413c"
+  ],
+  "source_items": [
+    {
+      "discovery_rank": 0,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "https://developers.openai.com/api/reference/responses/overview",
+      "published_at": null,
+      "snippet": "Responses Overview | OpenAI API Reference Skip to content Home API Docs Guides and concepts for the OpenAI API API reference Endpoints, parameters, and responses Codex Docs Guides, concepts, and product docs for Codex Use cases Example workflows and tasks teams hand to Codex Chat",
+      "source_id": "web-55c99a76413c",
+      "source_type": "web",
+      "title": "Responses Overview | OpenAI API Reference"
+    },
+    {
+      "discovery_rank": 1,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/responses",
+      "published_at": null,
+      "snippet": "Use the Azure OpenAI Responses API - Microsoft Foundry | Microsoft Learn Skip to main content Skip to Ask Learn chat experience This browser is no longer supported. Upgrade to Microsoft Edge to take advantage of the latest features, security updates, and technical support. Downlo",
+      "source_id": "web-ad679e91a4f5",
+      "source_type": "web",
+      "title": "Use the Azure OpenAI Responses API - Microsoft Foundry"
+    },
+    {
+      "discovery_rank": 2,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "https://deepwiki.com/openai/completions-responses-migration-pack/6-responses-api-reference",
+      "published_at": "2025-09-28T16:29:20",
+      "snippet": "Responses API Reference | openai/completions-responses-migration-pack | DeepWiki Loading... Index your code with Devin DeepWiki DeepWiki openai/completions-responses-migration-pack Index your code with Devin Edit Wiki Share Loading... Last indexed: 28 September 2025 ( ac53ee ) Ov",
+      "source_id": "web-99bbb9cf9a85",
+      "source_type": "web",
+      "title": "Responses API Reference | openai/completions-responses-migration-pack ..."
+    },
+    {
+      "discovery_rank": 3,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "https://www.datacamp.com/tutorial/openai-responses-api",
+      "published_at": "2025-04-08T23:00:00+00:00",
+      "snippet": "OpenAI Responses API: The Ultimate Developer Guide | DataCamp Skip to main content EN English Espa\u00f1ol Portugu\u00eas Deutsch Beta Fran\u00e7ais",
+      "source_id": "web-28e0ef971e32",
+      "source_type": "web",
+      "title": "OpenAI Responses API: The Ultimate Developer Guide - DataCamp"
+    },
+    {
+      "discovery_rank": 4,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "https://github.com/Azure-Samples/azure-openai-responses-api-samples",
+      "published_at": null,
+      "snippet": "GitHub - Azure-Samples/azure-openai-responses-api-samples: Responses API on Azure OpenAI samples \u00b7 GitHub Skip to content Navigation Menu Toggle navigation",
+      "source_id": "web-d4831635165c",
+      "source_type": "web",
+      "title": "Responses API on Azure OpenAI samples - GitHub"
+    }
+  ],
+  "source_mode": "web",
+  "summary": "Official OpenAI documentation for the Responses API is available via the Responses Overview page within the OpenAI API Reference.",
+  "uncertainties": [
+    "No explicit uncertainties identified from the provided evidence."
+  ],
+  "work_unit_id": "wu-1"
+}

@@ -16,6 +16,8 @@ RouteKind = Literal["stop", "hold", "follow_up"]
 RoutedOutcome = Literal[
     "blocked",
     "escalated",
+    "planning",
+    "research_followup",
     "retry",
     "revalidate",
     "recover",

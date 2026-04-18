@@ -9,6 +9,7 @@ FlowFamily = Literal[
     "bounded_research_to_decision_support",
     "bounded_proposal_selection_action",
     "conditional_planning_insertion",
+    "conditional_research_followup",
     "blocked_or_escalation",
     "evaluation_driven_followup",
 ]
@@ -55,6 +56,14 @@ FLOW_STAGE_ORDERS: dict[FlowFamily, tuple[StageName, ...]] = {
         "evaluation",
         "memory",
         "transition",
+    ),
+    "conditional_research_followup": (
+        "context",
+        "proposal",
+        "selection",
+        "research",
+        "action",
+        "governance",
     ),
     "blocked_or_escalation": ("context", "proposal", "selection", "action", "governance"),
     "evaluation_driven_followup": ("evaluation",),

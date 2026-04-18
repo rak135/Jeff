@@ -5,7 +5,23 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Mapping
 
-from jeff.cognitive import EvaluationResult, ProposalResult, SelectionRequest
+from jeff.cognitive import EvaluationResult, PlanArtifact, ProposalResult, ResearchArtifact, SelectionRequest, SelectionResult
+from jeff.cognitive.post_selection import (
+    NextStageResolutionRequest,
+    NextStageResolutionResult,
+    OperatorSelectionOverride,
+    PlanActionBridgeRequest,
+    PlannedActionBridgeResult,
+    ResearchOutputSufficiencyRequest,
+    ResearchOutputSufficiencyResult,
+    SelectionActionResolutionRequest,
+    SelectionEffectiveProposalRequest,
+    bridge_plan_to_action,
+    evaluate_research_output_sufficiency,
+    materialize_effective_proposal,
+    resolve_next_stage,
+    resolve_selection_action_basis,
+)
 from jeff.cognitive.selection.api import SelectionRunFailure, run_selection_hybrid
 from jeff.core.schemas import Scope
 
@@ -51,6 +67,7 @@ def run_flow(
     scope: Scope,
     stage_handlers: Mapping[StageName, StageHandler | HybridSelectionStageConfig],
     initial_input: object | None = None,
+    operator_override: OperatorSelectionOverride | None = None,
 ) -> FlowRunResult:
     stages = stage_order_for_flow(flow_family)
     sequence_validation = validate_stage_sequence(flow_family=flow_family, stages=tuple(stage_handlers.keys()))
@@ -81,20 +98,91 @@ def run_flow(
 
     for stage in stages:
         if previous_stage is not None:
-            routing = _route_before_next_stage(
-                previous_stage=previous_stage,
-                previous_output=previous_output,
-                next_stage=stage,
-                scope=scope,
-            )
-            if routing is not None:
-                return _finish_with_routing(
-                    lifecycle=lifecycle,
-                    outputs=outputs,
-                    events=events,
-                    routing=routing,
-                    flow_family=flow_family,
+            if previous_stage == "selection" and stage in {"planning", "research", "action"}:
+                try:
+                    next_stage_resolution = _resolve_selection_next_stage(
+                        flow_id=flow_id,
+                        proposal_output=outputs.get("proposal"),
+                        selection_output=previous_output,
+                        operator_override=operator_override,
+                    )
+                    routing, skip_stage = _route_next_stage_resolution(
+                        next_stage_resolution=next_stage_resolution,
+                        next_stage=stage,
+                        scope=scope,
+                    )
+                except Exception as exc:
+                    return _finish_with_validation_failure(
+                        lifecycle=lifecycle,
+                        outputs=outputs,
+                        events=events,
+                        flow_family=flow_family,
+                        scope=scope,
+                        stage=stage,
+                        validation=ValidationResult(
+                            valid=False,
+                            code="post_selection_next_stage_resolution_failed",
+                            reason=str(exc),
+                        ),
+                    )
+                if routing is not None:
+                    return _finish_with_routing(
+                        lifecycle=lifecycle,
+                        outputs=outputs,
+                        events=events,
+                        routing=routing,
+                        flow_family=flow_family,
+                    )
+                if skip_stage:
+                    continue
+            else:
+                if previous_stage == "research" and stage == "action":
+                    try:
+                        research_sufficiency = _evaluate_research_output_sufficiency(
+                            flow_id=flow_id,
+                            research_output=previous_output,
+                        )
+                    except Exception as exc:
+                        return _finish_with_validation_failure(
+                            lifecycle=lifecycle,
+                            outputs=outputs,
+                            events=events,
+                            flow_family=flow_family,
+                            scope=scope,
+                            stage=stage,
+                            validation=ValidationResult(
+                                valid=False,
+                                code="research_output_sufficiency_bridge_failed",
+                                reason=str(exc),
+                            ),
+                        )
+
+                    return _finish_with_routing(
+                        lifecycle=lifecycle,
+                        outputs=outputs,
+                        events=events,
+                        routing=_route_research_boundary(
+                            research=previous_output,
+                            sufficiency_result=research_sufficiency,
+                            scope=scope,
+                        ),
+                        flow_family=flow_family,
+                    )
+
+                routing = _route_before_next_stage(
+                    previous_stage=previous_stage,
+                    previous_output=previous_output,
+                    next_stage=stage,
+                    scope=scope,
                 )
+                if routing is not None:
+                    return _finish_with_routing(
+                        lifecycle=lifecycle,
+                        outputs=outputs,
+                        events=events,
+                        routing=routing,
+                        flow_family=flow_family,
+                    )
 
             handoff_validation = validate_handoff(
                 previous_stage=previous_stage,
@@ -112,6 +200,77 @@ def run_flow(
                     stage=stage,
                     validation=handoff_validation,
                 )
+
+            if previous_stage == "planning" and stage == "action":
+                try:
+                    bridged_action = _bridge_planned_action(
+                        flow_id=flow_id,
+                        plan_output=previous_output,
+                        scope=scope,
+                    )
+                except Exception as exc:
+                    return _finish_with_validation_failure(
+                        lifecycle=lifecycle,
+                        outputs=outputs,
+                        events=events,
+                        flow_family=flow_family,
+                        scope=scope,
+                        stage=stage,
+                        validation=ValidationResult(
+                            valid=False,
+                            code="plan_action_bridge_failed",
+                            reason=str(exc),
+                        ),
+                    )
+
+                if not bridged_action.action_formed:
+                    return _finish_with_routing(
+                        lifecycle=lifecycle,
+                        outputs=outputs,
+                        events=events,
+                        routing=_route_planning_boundary(
+                            plan=previous_output,
+                            bridge_result=bridged_action,
+                            scope=scope,
+                        ),
+                        flow_family=flow_family,
+                    )
+
+                _append_event(
+                    events,
+                    flow_family=flow_family,
+                    scope=scope,
+                    stage=stage,
+                    event_type="stage_entered",
+                    summary="entered action via planning bridge",
+                )
+                lifecycle = update_lifecycle(lifecycle, lifecycle_state="active", current_stage=stage)
+
+                stage_output = bridged_action.action
+                output_validation = validate_stage_output(stage=stage, output=stage_output, flow_scope=scope)
+                if not output_validation.valid:
+                    return _finish_with_validation_failure(
+                        lifecycle=lifecycle,
+                        outputs=outputs,
+                        events=events,
+                        flow_family=flow_family,
+                        scope=scope,
+                        stage=stage,
+                        validation=output_validation,
+                    )
+
+                outputs[stage] = stage_output
+                _append_event(
+                    events,
+                    flow_family=flow_family,
+                    scope=scope,
+                    stage=stage,
+                    event_type="stage_exited",
+                    summary="exited action via planning bridge",
+                )
+                previous_stage = stage
+                previous_output = stage_output
+                continue
 
         _append_event(
             events,
@@ -217,6 +376,124 @@ def run_flow(
     )
 
 
+def _resolve_selection_next_stage(
+    *,
+    flow_id: str,
+    proposal_output: object | None,
+    selection_output: object,
+    operator_override: OperatorSelectionOverride | None,
+) -> NextStageResolutionResult:
+    if not isinstance(proposal_output, ProposalResult):
+        raise TypeError("post-selection routing requires ProposalResult output from the proposal stage")
+    if not isinstance(selection_output, SelectionResult):
+        raise TypeError("post-selection routing requires SelectionResult output from the selection stage")
+
+    resolved_basis = resolve_selection_action_basis(
+        SelectionActionResolutionRequest(
+            request_id=f"{flow_id}:selection-action-resolution",
+            selection_result=selection_output,
+            operator_override=operator_override,
+        )
+    )
+    materialized = materialize_effective_proposal(
+        SelectionEffectiveProposalRequest(
+            request_id=f"{flow_id}:selection-effective-proposal",
+            proposal_result=proposal_output,
+            resolved_basis=resolved_basis,
+        )
+    )
+    return resolve_next_stage(
+        NextStageResolutionRequest(
+            request_id=f"{flow_id}:next-stage-resolution",
+            materialized_effective_proposal=materialized,
+        )
+    )
+
+
+def _route_next_stage_resolution(
+    *,
+    next_stage_resolution: NextStageResolutionResult,
+    next_stage: StageName,
+    scope: Scope,
+) -> tuple[RoutingDecision | None, bool]:
+    if next_stage_resolution.next_stage_target == "governance":
+        if next_stage in {"planning", "research"}:
+            return None, True
+        if next_stage != "action":
+            raise ValueError(
+                f"governance next stage requires action continuation, but the flow expects {next_stage}"
+            )
+        return None, False
+
+    if next_stage_resolution.next_stage_target == "planning":
+        if next_stage == "planning":
+            return None, False
+        return (
+            RoutingDecision(
+                route_kind="hold",
+                routed_outcome="planning",
+                scope=scope,
+                source_stage="selection",
+                reason_summary=(
+                    f"{next_stage_resolution.summary} Planning is the next required downstream stage, "
+                    "and this flow stops before entering it."
+                ),
+            ),
+            False,
+        )
+
+    if next_stage_resolution.next_stage_target == "research_followup":
+        if next_stage == "research":
+            return None, False
+        return (
+            RoutingDecision(
+                route_kind="hold",
+                routed_outcome="research_followup",
+                scope=scope,
+                source_stage="selection",
+                reason_summary=(
+                    f"{next_stage_resolution.summary} Bounded research follow-up is the next required downstream "
+                    "stage, and this flow stops before entering it."
+                ),
+            ),
+            False,
+        )
+
+    if next_stage_resolution.next_stage_target == "terminal_non_selection":
+        routed_outcome = "reject_all" if next_stage_resolution.non_selection_outcome == "reject_all" else "defer"
+        return (
+            RoutingDecision(
+                route_kind="stop",
+                routed_outcome=routed_outcome,
+                scope=scope,
+                source_stage="selection",
+                reason_summary=(
+                    f"{next_stage_resolution.summary} This remains a terminal non-execution path in the current slice."
+                ),
+            ),
+            False,
+        )
+
+    if next_stage_resolution.next_stage_target == "escalation_surface":
+        return (
+            RoutingDecision(
+                route_kind="hold",
+                routed_outcome="escalated",
+                scope=scope,
+                source_stage="selection",
+                reason_summary=(
+                    f"{next_stage_resolution.summary} This route stops at an explicit escalation surface in the "
+                    "current slice."
+                ),
+            ),
+            False,
+        )
+
+    raise ValueError(
+        f"unsupported post-selection next_stage_target: {next_stage_resolution.next_stage_target}"
+    )
+
+
 def _invoke_stage_handler(
     *,
     stage: StageName,
@@ -259,13 +536,123 @@ def _route_before_next_stage(
     next_stage: StageName,
     scope: Scope,
 ) -> RoutingDecision | None:
-    if previous_stage == "selection" and next_stage in {"planning", "action"}:
+    if previous_stage == "selection" and next_stage in {"planning", "research", "action"}:
         return route_selection_outcome(selection=previous_output, scope=scope)
+    if previous_stage == "planning" and next_stage == "action":
+        return None
     if previous_stage == "governance" and next_stage == "execution":
         return route_governance_outcome(decision=previous_output, scope=scope)
     if previous_stage == "memory" and next_stage == "transition":
         return route_memory_write_outcome(memory_write=previous_output, scope=scope)
     return None
+
+
+def _bridge_planned_action(
+    *,
+    flow_id: str,
+    plan_output: object,
+    scope: Scope,
+) -> PlannedActionBridgeResult:
+    if not isinstance(plan_output, PlanArtifact):
+        raise TypeError("plan action bridge requires PlanArtifact output from the planning stage")
+
+    return bridge_plan_to_action(
+        PlanActionBridgeRequest(
+            request_id=f"{flow_id}:plan-action-bridge",
+            plan_artifact=plan_output,
+            scope=scope,
+        )
+    )
+
+
+def _evaluate_research_output_sufficiency(
+    *,
+    flow_id: str,
+    research_output: object,
+) -> ResearchOutputSufficiencyResult:
+    if not isinstance(research_output, ResearchArtifact):
+        raise TypeError("research output sufficiency bridge requires ResearchArtifact output from the research stage")
+
+    return evaluate_research_output_sufficiency(
+        ResearchOutputSufficiencyRequest(
+            request_id=f"{flow_id}:research-output-sufficiency",
+            research_artifact=research_output,
+        )
+    )
+
+
+def _route_planning_boundary(
+    *,
+    plan: PlanArtifact,
+    scope: Scope,
+    bridge_result: PlannedActionBridgeResult | None = None,
+) -> RoutingDecision:
+    proposal_summary = (
+        "the selected proposal"
+        if plan.selected_proposal_id is None
+        else f"proposal {plan.selected_proposal_id}"
+    )
+    bridge_reason = (
+        "no repo-local plan-to-action bridge is implemented in the current slice."
+        if bridge_result is None
+        else f"no Action could be formed from the current plan output because {bridge_result.no_action_reason}"
+    )
+    return RoutingDecision(
+        route_kind="hold",
+        routed_outcome="planning",
+        scope=scope,
+        source_stage="planning",
+        reason_summary=(
+            f"Planning entered and produced a bounded plan artifact for {proposal_summary} "
+            f"with {len(plan.intended_steps)} intended step(s). Planning remains support-only; "
+            "no governance evaluation occurred, no action permission exists, no execution occurred, "
+            f"and {bridge_reason}"
+        ),
+    )
+def _route_research_boundary(
+    *,
+    research: ResearchArtifact,
+    sufficiency_result: ResearchOutputSufficiencyResult,
+    scope: Scope,
+) -> RoutingDecision:
+    if sufficiency_result.sufficient_for_downstream_use:
+        return RoutingDecision(
+            route_kind="hold",
+            routed_outcome="research_followup",
+            scope=scope,
+            source_stage="research",
+            reason_summary=(
+                f"Research entered and produced a bounded research artifact for question '{research.question}' "
+                f"with {len(research.findings)} finding(s) across {len(research.source_ids)} source(s). "
+                "Sufficiency evaluation: decision_support_ready. Current research is sufficient for bounded "
+                f"downstream decision support with supported points: {', '.join(sufficiency_result.key_supported_points)}. "
+                "Research remains support-only; no governance evaluation occurred, no action permission exists, "
+                "no execution occurred, and no repo-local decision-support-to-action, governance, or execution "
+                "bridge is implemented in the current slice."
+            ),
+        )
+
+    unresolved_items = "; ".join(sufficiency_result.unresolved_items)
+    contradiction_note = (
+        " Contradictions remain visible and unresolved."
+        if sufficiency_result.contradictions_present
+        else ""
+    )
+    return RoutingDecision(
+        route_kind="hold",
+        routed_outcome="research_followup",
+        scope=scope,
+        source_stage="research",
+        reason_summary=(
+            f"Research entered and produced a bounded research artifact for question '{research.question}' "
+            f"with {len(research.findings)} finding(s) across {len(research.source_ids)} source(s). "
+            "Sufficiency evaluation: more_research_needed. Current research is not yet sufficient for bounded "
+            f"downstream use because these unresolved items remain: {unresolved_items}.{contradiction_note} "
+            "Research remains support-only; no governance evaluation occurred, no action permission exists, "
+            "no execution occurred, and Jeff does not auto-loop into more research or any downstream action in "
+            "the current slice."
+        ),
+    )
 
 
 def _terminal_routing(

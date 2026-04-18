@@ -40,7 +40,7 @@
       "proposal-1",
       "proposal-2"
     ],
-    "operator_rationale": "Operator wants the alternate bounded demo path.",
+    "operator_rationale": "Operator validation: switch to alternate bounded path",
     "original_selected_proposal_id": "proposal-1",
     "original_selection_disposition": "selected",
     "override_id": "selection-override:selection-override:run-1:proposal-2",
@@ -98,7 +98,7 @@
     }
   },
   "record_class": "selection_review_support",
-  "recorded_at": "2026-04-18T17:02:26+00:00",
+  "recorded_at": "2026-04-18T17:18:38+00:00",
   "run_id": "run-1",
   "schema_version": "1.0",
   "selection_result": {
