@@ -83,3 +83,21 @@ class ExecutionResult:
     @property
     def scope(self):
         return self.governed_request.action.scope
+
+
+def execute_governed_action(
+    request: GovernedExecutionRequest,
+    *,
+    output_summary: str | None = None,
+    execution_status: ExecutionStatus = "completed",
+) -> ExecutionResult:
+    """Record the current repo-local execution result for a governed bounded action."""
+
+    if not isinstance(request, GovernedExecutionRequest):
+        raise TypeError("execution requires a GovernedExecutionRequest")
+
+    return ExecutionResult(
+        governed_request=request,
+        execution_status=execution_status,
+        output_summary=output_summary,
+    )

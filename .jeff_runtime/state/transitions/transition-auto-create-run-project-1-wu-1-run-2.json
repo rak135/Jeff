@@ -1,0 +1,28 @@
+{
+  "record_class": "transition_audit_support",
+  "recorded_at": "2026-04-19T11:46:12+00:00",
+  "request": {
+    "basis_state_version": 3,
+    "payload": {
+      "run_id": "run-2"
+    },
+    "scope": {
+      "project_id": "project-1",
+      "run_id": null,
+      "work_unit_id": "wu-1"
+    },
+    "transition_id": "transition-auto-create-run-project-1-wu-1-run-2",
+    "transition_type": "create_run"
+  },
+  "result": {
+    "changed_paths": [
+      "projects.project-1.work_units.wu-1.runs.run-2"
+    ],
+    "state_after_version": 4,
+    "state_before_version": 3,
+    "transition_id": "transition-auto-create-run-project-1-wu-1-run-2",
+    "transition_result": "committed",
+    "validation_errors": []
+  },
+  "schema_version": "1.0"
+}

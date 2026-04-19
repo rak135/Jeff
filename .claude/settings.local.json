@@ -21,7 +21,18 @@
       "Bash(docker --version)",
       "Bash(npm --version)",
       "Bash(npm install *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(cargo --version)",
+      "Bash(rustc --version)",
+      "Bash(where cl.exe)",
+      "Bash(where link.exe)",
+      "Read(//c/Program Files/Microsoft Visual Studio/**)",
+      "Bash(curl --proto '=https' --tlsv1.2 -sSf https://win.rustup.rs/x86_64 -o /tmp/rustup-init.exe)",
+      "Read(//tmp/**)",
+      "Bash(/tmp/rustup-init.exe -y --default-toolchain stable --profile minimal --no-modify-path)",
+      "Bash(export PATH=\"$HOME/.cargo/bin:$PATH\")",
+      "Bash(npx --yes @tauri-apps/cli@2 init --ci --app-name \"Jeff\" --window-title \"Jeff\" --frontend-dist \"../dist\" --dev-url \"http://127.0.0.1:5173\" --before-dev-command \"npm run dev\" --before-build-command \"npm run build\")",
+      "Bash(npx tauri *)"
     ]
   }
 }

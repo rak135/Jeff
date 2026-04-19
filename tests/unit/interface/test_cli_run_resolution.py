@@ -122,19 +122,20 @@ def test_help_text_marks_run_commands_as_manual_history_debug_path() -> None:
     text = cli.run_one_shot("/help")
 
     assert "Primary flow:" in text
+    assert "- /run <objective>" in text
     assert "History/debug:" in text
     assert "- /run list" in text
     assert "- /run use <run_id>" in text
 
 
-def test_run_command_does_not_gain_objective_launcher_meaning() -> None:
+def test_run_command_requires_runtime_configuration_for_objective_launch() -> None:
     state, _ = build_state_with_runs()
     cli = JeffCLI(context=InterfaceContext(state=state))
 
     cli.run_one_shot("/project use project-1")
     cli.run_one_shot("/work use wu-1")
 
-    with pytest.raises(ValueError, match="run command must be 'run list' or 'run use <run_id>'"):
+    with pytest.raises(ValueError, match="run objective launch requires configured InfrastructureServices"):
         cli.run_one_shot("/run compare heat pump options")
 
 

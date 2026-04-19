@@ -510,6 +510,7 @@ def render_help() -> str:
             "- /project use <project_id>",
             "- /work list",
             "- /work use <work_unit_id>",
+            "- /run <objective>",
             "- /inspect",
             "- /show [run_id]",
             "- /selection show [run_id]",

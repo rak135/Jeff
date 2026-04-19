@@ -27,6 +27,70 @@ npm run preview    # serve dist/ locally
 npm run typecheck  # tsc --noEmit
 ```
 
+## Desktop app (Windows)
+
+The frontend is packaged as a native Windows desktop app using [Tauri 2](https://tauri.app/).
+The desktop shell lives in `src-tauri/` and wraps the existing Vite frontend — no
+UI changes, no second codebase. HashRouter already makes the SPA work from the
+`tauri://localhost` asset protocol, so the packaged app loads the same mock /
+future data as the web prototype.
+
+### Prerequisites (first time only)
+
+- **Rust stable toolchain** — install via https://rustup.rs (`rustup-init.exe`,
+  pick the MSVC host). Tauri needs `cargo` on `PATH`.
+- **MSVC build tools** — "Desktop development with C++" workload from Visual
+  Studio / Build Tools.
+- **WebView2 runtime** — preinstalled on Windows 11; on Windows 10 get the
+  Evergreen runtime from Microsoft.
+
+### Desktop dev mode
+
+```bash
+cd gui/frontend
+npm install          # once
+npm run desktop:dev  # launches Vite + opens the Jeff desktop window
+```
+
+This runs `tauri dev`, which starts the Vite dev server (configured via
+`beforeDevCommand` in `src-tauri/tauri.conf.json`) and opens the app in a real
+native window with hot-reload. No browser required.
+
+### Build the Windows desktop app
+
+```bash
+cd gui/frontend
+npm run desktop:build
+```
+
+This runs `npm run build` to produce `dist/`, then compiles the Rust shell and
+bundles everything. Output lands in `src-tauri/target/release/`:
+
+- Portable executable:
+  `src-tauri/target/release/jeff-desktop.exe`
+- MSI installer:
+  `src-tauri/target/release/bundle/msi/Jeff_<version>_x64_en-US.msi`
+- NSIS setup:
+  `src-tauri/target/release/bundle/nsis/Jeff_<version>_x64-setup.exe`
+
+Double-click the `.exe` to launch, or run either installer for a Start-menu
+shortcut and uninstaller entry. The packaged app bundles the built `dist/`
+assets — it does **not** require a dev server.
+
+### Data in the packaged app
+
+The packaged desktop app uses the same adapter seam as the web prototype, so it
+still runs on the mock / future data set today. To wire in real Jeff backend
+surfaces later, swap the adapter in `src/lib/state/DataContext.tsx` as
+described in *Connecting real backend later* below; no changes to the desktop
+shell are needed.
+
+### Why Tauri (not Electron)
+
+Tauri reuses Windows' built-in WebView2, so the installer is a few MB instead
+of ~150 MB, startup is faster, and no Chromium is shipped with the app. The
+existing Vite/React/Tailwind/HashRouter stack plugs in unchanged.
+
 ## Project structure
 
 ```
