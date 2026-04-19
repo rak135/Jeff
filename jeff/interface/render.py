@@ -103,12 +103,15 @@ def render_run_show(payload: dict[str, Any]) -> str:
     derived = payload["derived"]
     support = payload["support"]
     telemetry = payload["telemetry"]
+    live_context = support.get("live_context")
 
     lines = [
         f"RUN {truth['run_id']}",
         f"[truth] project_id={truth['project_id']} work_unit_id={truth['work_unit_id']} run_lifecycle_state={truth['run_lifecycle_state']}",
     ]
     if not derived["flow_visible"]:
+        if live_context is not None:
+            lines.extend(_render_live_context_lines(live_context, prefix="[support][live_context]"))
         lines.append("[derived] no orchestrator flow is attached to this run")
         return "\n".join(lines)
 
@@ -127,6 +130,8 @@ def render_run_show(payload: dict[str, Any]) -> str:
             f"[support] routing route_kind={routing['route_kind']} routed_outcome={routing['routed_outcome']} "
             f"source_stage={routing['source_stage']} reason={routing['reason_summary']}"
         )
+    if live_context is not None:
+        lines.extend(_render_live_context_lines(live_context, prefix="[support][live_context]"))
     proposal = support["proposal_summary"]
     if proposal["available"]:
         lines.append(
@@ -162,6 +167,26 @@ def render_run_show(payload: dict[str, Any]) -> str:
     for event in support["recent_events"]:
         lines.append(f"- #{event['ordinal']} {event['stage'] or '-'} {event['event_type']} {event['summary']}")
     return "\n".join(lines)
+
+
+def _render_live_context_lines(live_context: Mapping[str, Any], *, prefix: str) -> list[str]:
+    lines = [
+        f"{prefix} purpose={live_context['purpose']}",
+        f"{prefix} truth_families={','.join(live_context['truth_families'])}",
+        f"{prefix} governance_truth_count={live_context['governance_truth_count']}",
+        (
+            f"{prefix} support_counts="
+            f"memory:{live_context['memory_support_count']} "
+            f"compiled_knowledge:{live_context['compiled_knowledge_support_count']} "
+            f"archive:{live_context['archive_support_count']} "
+            f"direct:{live_context['direct_support_count']}"
+        ),
+    ]
+    ordered_support_families = live_context["ordered_support_source_families"]
+    lines.append(
+        f"{prefix} support_order=" + (",".join(ordered_support_families) if ordered_support_families else "NONE")
+    )
+    return lines
 
 
 def render_selection_review(payload: dict[str, Any]) -> str:
@@ -360,6 +385,8 @@ def render_research_result(payload: dict[str, Any]) -> str:
     truth = payload["truth"]
     derived = payload["derived"]
     support = payload["support"]
+    live_context = support.get("live_context")
+    proposal_followup = support.get("proposal_followup")
 
     lines = [
         (
@@ -389,6 +416,35 @@ def render_research_result(payload: dict[str, Any]) -> str:
 
     lines.append(f"recommendation={support['recommendation'] or '-'}")
     lines.append(f"persistence={support['persistence_note']}")
+
+    if live_context is not None:
+        lines.append("[support] live_context")
+        lines.append(f"live_context_purpose={live_context['purpose']}")
+        lines.append(f"truth_families={','.join(live_context['truth_families'])}")
+        lines.append(f"governance_truth_count={live_context['governance_truth_count']}")
+        lines.append(
+            "support_counts="
+            f"memory:{live_context['memory_support_count']} "
+            f"compiled_knowledge:{live_context['compiled_knowledge_support_count']} "
+            f"archive:{live_context['archive_support_count']} "
+            f"direct:{live_context['direct_support_count']}"
+        )
+        ordered_support_families = live_context["ordered_support_source_families"]
+        lines.append(
+            "support_order=" + (",".join(ordered_support_families) if ordered_support_families else "NONE")
+        )
+
+    if proposal_followup is not None:
+        lines.append("[support] proposal_followup")
+        if proposal_followup["proposal_generation_ran"]:
+            lines.append(
+                f"proposal_followup=ran serious_option_count={proposal_followup['proposal_count']}"
+            )
+        else:
+            lines.append("proposal_followup=not_available")
+        lines.append(f"proposal_request_built={proposal_followup['proposal_request_built']}")
+        if proposal_followup["no_generation_reason"] is not None:
+            lines.append(f"proposal_followup_reason={proposal_followup['no_generation_reason']}")
 
     if not derived["handoff_memory_requested"]:
         lines.append("memory_handoff=not requested")

@@ -26,8 +26,24 @@ def test_show_json_view_preserves_truth_support_and_derived_distinctions() -> No
     assert payload["support"]["proposal_summary"]["available"] is True
     assert payload["support"]["proposal_summary"]["serious_option_count"] == 2
     assert payload["support"]["evaluation_summary"]["available"] is True
+    assert payload["support"]["live_context"] is None
     assert "health_posture" in payload["telemetry"]
     assert "status" not in payload["derived"]
+
+
+def test_inspect_json_view_keeps_live_context_in_support_not_truth() -> None:
+    context, _ = build_interface_context_with_flow(current_stage="execution", lifecycle_state="active")
+    cli = JeffCLI(context=context)
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+
+    payload = json.loads(cli.run_one_shot("/inspect", json_output=True))
+
+    assert payload["view"] == "run_show"
+    assert "live_context" not in payload["truth"]
+    assert payload["support"]["live_context"]["purpose"] == "operator explanation proposal support CLI coverage"
+    assert payload["support"]["live_context"]["truth_families"] == ["project", "work_unit", "run"]
+    assert payload["support"]["live_context"]["ordered_support_source_families"] == []
 
 
 def test_trace_json_view_is_machine_readable_and_ordered() -> None:

@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+[data-theme='light'] {
+  --bg: #f5f2ec;
+  --surface: #faf8f3;
+  --panel: #ffffff;
+  --rail: #ede8dd;
+  --border: #e0dacb;
+  --border-strong: #c9c1ae;
+  --text: #1a1816;
+  --muted: #6b6558;
+  --faint: #9a9283;
+  --approved: #5c7a4c;
+  --blocked: #a8553a;
+  --pending: #c48a3a;
+  --degraded: #a87c3a;
+  --canonical: #1a1816;
+  --support: #8b7355;
+  --derived: #7a7064;
+  --memory: #8578a0;
+  --accent: #d4a574;
+}
+
+[data-theme='dark'] {
+  --bg: #17150f;
+  --surface: #1f1c15;
+  --panel: #26221a;
+  --rail: #1a1712;
+  --border: #332e24;
+  --border-strong: #4a4335;
+  --text: #ebe4d3;
+  --muted: #9a9283;
+  --faint: #6b6558;
+  --approved: #8ab06a;
+  --blocked: #d07860;
+  --pending: #e0a75a;
+  --degraded: #c89860;
+  --canonical: #ebe4d3;
+  --support: #c9a878;
+  --derived: #a89d8a;
+  --memory: #b0a0c8;
+  --accent: #d4a574;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 14px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Scrollbars — subtle */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* Small utility: tight mono label */
+.label-mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--faint);
+}

@@ -109,12 +109,15 @@ def retrieve_memory(
 
     # Stage 4: scoped lexical retrieval
     if request.query_text:
-        lexical_records = list(store.search_lexical(
-            str(request.scope.project_id),
-            request.query_text,
-            memory_type_filter=request.memory_type_filter,
-            limit=request.result_limit * 3,
-        ))
+        lexical_records = [
+            r for r in store.search_lexical(
+                str(request.scope.project_id),
+                request.query_text,
+                memory_type_filter=request.memory_type_filter,
+                limit=request.result_limit * 3,
+            )
+            if _scope_matches(request.scope, r.scope)
+        ]
     else:
         lexical_records = _fetch_scoped_lexical(request=request, store=store)
 
@@ -123,12 +126,15 @@ def retrieve_memory(
     if embedder is not None and request.query_text:
         try:
             query_emb = embedder.embed(request.query_text)
-            semantic_records = list(store.search_semantic(
-                str(request.scope.project_id),
-                query_emb,
-                memory_type_filter=request.memory_type_filter,
-                limit=request.result_limit * 3,
-            ))
+            semantic_records = [
+                r for r in store.search_semantic(
+                    str(request.scope.project_id),
+                    query_emb,
+                    memory_type_filter=request.memory_type_filter,
+                    limit=request.result_limit * 3,
+                )
+                if _scope_matches(request.scope, r.scope)
+            ]
         except Exception:
             # Semantic retrieval failure must not break the pipeline
             pass

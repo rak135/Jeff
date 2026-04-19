@@ -7,6 +7,8 @@ from datetime import datetime
 from typing import Any
 
 from jeff.cognitive import (
+    ContextPackage,
+    ProposalGenerationBridgeResult,
     ResearchArtifactRecord,
     ResearchOperatorSurfaceError,
     ResearchSynthesisRuntimeError,
@@ -89,6 +91,7 @@ def run_show_json(
     run: Run,
     flow_run: FlowRunResult | None,
     selection_review: object | None = None,
+    live_context_package: ContextPackage | None = None,
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "view": "run_show",
@@ -107,6 +110,7 @@ def run_show_json(
     if flow_run is None:
         payload["derived"] = {"flow_visible": False}
         payload["support"] = {
+            "live_context": _live_context_summary_json(live_context_package),
             "proposal_summary": _proposal_summary_json(selection_review=selection_review, flow_run=None),
             "evaluation_summary": _evaluation_summary_json(flow_run=None),
         }
@@ -115,6 +119,7 @@ def run_show_json(
     payload["derived"] = _flow_derived_json(flow_run)
     payload["support"] = {
         "routing_decision": routing_json(flow_run),
+        "live_context": _live_context_summary_json(live_context_package),
         "proposal_summary": _proposal_summary_json(selection_review=selection_review, flow_run=flow_run),
         "evaluation_summary": _evaluation_summary_json(flow_run=flow_run),
         "recent_events": trace_json(flow_run)["support"]["events"][-5:],
@@ -405,6 +410,9 @@ def research_result_json(
     memory_handoff_result: MemoryWriteDecision | None,
     session: CliSession,
     artifact_locator: str | None = None,
+    live_context_package: ContextPackage | None = None,
+    proposal_followup_result: ProposalGenerationBridgeResult | None = None,
+    proposal_followup_issue: str | None = None,
 ) -> dict[str, Any]:
     validate_research_artifact_record(record)
     source_index = {source.source_id: _project_research_source(source) for source in record.source_items}
@@ -441,6 +449,11 @@ def research_result_json(
             "recommendation": record.recommendation,
             "source_ids": list(record.source_ids),
             "sources": [source_index[source.source_id] for source in record.source_items],
+            "live_context": _live_context_summary_json(live_context_package),
+            "proposal_followup": _proposal_followup_summary_json(
+                proposal_followup_result=proposal_followup_result,
+                proposal_followup_issue=proposal_followup_issue,
+            ),
         },
         "session": {
             "project_id": session.scope.project_id,
@@ -449,6 +462,54 @@ def research_result_json(
             "output_mode": session.output_mode,
             "json_output": session.json_output,
         },
+    }
+
+
+def _live_context_summary_json(context_package: ContextPackage | None) -> dict[str, Any] | None:
+    if context_package is None:
+        return None
+
+    return {
+        "assembled": True,
+        "purpose": context_package.purpose,
+        "truth_families": [record.truth_family for record in context_package.ordered_truth_records],
+        "truth_record_count": len(context_package.ordered_truth_records),
+        "governance_truth_count": len(context_package.governance_truth_records),
+        "memory_support_count": len(context_package.memory_support_inputs),
+        "compiled_knowledge_support_count": len(context_package.compiled_knowledge_support_inputs),
+        "archive_support_count": len(context_package.archive_support_inputs),
+        "direct_support_count": len(context_package.support_inputs),
+        "ordered_support_source_families": [
+            support_input.source_family for support_input in context_package.ordered_support_inputs
+        ],
+    }
+
+
+def _proposal_followup_summary_json(
+    *,
+    proposal_followup_result: ProposalGenerationBridgeResult | None,
+    proposal_followup_issue: str | None,
+) -> dict[str, Any] | None:
+    if proposal_followup_result is None and proposal_followup_issue is None:
+        return None
+
+    if proposal_followup_result is None:
+        return {
+            "attempted": True,
+            "proposal_request_built": False,
+            "proposal_generation_ran": False,
+            "proposal_count": None,
+            "no_generation_reason": proposal_followup_issue,
+            "summary": None,
+        }
+
+    return {
+        "attempted": True,
+        "proposal_request_built": proposal_followup_result.proposal_request_built,
+        "proposal_generation_ran": proposal_followup_result.proposal_generation_ran,
+        "proposal_count": proposal_followup_result.proposal_count,
+        "no_generation_reason": proposal_followup_result.no_generation_reason or proposal_followup_issue,
+        "summary": proposal_followup_result.summary,
     }
 
 

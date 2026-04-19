@@ -68,7 +68,7 @@
 - `memory_handoff.py` distills validated research artifacts into bounded memory-worthy inputs and delegates final write/reject/defer authority to the current Memory write pipeline.
 - `legacy.py` still exists because real callers/tests still use `ResearchResult` and the compatibility request path; it is intentionally isolated and not the main path.
 - CLI research integration now exists and has been verified against the live runtime; the CLI remains a thin operator surface over this package rather than the owner of research semantics.
-- Orchestrator-integrated research continuation now exists in one bounded form: post-selection `research_followup` can enter the existing research stage, preserve a `ResearchArtifact`, and then pass that artifact through an explicit downstream sufficiency evaluation before stopping truthfully at the research boundary.
+- Orchestrator-integrated research continuation now exists in one bounded form: post-selection `research_followup` can enter the existing research stage, preserve a `ResearchArtifact`, pass that artifact through an explicit downstream sufficiency evaluation, and when sufficient build an explicit decision-support handoff, an explicit proposal-support package, an explicit proposal-input package, and when the bounded repo-local runtime/context inputs are present a preserved proposal output before stopping truthfully at the proposal-output boundary.
 
 # Local Invariants / Contract Notes
 
@@ -84,6 +84,10 @@
 - Memory handoff is selective, distilled, and thin; it must not dump whole research artifacts into Memory or bypass the current Memory write pipeline.
 - Orchestrator entry into research does not make research output permission, truth, action, governance, or execution authority.
 - Research sufficiency evaluation downstream of orchestrator entry does not upgrade research into permission or truth; it only distinguishes decision-support-ready output from explicit unresolved gaps.
+- Downstream decision-support handoff building also does not upgrade research into permission or truth; it only preserves decomposed support for later downstream consumption.
+- Downstream proposal-support package building also does not upgrade research into permission or truth; it only preserves decomposed support for later proposal consumption.
+- Downstream proposal-input package building also does not upgrade research into permission or truth; it only preserves decomposed support for later proposal generation.
+- Downstream proposal generation after a lawful proposal-input package also does not upgrade research into permission or truth; it only preserves bounded proposal output and still does not authorize selection, action, governance, or execution.
 - Future research work must stay inside this package instead of reintroducing flat blob modules.
 
 # Active Risks / Blockers / Unresolved Issues
@@ -93,7 +97,7 @@
 - Research-to-memory gating is intentionally simple and could still over- or under-select some artifacts until more real usage sharpens the boundary.
 - The legacy surface still exists and can drift if future work updates only the active path without checking remaining callers/tests.
 - The temporary `research_repair` formatter bridge naming can mislead readers unless they check the actual 3-step runtime path.
-- Orchestrator-integrated research continuation now exists only as a bounded research-plus-sufficiency boundary stop; there is still no hidden research-to-governance or research-to-execution shortcut.
+- Orchestrator-integrated research continuation now exists only as a bounded research-plus-sufficiency-plus-decision-support-plus-proposal-support-plus-proposal-input-plus-optional-proposal-output stop; there is still no hidden automatic selection, research-to-action, research-to-governance, or research-to-execution shortcut.
 
 # Next Continuation Steps
 

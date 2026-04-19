@@ -22,6 +22,7 @@
 - `jeff/cognitive/selection/__init__.py`
 - `jeff/cognitive/selection/contracts.py`
 - `jeff/cognitive/selection/decision.py`
+- `jeff/cognitive/selection/proposal_output_to_selection_bridge.py`
 
 # Current Implementation Reality
 
@@ -30,7 +31,8 @@
 - `SelectionRequest` is centered on `ProposalResult`.
 - `SelectionResult` still carries explicit non-selection outcomes as `reject_all`, `defer`, or `escalate`.
 - `run_selection(...)` now compares current proposal options deterministically using only visible Selection-local factors.
-- No runtime/model path, validation engine, or orchestrator wiring lives in this package yet.
+- Selection now also owns a deterministic fail-closed bridge that turns preserved lawful proposal output into a bounded `SelectionRequest`, runs Selection, and preserves Selection output without implying action, governance, or execution.
+- Orchestrator now uses that explicit Selection-local bridge after lawful post-research proposal output exists, and may then hand the preserved `SelectionResult` into the existing downstream post-selection chain.
 
 # Important Invariants
 
@@ -38,6 +40,8 @@
 - Honest non-selection remains explicit and limited to `reject_all`, `defer`, or `escalate`.
 - Selection does not grant permission.
 - Planning-needed information may influence comparison, but it does not become plan authority.
+- Proposal output stays proposal output until the explicit Selection bridge runs; the bridge preserves Selection output only and does not collapse Selection into action or permission.
+- Any continued downstream use of preserved Selection output remains outside Selection ownership and remains non-authorizing until later lawful downstream stages say otherwise.
 
 # Next Continuation Steps
 

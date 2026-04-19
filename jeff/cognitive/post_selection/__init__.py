@@ -53,6 +53,20 @@ from .research_output_sufficiency_bridge import (
     ResearchOutputSufficiencyResult,
     evaluate_research_output_sufficiency,
 )
+from .research_to_decision_support_bridge import (
+    ResearchDecisionSupportError,
+    ResearchDecisionSupportHandoff,
+    ResearchDecisionSupportIssue,
+    ResearchDecisionSupportRequest,
+    build_research_decision_support_handoff,
+)
+from .research_to_proposal_consumer import (
+    ProposalSupportPackage,
+    ResearchProposalConsumerError,
+    ResearchProposalConsumerIssue,
+    ResearchProposalConsumerRequest,
+    consume_research_for_proposal_support,
+)
 
 __all__ = [
     "ActionFormationError",
@@ -77,6 +91,14 @@ __all__ = [
     "PlanActionBridgeIssue",
     "PlanActionBridgeRequest",
     "PlannedActionBridgeResult",
+    "ProposalSupportPackage",
+    "ResearchDecisionSupportError",
+    "ResearchDecisionSupportHandoff",
+    "ResearchDecisionSupportIssue",
+    "ResearchDecisionSupportRequest",
+    "ResearchProposalConsumerError",
+    "ResearchProposalConsumerIssue",
+    "ResearchProposalConsumerRequest",
     "ResearchOutputSufficiencyError",
     "ResearchOutputSufficiencyIssue",
     "ResearchOutputSufficiencyRequest",
@@ -89,8 +111,10 @@ __all__ = [
     "SelectionEffectiveProposalMaterializationError",
     "SelectionEffectiveProposalMaterializationIssue",
     "SelectionEffectiveProposalRequest",
+    "build_research_decision_support_handoff",
     "build_operator_selection_override",
     "bridge_plan_to_action",
+    "consume_research_for_proposal_support",
     "evaluate_research_output_sufficiency",
     "form_action_from_materialized_proposal",
     "handoff_action_to_governance",

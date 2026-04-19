@@ -18,6 +18,21 @@ structurally valid; no record is durably stored.
 
 Supersede and merge paths execute the full write pipeline then additionally
 update the target record's status and create the relevant cross-links.
+
+Atomic logical write unit
+-------------------------
+For each of _run_pipeline (standard write), supersede_candidate, and
+merge_into_candidate, the atomic boundary (store.atomic()) wraps:
+ - committed record persistence
+ - supersede/merge status updates (where applicable)
+ - support link persistence
+ - supersession/merge link persistence (where applicable)
+ - embedding/index persistence (index_record with strict=True)
+ - write-event persistence (_emit_write_event)
+
+On the PostgreSQL path any failure inside the block rolls the whole unit back,
+so a committed record cannot outlive its links, embedding, or audit event.
+On the in-memory path store.atomic() is a no-op (test fallback only).
 """
 
 from __future__ import annotations
@@ -189,31 +204,31 @@ def supersede_candidate(
         schema_version=record.schema_version,
         supersedes_memory_id=str(target_id),
     )
-    store._store_committed_record(record)
 
-    # Mark old record as superseded
-    store._mark_superseded(superseded_memory_id=target_id, new_memory_id=new_memory_id)
-
-    # Build and persist links
+    # Build links before entering atomic block so construction errors don't
+    # leave a half-written record in the store.
     support_links = build_support_links(record=record)
     supersession_link = build_supersession_link(
         new_memory_id=new_memory_id,
         superseded_memory_id=target_id,
     )
     all_links = support_links + (supersession_link,)
-    for link in all_links:
-        store.store_link(link)
 
-    # Index
-    index_record(record, store=store, embedder=embedder)
+    with store.atomic():
+        store._store_committed_record(record)
+        store._mark_superseded(superseded_memory_id=target_id, new_memory_id=new_memory_id)
+        for link in all_links:
+            store.store_link(link)
+        # Index + write-event are part of the atomic logical write: on PostgreSQL
+        # any failure here rolls back the record, status change, and links.
+        index_record(record, store=store, embedder=embedder, strict=True)
+        _emit_write_event(
+            store=store,
+            candidate=candidate,
+            outcome="supersede_existing",
+            memory_id=str(new_memory_id),
+        )
 
-    # Emit write event
-    _emit_write_event(
-        store=store,
-        candidate=candidate,
-        outcome="supersede_existing",
-        memory_id=str(new_memory_id),
-    )
     record_write_outcome("supersede_existing")
 
     decision = MemoryWriteDecision(
@@ -321,25 +336,24 @@ def merge_into_candidate(
         superseded_by_memory_id=old_record.superseded_by_memory_id,
         merged_into_memory_id=old_record.merged_into_memory_id,
     )
-    store._store_committed_record(updated)
-
-    # Build and persist merge link
     merge_link = build_merge_link(
         target_memory_id=target_id,
         merged_into_memory_id=target_id,
     )
-    store.store_link(merge_link)
 
-    # Re-index the updated record
-    index_record(updated, store=store, embedder=embedder)
+    with store.atomic():
+        store._store_committed_record(updated)
+        store.store_link(merge_link)
+        # Index + write-event are part of the atomic logical write: on PostgreSQL
+        # any failure here rolls back the merge.
+        index_record(updated, store=store, embedder=embedder, strict=True)
+        _emit_write_event(
+            store=store,
+            candidate=candidate,
+            outcome="merge_into_existing",
+            memory_id=str(target_id),
+        )
 
-    # Emit write event
-    _emit_write_event(
-        store=store,
-        candidate=candidate,
-        outcome="merge_into_existing",
-        memory_id=str(target_id),
-    )
     record_write_outcome("merge_into_existing")
 
     decision = MemoryWriteDecision(
@@ -451,19 +465,17 @@ def _run_pipeline(
         )
         return MemoryWriteResult(write_decision=decision)
 
-    # Stage 7: commit
-    store._store_committed_record(record)
-
-    # Stage 8: indexing (committed record stands even if indexing fails)
-    index_record(record, store=store, embedder=embedder)
-
-    # Stage 9: linking
+    # Stage 7–10: record + links + index + write-event are one atomic logical write.
+    # On the PostgreSQL path any failure inside the block rolls back the whole unit;
+    # on the in-memory path atomic() is a no-op (best-effort test semantics).
     links = build_support_links(record=record)
-    for link in links:
-        store.store_link(link)
+    with store.atomic():
+        store._store_committed_record(record)
+        for link in links:
+            store.store_link(link)
+        index_record(record, store=store, embedder=embedder, strict=True)
+        _emit_write_event(store=store, candidate=candidate, outcome="write", memory_id=str(memory_id))
 
-    # Emit write event
-    _emit_write_event(store=store, candidate=candidate, outcome="write", memory_id=str(memory_id))
     record_write_outcome("write")
 
     decision = MemoryWriteDecision(
@@ -491,17 +503,19 @@ def _emit_write_event(
     outcome: str,
     memory_id: str | None = None,
 ) -> None:
-    try:
-        event = MemoryWriteEvent(
-            write_event_id=coerce_write_event_id(f"we-{uuid.uuid4().hex[:12]}"),
-            candidate_id=candidate.candidate_id,
-            project_id=str(candidate.scope.project_id),
-            write_outcome=outcome,
-            decision_summary=f"{outcome} for candidate {candidate.candidate_id}",
-            created_at=utc_now(),
-            related_memory_id=memory_id,
-        )
-        store.store_write_event(event)
-    except Exception:
-        # Audit failure must not break the write pipeline
-        pass
+    """Persist the write-event audit record.
+
+    Called inside the atomic write block: a failure here propagates and rolls back
+    the logical write on the PostgreSQL path, so the event is part of the same
+    all-or-nothing unit as the committed record, links, and index state.
+    """
+    event = MemoryWriteEvent(
+        write_event_id=coerce_write_event_id(f"we-{uuid.uuid4().hex[:12]}"),
+        candidate_id=candidate.candidate_id,
+        project_id=str(candidate.scope.project_id),
+        write_outcome=outcome,
+        decision_summary=f"{outcome} for candidate {candidate.candidate_id}",
+        created_at=utc_now(),
+        related_memory_id=memory_id,
+    )
+    store.store_write_event(event)

@@ -7,6 +7,7 @@ from pathlib import Path
 from jeff.action import GovernedExecutionRequest, normalize_outcome
 from jeff.action.execution import ExecutionResult
 from jeff.cognitive import ResearchArtifactStore, SelectionResult, evaluate_outcome
+from jeff.cognitive.research.archive import ResearchArchiveStore
 from jeff.cognitive.post_selection.action_formation import ActionFormationRequest, form_action_from_materialized_proposal
 from jeff.cognitive.post_selection.action_resolution import SelectionActionResolutionRequest, resolve_selection_action_basis
 from jeff.cognitive.post_selection.effective_proposal import SelectionEffectiveProposalRequest, materialize_effective_proposal
@@ -25,6 +26,7 @@ from jeff.infrastructure import (
     load_runtime_config,
 )
 from jeff.interface.commands import InterfaceContext, SelectionReviewRecord
+from jeff.knowledge import KnowledgeStore
 from jeff.memory import InMemoryMemoryStore
 from jeff.orchestrator.lifecycle import FlowLifecycle
 from jeff.orchestrator.runner import FlowRunResult
@@ -128,6 +130,8 @@ def build_startup_interface_context(*, base_dir: str | Path | None = None) -> In
             runtime_store.home.research_artifacts_dir,
             legacy_root_dirs=runtime_store.research_artifact_legacy_dirs(configured_root),
         ),
+        research_archive_store=ResearchArchiveStore(runtime_store.home.artifacts_dir),
+        knowledge_store=KnowledgeStore(runtime_store.home.artifacts_dir),
         memory_store=InMemoryMemoryStore() if runtime_config.research.enable_memory_handoff else None,
         research_memory_handoff_enabled=runtime_config.research.enable_memory_handoff,
         runtime_store=runtime_store,

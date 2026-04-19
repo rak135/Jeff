@@ -11,6 +11,8 @@ from jeff.core.schemas import Scope
 TriggerFamily = Literal["operator_input", "system_trigger"]
 SupportFamily = Literal[
     "memory",
+    "compiled_knowledge",
+    "archive",
     "artifact",
     "evidence",
     "research",
@@ -24,7 +26,7 @@ SourceFamily = Literal[
     "research",
 ]
 
-_BLOCKED_CONTEXT_FAMILIES = {"session_state", "ui_state", "trace", "log", "archive"}
+_BLOCKED_CONTEXT_FAMILIES = {"session_state", "ui_state", "trace", "log"}
 
 
 def require_text(value: str, *, field_name: str) -> str:
@@ -68,7 +70,16 @@ class TriggerInput:
 
 @dataclass(frozen=True, slots=True)
 class TruthRecord:
-    truth_family: Literal["project", "work_unit", "run"]
+    truth_family: Literal[
+        "project",
+        "work_unit",
+        "run",
+        "governance_blocker",
+        "governance_integrity",
+        "governance_approval_dependency",
+        "governance_constraint",
+        "governance_readiness",
+    ]
     scope: Scope
     summary: str
 
@@ -87,7 +98,15 @@ class SupportInput:
     def __post_init__(self) -> None:
         if self.source_family in _BLOCKED_CONTEXT_FAMILIES:
             raise ValueError(f"{self.source_family} is not valid context support")
-        if self.source_family not in {"memory", "artifact", "evidence", "research", "operator_material"}:
+        if self.source_family not in {
+            "memory",
+            "compiled_knowledge",
+            "archive",
+            "artifact",
+            "evidence",
+            "research",
+            "operator_material",
+        }:
             raise ValueError(f"unsupported support source_family: {self.source_family}")
         object.__setattr__(self, "summary", require_text(self.summary, field_name="summary"))
         if self.source_id is not None:

@@ -18,6 +18,13 @@ from jeff.core.schemas import Scope
 from jeff.core.state import bootstrap_global_state
 from jeff.core.transition import TransitionRequest, TransitionResult, apply_transition
 from jeff.governance import CurrentTruthSnapshot, Policy, evaluate_action_entry
+from jeff.infrastructure import (
+    AdapterFactoryConfig,
+    AdapterProviderKind,
+    ModelAdapterRuntimeConfig,
+    PurposeOverrides,
+    build_infrastructure_services,
+)
 from jeff.memory import InMemoryMemoryStore, MemorySupportRef, create_memory_candidate, write_memory_candidate
 from jeff.orchestrator import run_flow, stage_order_for_flow, validate_stage_sequence
 
@@ -203,6 +210,15 @@ def _standard_stage_handlers(scope: Scope):
 def test_flow_family_stage_orders_are_explicit() -> None:
     stages = stage_order_for_flow("bounded_proposal_selection_action")
     research_followup_stages = stage_order_for_flow("conditional_research_followup")
+    research_followup_with_planning = (
+        "context",
+        "proposal",
+        "selection",
+        "research",
+        "planning",
+        "action",
+        "governance",
+    )
 
     assert stages == (
         "context",
@@ -231,6 +247,10 @@ def test_flow_family_stage_orders_are_explicit() -> None:
     assert validate_stage_sequence(
         flow_family="conditional_research_followup",
         stages=research_followup_stages,
+    ).valid is True
+    assert validate_stage_sequence(
+        flow_family="conditional_research_followup",
+        stages=research_followup_with_planning,
     ).valid is True
 
 
@@ -501,7 +521,7 @@ def test_conditional_planning_flow_can_bridge_single_bounded_step_into_action_an
     ]
 
 
-def test_conditional_research_flow_enters_research_and_holds_at_research_boundary() -> None:
+def test_conditional_research_flow_enters_research_and_holds_at_proposal_output_boundary() -> None:
     scope = Scope(project_id="project-1", work_unit_id="wu-1", run_id="run-1")
     state = _state_with_scope(scope)
 
@@ -545,6 +565,10 @@ def test_conditional_research_flow_enters_research_and_holds_at_research_boundar
             source_ids=("source-1",),
         )
 
+    research_stage.proposal_generation_infrastructure_services = _proposal_generation_services()
+    research_stage.proposal_generation_objective = "Frame bounded follow-up options from the preserved research"
+    research_stage.proposal_generation_visible_constraints = ("Stay inside the current project scope.",)
+
     def action_stage(_research):
         return Action(
             action_id="action-research-1",
@@ -578,14 +602,65 @@ def test_conditional_research_flow_enters_research_and_holds_at_research_boundar
     assert result.lifecycle.lifecycle_state == "waiting"
     assert result.lifecycle.current_stage == "research"
     assert result.routing_decision is not None
-    assert result.routing_decision.routed_outcome == "research_followup"
+    assert result.routing_decision.routed_outcome == "defer"
     assert result.routing_decision.source_stage == "research"
     assert "Research entered and produced a bounded research artifact" in result.routing_decision.reason_summary
     assert "Sufficiency evaluation: decision_support_ready." in result.routing_decision.reason_summary
+    assert "Decision-support handoff ready:" in result.routing_decision.reason_summary
+    assert "Proposal-support package ready:" in result.routing_decision.reason_summary
+    assert "Proposal-input package ready:" in result.routing_decision.reason_summary
+    assert "Proposal output ready:" in result.routing_decision.reason_summary
+    assert "Selection then ran via" in result.routing_decision.reason_summary
+    assert "reused the existing downstream post-selection chain" in result.routing_decision.reason_summary
     assert "research" in result.outputs
+    assert result.outputs["research_output_sufficiency"].downstream_target == "decision_support_ready"
+    assert result.outputs["research_decision_support_handoff"].decision_support_ready is True
+    assert result.outputs["research_proposal_support_package"].proposal_support_ready is True
+    assert result.outputs["proposal_input_package"].proposal_input_ready is True
+    assert result.outputs["proposal_generation_bridge_result"].proposal_generation_ran is True
+    assert result.outputs["proposal_output"].proposal_count == 1
+    assert result.outputs["selection_output"].non_selection_outcome == "defer"
     assert [event.stage for event in result.events if event.event_type == "stage_entered"] == [
         "context",
         "proposal",
         "selection",
         "research",
     ]
+
+
+def _proposal_generation_services():
+    return build_infrastructure_services(
+        ModelAdapterRuntimeConfig(
+            default_adapter_id="fake-default",
+            adapters=(
+                AdapterFactoryConfig(
+                    provider_kind=AdapterProviderKind.FAKE,
+                    adapter_id="fake-default",
+                    model_name="default-model",
+                    fake_text_response="wrong adapter",
+                ),
+                AdapterFactoryConfig(
+                    provider_kind=AdapterProviderKind.FAKE,
+                    adapter_id="fake-proposal",
+                    model_name="proposal-model",
+                    fake_text_response=(
+                        "PROPOSAL_COUNT: 1\n"
+                        "SCARCITY_REASON: Only one serious bounded option is currently grounded.\n"
+                        "OPTION_1_TYPE: clarify\n"
+                        "OPTION_1_TITLE: Clarify the current export constraint\n"
+                        "OPTION_1_SUMMARY: Ask one bounded clarifying question before any later downstream review step.\n"
+                        "OPTION_1_WHY_NOW: Current research narrows the path but still preserves one decisive uncertainty.\n"
+                        "OPTION_1_ASSUMPTIONS: The current export constraint can be clarified quickly\n"
+                        "OPTION_1_RISKS: Clarification may confirm there is still no stronger path\n"
+                        "OPTION_1_CONSTRAINTS: Stay inside the current project scope\n"
+                        "OPTION_1_BLOCKERS: Further downstream review remains outside this proposal slice\n"
+                        "OPTION_1_PLANNING_NEEDED: no\n"
+                        "OPTION_1_FEASIBILITY: Feasible with one bounded follow-up check\n"
+                        "OPTION_1_REVERSIBILITY: Fully reversible\n"
+                        "OPTION_1_SUPPORT_REFS: source-1\n"
+                    ),
+                ),
+            ),
+            purpose_overrides=PurposeOverrides(proposal="fake-proposal"),
+        )
+    )

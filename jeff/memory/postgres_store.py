@@ -1,9 +1,20 @@
 """PostgreSQL-backed memory store implementing MemoryStoreProtocol.
 
 Uses psycopg2 for synchronous PostgreSQL access.
-FTS is provided by PostgreSQL's native tsvector/tsquery.
-Embeddings are stored as JSONB; cosine similarity is computed in Python for v1
-(upgrade to pgvector's <=> operator for production-scale semantic retrieval).
+FTS is provided by PostgreSQL's native tsvector/plainto_tsquery with a GIN index.
+Semantic retrieval uses pgvector's <=> (cosine distance) operator with an HNSW index —
+no Python-side similarity computation is performed for the PostgreSQL path.
+
+Requires:
+  - psycopg2-binary >= 2.9
+  - PostgreSQL with the pgvector extension (CREATE EXTENSION vector)
+    https://github.com/pgvector/pgvector  (>= 0.5.0 for HNSW index)
+
+Transaction ownership:
+  Every mutating method executes its SQL but only commits when _auto_commit is True
+  (the default).  Call store.atomic() as a context manager to group multiple operations
+  into one transaction.  On normal exit the context manager commits; on exception it
+  rolls back, so no partial writes can survive a failure.
 
 Usage:
     import psycopg2
@@ -11,13 +22,20 @@ Usage:
 
     conn = psycopg2.connect("postgresql://user:pass@host/dbname")
     store = PostgresMemoryStore(conn)
-    store.initialize_schema()  # idempotent; call once per connection
+    store.initialize_schema()   # idempotent — creates extension, tables, indexes
+
+    # Atomic logical write:
+    with store.atomic():
+        store._store_committed_record(record)
+        store.store_link(link1)
+        store.store_link(link2)
+    # Single commit on exit; full rollback if anything raised.
 """
 
 from __future__ import annotations
 
+import contextlib
 import json
-import math
 import uuid
 
 from jeff.core.schemas import MemoryId, Scope, coerce_memory_id
@@ -32,37 +50,51 @@ except ImportError:
     _PSYCOPG2_AVAILABLE = False
 
 
-_SCHEMA_SQL = """\
+def _make_schema_sql(embedding_dim: int) -> str:
+    """Return the DDL for all memory tables, parameterised by embedding dimension.
+
+    The embedding column is typed vector(N) for native pgvector storage and indexing.
+    Re-running this on an existing database is safe (all statements use IF NOT EXISTS).
+    """
+    return f"""\
+CREATE EXTENSION IF NOT EXISTS vector;
+
 CREATE TABLE IF NOT EXISTS memory_records (
-    memory_id             TEXT PRIMARY KEY,
-    memory_type           TEXT NOT NULL,
-    project_id            TEXT NOT NULL,
-    work_unit_id          TEXT,
-    run_id                TEXT,
-    summary               TEXT NOT NULL,
-    remembered_points     JSONB NOT NULL,
-    why_it_matters        TEXT NOT NULL,
-    support_quality       TEXT NOT NULL,
-    stability             TEXT NOT NULL,
-    record_status         TEXT NOT NULL DEFAULT 'active',
-    conflict_posture      TEXT NOT NULL DEFAULT 'none',
-    freshness_sensitivity TEXT NOT NULL DEFAULT 'low',
-    created_at            TEXT NOT NULL,
-    updated_at            TEXT NOT NULL,
-    created_from_run_id   TEXT,
-    schema_version        TEXT NOT NULL DEFAULT '1.0',
-    supersedes_memory_id  TEXT,
+    memory_id               TEXT PRIMARY KEY,
+    memory_type             TEXT NOT NULL,
+    project_id              TEXT NOT NULL,
+    work_unit_id            TEXT,
+    run_id                  TEXT,
+    summary                 TEXT NOT NULL,
+    remembered_points       JSONB NOT NULL,
+    why_it_matters          TEXT NOT NULL,
+    support_quality         TEXT NOT NULL,
+    stability               TEXT NOT NULL,
+    record_status           TEXT NOT NULL DEFAULT 'active',
+    conflict_posture        TEXT NOT NULL DEFAULT 'none',
+    freshness_sensitivity   TEXT NOT NULL DEFAULT 'low',
+    created_at              TEXT NOT NULL,
+    updated_at              TEXT NOT NULL,
+    created_from_run_id     TEXT,
+    schema_version          TEXT NOT NULL DEFAULT '1.0',
+    supersedes_memory_id    TEXT,
     superseded_by_memory_id TEXT,
-    merged_into_memory_id TEXT,
-    support_refs          JSONB NOT NULL DEFAULT '[]',
-    fts_vector            TSVECTOR,
-    embedding             JSONB
+    merged_into_memory_id   TEXT,
+    support_refs            JSONB NOT NULL DEFAULT '[]',
+    fts_vector              TSVECTOR,
+    embedding               vector({embedding_dim})
 );
 
 CREATE INDEX IF NOT EXISTS memory_records_project_id_idx
     ON memory_records (project_id);
+
 CREATE INDEX IF NOT EXISTS memory_records_fts_idx
     ON memory_records USING GIN (fts_vector);
+
+-- HNSW index for approximate nearest-neighbour semantic search (pgvector >= 0.5.0).
+-- cosine distance: ORDER BY embedding <=> query_vec (lower = more similar)
+CREATE INDEX IF NOT EXISTS memory_records_embedding_idx
+    ON memory_records USING hnsw (embedding vector_cosine_ops);
 
 CREATE TABLE IF NOT EXISTS memory_links (
     link_id       TEXT PRIMARY KEY,
@@ -70,7 +102,7 @@ CREATE TABLE IF NOT EXISTS memory_links (
     link_type     TEXT NOT NULL,
     target_id     TEXT NOT NULL,
     target_family TEXT NOT NULL,
-    metadata      JSONB NOT NULL DEFAULT '{}'
+    metadata      JSONB NOT NULL DEFAULT '{{}}'
 );
 
 CREATE INDEX IF NOT EXISTS memory_links_target_id_idx
@@ -90,15 +122,15 @@ CREATE TABLE IF NOT EXISTS memory_write_events (
 );
 
 CREATE TABLE IF NOT EXISTS memory_retrieval_events (
-    retrieval_event_id TEXT PRIMARY KEY,
-    project_id         TEXT NOT NULL,
-    purpose            TEXT NOT NULL,
-    returned_count     INTEGER NOT NULL,
-    explicit_hit_count INTEGER NOT NULL,
-    lexical_hit_count  INTEGER NOT NULL,
-    semantic_hit_count INTEGER NOT NULL,
+    retrieval_event_id  TEXT PRIMARY KEY,
+    project_id          TEXT NOT NULL,
+    purpose             TEXT NOT NULL,
+    returned_count      INTEGER NOT NULL,
+    explicit_hit_count  INTEGER NOT NULL,
+    lexical_hit_count   INTEGER NOT NULL,
+    semantic_hit_count  INTEGER NOT NULL,
     contradiction_count INTEGER NOT NULL,
-    created_at         TEXT NOT NULL
+    created_at          TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS maintenance_jobs (
@@ -108,7 +140,7 @@ CREATE TABLE IF NOT EXISTS maintenance_jobs (
     job_status TEXT NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    details    JSONB NOT NULL DEFAULT '{}'
+    details    JSONB NOT NULL DEFAULT '{{}}'
 );
 """
 
@@ -116,26 +148,84 @@ CREATE TABLE IF NOT EXISTS maintenance_jobs (
 class PostgresMemoryStore:
     """PostgreSQL-backed memory store.
 
-    The caller owns the connection lifecycle and commits.  Each mutating method
-    commits immediately to keep the store consistent.  For test isolation, wrap
-    calls in a transaction and roll back after the test.
+    Transaction ownership
+    ---------------------
+    When _auto_commit is True (the default), each mutating method commits after
+    its SQL executes.  Use atomic() to group a logical write into one transaction:
+
+        with store.atomic():
+            store._store_committed_record(record)
+            store.store_link(link)
+        # single commit here; rollback if anything raised
+
+    Semantic retrieval
+    ------------------
+    Embeddings are stored in a pgvector vector(N) column.  search_semantic()
+    delegates distance computation entirely to PostgreSQL via the <=> cosine
+    distance operator and an HNSW index.  No Python-side row fetching or
+    cosine computation is performed.
+
+    Locality filtering
+    ------------------
+    Both search_lexical() and search_semantic() filter by project_id only.
+    Callers (retrieve_memory in retrieval.py) apply _scope_matches() to enforce
+    work_unit_id / run_id locality before results enter the candidate pool.
     """
 
-    def __init__(self, conn) -> None:
+    def __init__(self, conn, *, embedding_dim: int = 64) -> None:
         if not _PSYCOPG2_AVAILABLE:
             raise ImportError(
                 "psycopg2 is required for PostgresMemoryStore; "
                 "install it with: pip install psycopg2-binary"
             )
         self._conn = conn
+        self._embedding_dim = embedding_dim
+        self._auto_commit = True  # flipped to False inside atomic()
 
     def initialize_schema(self) -> None:
-        """Create all tables and indexes if they do not exist (idempotent)."""
+        """Create extension, tables, and indexes (idempotent).
+
+        Raises RuntimeError if the pgvector extension is not installed on the server.
+        """
         with self._conn.cursor() as cur:
-            cur.execute(_SCHEMA_SQL)
+            cur.execute(_make_schema_sql(self._embedding_dim))
         self._conn.commit()
 
-    # --- Record operations ---
+    # ------------------------------------------------------------------ #
+    # Transaction management                                               #
+    # ------------------------------------------------------------------ #
+
+    @contextlib.contextmanager
+    def atomic(self):
+        """Context manager for atomic logical write operations.
+
+        Suspends per-method auto-commit.  On normal exit, commits the whole
+        transaction.  On exception, rolls back cleanly so no partial writes
+        survive a failure.
+
+        Nested calls are supported: only the outermost atomic() commits/rolls back.
+        """
+        if not self._auto_commit:
+            # Already inside an atomic block — inner block is a no-op
+            yield
+            return
+        self._auto_commit = False
+        try:
+            yield
+            self._conn.commit()
+        except Exception:
+            self._conn.rollback()
+            raise
+        finally:
+            self._auto_commit = True
+
+    def _commit_if_auto(self) -> None:
+        if self._auto_commit:
+            self._conn.commit()
+
+    # ------------------------------------------------------------------ #
+    # Record operations                                                    #
+    # ------------------------------------------------------------------ #
 
     def allocate_memory_id(self) -> MemoryId:
         return coerce_memory_id(f"memory-{uuid.uuid4().hex[:12]}")
@@ -190,21 +280,21 @@ class PostgresMemoryStore:
                     %s::jsonb, to_tsvector('english', %s)
                 )
                 ON CONFLICT (memory_id) DO UPDATE SET
-                    summary               = EXCLUDED.summary,
-                    remembered_points     = EXCLUDED.remembered_points,
-                    why_it_matters        = EXCLUDED.why_it_matters,
-                    support_quality       = EXCLUDED.support_quality,
-                    stability             = EXCLUDED.stability,
-                    record_status         = EXCLUDED.record_status,
-                    conflict_posture      = EXCLUDED.conflict_posture,
-                    freshness_sensitivity = EXCLUDED.freshness_sensitivity,
-                    updated_at            = EXCLUDED.updated_at,
-                    created_from_run_id   = EXCLUDED.created_from_run_id,
-                    supersedes_memory_id  = EXCLUDED.supersedes_memory_id,
+                    summary                 = EXCLUDED.summary,
+                    remembered_points       = EXCLUDED.remembered_points,
+                    why_it_matters          = EXCLUDED.why_it_matters,
+                    support_quality         = EXCLUDED.support_quality,
+                    stability               = EXCLUDED.stability,
+                    record_status           = EXCLUDED.record_status,
+                    conflict_posture        = EXCLUDED.conflict_posture,
+                    freshness_sensitivity   = EXCLUDED.freshness_sensitivity,
+                    updated_at              = EXCLUDED.updated_at,
+                    created_from_run_id     = EXCLUDED.created_from_run_id,
+                    supersedes_memory_id    = EXCLUDED.supersedes_memory_id,
                     superseded_by_memory_id = EXCLUDED.superseded_by_memory_id,
-                    merged_into_memory_id = EXCLUDED.merged_into_memory_id,
-                    support_refs          = EXCLUDED.support_refs,
-                    fts_vector            = EXCLUDED.fts_vector
+                    merged_into_memory_id   = EXCLUDED.merged_into_memory_id,
+                    support_refs            = EXCLUDED.support_refs,
+                    fts_vector              = EXCLUDED.fts_vector
                 """,
                 (
                     str(record.memory_id), record.memory_type,
@@ -221,7 +311,7 @@ class PostgresMemoryStore:
                     refs_json, fts_text,
                 ),
             )
-        self._conn.commit()
+        self._commit_if_auto()
 
     def _mark_superseded(self, *, superseded_memory_id: MemoryId, new_memory_id: MemoryId) -> None:
         with self._conn.cursor() as cur:
@@ -233,9 +323,11 @@ class PostgresMemoryStore:
                 """,
                 (str(new_memory_id), str(superseded_memory_id)),
             )
-        self._conn.commit()
+        self._commit_if_auto()
 
-    # --- Link operations ---
+    # ------------------------------------------------------------------ #
+    # Link operations                                                      #
+    # ------------------------------------------------------------------ #
 
     def store_link(self, link) -> None:
         meta_json = json.dumps(dict(link.metadata) if link.metadata else {})
@@ -252,7 +344,7 @@ class PostgresMemoryStore:
                     link.link_type, link.target_id, link.target_family, meta_json,
                 ),
             )
-        self._conn.commit()
+        self._commit_if_auto()
 
     def get_links_for_target(self, target_id: str, project_id: str) -> tuple:
         with self._conn.cursor() as cur:
@@ -281,7 +373,9 @@ class PostgresMemoryStore:
             rows = cur.fetchall()
         return tuple(_row_to_link(row) for row in rows)
 
-    # --- Retrieval search ---
+    # ------------------------------------------------------------------ #
+    # Retrieval search                                                     #
+    # ------------------------------------------------------------------ #
 
     def search_lexical(
         self,
@@ -291,15 +385,22 @@ class PostgresMemoryStore:
         memory_type_filter: str | None,
         limit: int,
     ) -> tuple[CommittedMemoryRecord, ...]:
-        """Full-text search using PostgreSQL plainto_tsquery (English dictionary)."""
+        """Full-text search using PostgreSQL plainto_tsquery (English dictionary).
+
+        Filters by project_id and active status only.  Callers are responsible for
+        applying work_unit_id / run_id locality filtering on the returned records.
+        """
         if not query.strip():
             return ()
+
         type_clause = "AND memory_type = %s" if memory_type_filter else ""
-        params: list = [project_id, query, query]
+        # Parameter order must match %s positions in the SQL string:
+        # 1: query (for ts_rank)  2: project_id  3: query (for @@ match)
+        # [optional 4: memory_type_filter]  final: limit
         if memory_type_filter:
-            params = [project_id, query, memory_type_filter, query, limit]
+            exec_params = [query, project_id, query, memory_type_filter, limit]
         else:
-            params = [project_id, query, query, limit]
+            exec_params = [query, project_id, query, limit]
 
         sql = f"""
             SELECT *,
@@ -312,16 +413,12 @@ class PostgresMemoryStore:
             ORDER BY _rank DESC
             LIMIT %s
         """
-        if memory_type_filter:
-            exec_params = [query, project_id, query, memory_type_filter, limit]
-        else:
-            exec_params = [query, project_id, query, limit]
-
         with self._conn.cursor() as cur:
             cur.execute(sql, exec_params)
             rows = cur.fetchall()
             desc = cur.description
-        # Strip the synthetic _rank column before building records
+
+        # Strip the synthetic _rank column so _row_to_record receives clean columns
         rank_idx = [d[0] for d in desc].index("_rank")
         clean_rows = [row[:rank_idx] + row[rank_idx + 1:] for row in rows]
         clean_desc = [d for d in desc if d[0] != "_rank"]
@@ -335,65 +432,62 @@ class PostgresMemoryStore:
         memory_type_filter: str | None,
         limit: int,
     ) -> tuple[CommittedMemoryRecord, ...]:
-        """Cosine similarity search using stored JSONB embeddings.
+        """Cosine similarity search using pgvector's <=> operator.
 
-        Computes similarity in Python for v1.  Migrate to pgvector's <=> operator
-        for production-scale retrieval without changing the store interface.
-        Records without stored embeddings are silently skipped.
+        Distance computation and ordering happen entirely inside PostgreSQL via the
+        HNSW index on the embedding column.  No Python-side similarity computation
+        is performed.
+
+        Filters by project_id and active status only.  Callers are responsible for
+        applying work_unit_id / run_id locality filtering on the returned records.
         """
         if not query_embedding:
             return ()
-        query_norm = _vec_norm(query_embedding)
-        if query_norm == 0.0:
-            return ()
+
+        # Format the query vector as a pgvector literal: [f1,f2,...,fN]
+        vec_str = "[" + ",".join(str(float(x)) for x in query_embedding) + "]"
 
         type_clause = "AND memory_type = %s" if memory_type_filter else ""
-        params: list = [project_id]
+        # Parameter order: project_id, [memory_type,] vec_str (for ORDER BY), limit
         if memory_type_filter:
-            params.append(memory_type_filter)
+            exec_params = [project_id, memory_type_filter, vec_str, limit]
+        else:
+            exec_params = [project_id, vec_str, limit]
 
         sql = f"""
-            SELECT *, embedding
+            SELECT *
             FROM memory_records
             WHERE project_id = %s
               AND record_status = 'active'
               AND embedding IS NOT NULL
               {type_clause}
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s
         """
         with self._conn.cursor() as cur:
-            cur.execute(sql, params)
+            cur.execute(sql, exec_params)
             rows = cur.fetchall()
             desc = cur.description
 
-        if not rows:
-            return ()
-
-        cols = [d[0] for d in desc]
-        emb_col = cols.index("embedding")
-
-        scored: list[tuple[float, CommittedMemoryRecord]] = []
-        for row in rows:
-            raw_emb = row[emb_col]
-            if raw_emb is None:
-                continue
-            emb = raw_emb if isinstance(raw_emb, list) else json.loads(raw_emb)
-            score = _cosine_similarity(query_embedding, query_norm, emb)
-            record = _row_to_record(row, desc)
-            scored.append((score, record))
-
-        scored.sort(key=lambda x: x[0], reverse=True)
-        return tuple(r for _, r in scored[:limit])
+        return tuple(_row_to_record(row, desc) for row in rows)
 
     def store_embedding(self, memory_id: str, embedding: list[float]) -> None:
-        emb_json = json.dumps(embedding)
+        """Store a vector embedding for a committed record.
+
+        The embedding is stored as a pgvector vector(N) value, enabling native
+        distance computation in search_semantic().
+        """
+        vec_str = "[" + ",".join(str(float(x)) for x in embedding) + "]"
         with self._conn.cursor() as cur:
             cur.execute(
-                "UPDATE memory_records SET embedding = %s::jsonb WHERE memory_id = %s",
-                (emb_json, memory_id),
+                "UPDATE memory_records SET embedding = %s::vector WHERE memory_id = %s",
+                (vec_str, memory_id),
             )
-        self._conn.commit()
+        self._commit_if_auto()
 
-    # --- Audit / event operations ---
+    # ------------------------------------------------------------------ #
+    # Audit / event operations                                             #
+    # ------------------------------------------------------------------ #
 
     def store_write_event(self, event) -> None:
         with self._conn.cursor() as cur:
@@ -412,7 +506,7 @@ class PostgresMemoryStore:
                     event.defer_reason_code, event.related_memory_id,
                 ),
             )
-        self._conn.commit()
+        self._commit_if_auto()
 
     def store_retrieval_event(self, event) -> None:
         with self._conn.cursor() as cur:
@@ -433,7 +527,7 @@ class PostgresMemoryStore:
                     event.created_at,
                 ),
             )
-        self._conn.commit()
+        self._commit_if_auto()
 
     def store_maintenance_job(self, job) -> None:
         details_json = json.dumps(dict(job.details) if job.details else {})
@@ -453,10 +547,12 @@ class PostgresMemoryStore:
                     job.job_status, job.created_at, job.updated_at, details_json,
                 ),
             )
-        self._conn.commit()
+        self._commit_if_auto()
 
 
-# --- Private helpers ---
+# ------------------------------------------------------------------ #
+# Private helpers                                                      #
+# ------------------------------------------------------------------ #
 
 def _row_to_record(row: tuple, description) -> CommittedMemoryRecord:
     cols = [d[0] for d in description]
@@ -517,16 +613,3 @@ def _row_to_link(row: tuple):
         target_family=target_family,
         metadata=meta,
     )
-
-
-def _vec_norm(v: list[float]) -> float:
-    return math.sqrt(sum(x * x for x in v))
-
-
-def _cosine_similarity(a: list[float], a_norm: float, b: list[float]) -> float:
-    if len(a) != len(b):
-        return 0.0
-    b_norm = _vec_norm(b)
-    if b_norm == 0.0:
-        return 0.0
-    return sum(x * y for x, y in zip(a, b)) / (a_norm * b_norm)

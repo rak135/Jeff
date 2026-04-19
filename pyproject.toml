@@ -7,6 +7,10 @@ name = "jeff"
 version = "0.1.0"
 requires-python = ">=3.11"
 readme = "README.md"
+dependencies = []
+
+[project.optional-dependencies]
+postgres = ["psycopg2-binary>=2.9"]
 
 [project.scripts]
 jeff = "jeff.main:main"

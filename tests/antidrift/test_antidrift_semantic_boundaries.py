@@ -210,7 +210,7 @@ def test_execution_outcome_and_evaluation_remain_distinct() -> None:
 
 
 def test_only_memory_layer_creates_candidates_and_memory_stays_support_only() -> None:
-    with pytest.raises(ValueError, match="must be created by jeff.memory.write_pipeline"):
+    with pytest.raises(ValueError, match="must be created by jeff.memory.candidate_builder"):
         MemoryCandidate(
             candidate_id="candidate-1",
             memory_type="operational",

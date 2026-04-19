@@ -15,6 +15,7 @@ from typing import Any
 from jeff.infrastructure import InfrastructureServices
 
 from ..types import require_text
+from .archive.api import archive_research_record
 from .contracts import (
     EvidenceItem,
     EvidencePack,
@@ -294,6 +295,7 @@ def persist_research_artifact(
     evidence_pack: EvidencePack,
     artifact: ResearchArtifact,
     store: ResearchArtifactStore,
+    archive_store=None,
     *,
     debug_emitter: ResearchDebugEmitter | None = None,
 ) -> ResearchArtifactRecord:
@@ -304,6 +306,12 @@ def persist_research_artifact(
         debug_emitter=debug_emitter,
     )
     store.save(record, debug_emitter=debug_emitter)
+    if archive_store is not None:
+        archive_research_record(
+            record,
+            store=archive_store,
+            target_project_id=research_request.project_id,
+        )
     return record
 
 
@@ -311,6 +319,7 @@ def run_and_persist_document_research(
     research_request: ResearchRequest,
     infrastructure_services: InfrastructureServices,
     store: ResearchArtifactStore,
+    archive_store=None,
     adapter_id: str | None = None,
     debug_emitter=None,
 ) -> ResearchArtifactRecord:
@@ -328,6 +337,7 @@ def run_and_persist_document_research(
         evidence_pack=evidence_pack,
         artifact=artifact,
         store=store,
+        archive_store=archive_store,
         debug_emitter=debug_emitter,
     )
 
@@ -336,6 +346,7 @@ def run_and_persist_web_research(
     research_request: ResearchRequest,
     infrastructure_services: InfrastructureServices,
     store: ResearchArtifactStore,
+    archive_store=None,
     adapter_id: str | None = None,
     debug_emitter=None,
 ) -> ResearchArtifactRecord:
@@ -353,6 +364,7 @@ def run_and_persist_web_research(
         evidence_pack=evidence_pack,
         artifact=artifact,
         store=store,
+        archive_store=archive_store,
         debug_emitter=debug_emitter,
     )
 

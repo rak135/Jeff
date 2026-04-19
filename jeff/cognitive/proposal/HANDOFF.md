@@ -24,6 +24,8 @@
 - `jeff/cognitive/proposal/contracts.py`
 - `jeff/cognitive/proposal/api.py`
 - `jeff/cognitive/proposal/generation.py`
+- `jeff/cognitive/proposal/proposal_generation_bridge.py`
+- `jeff/cognitive/proposal/proposal_support_package_consumer.py`
 - `jeff/cognitive/proposal/parsing.py`
 - `jeff/cognitive/proposal/validation.py`
 - `jeff/cognitive/proposal/prompt_files.py`
@@ -41,9 +43,13 @@
 - Proposal now also has a deterministic Step 1 parser that turns raw bounded text into structured parsed data without semantic judgment.
 - Proposal now also has a deterministic semantic validator that turns parsed Step 1 output into a lawful `ProposalResult` or explicit validation issues.
 - Proposal now also has a thin end-to-end API entry that composes build, runtime, parse, and validation into either `ProposalPipelineSuccess` with a `ProposalResult` or explicit stage-specific failure.
+- Proposal now also has a proposal-local fail-closed consumer that turns a preserved proposal-support package into an explicit proposal-input package for later proposal generation without auto-running generation.
+- Proposal now also has a proposal-local fail-closed proposal-generation bridge that turns a lawful preserved `ProposalInputPackage` plus the bounded repo-local generation inputs into a lawful `ProposalGenerationRequest`, runs the real proposal pipeline, preserves proposal output when generation succeeds, and otherwise preserves a truthful non-generation boundary.
+- When orchestration explicitly chooses to continue after lawful preserved proposal output exists, that downstream continuation now happens through a separate Selection-local proposal-output-to-selection bridge and then, when lawful, through the existing downstream post-selection chain rather than by collapsing Proposal into Selection inside this package.
 - Public Proposal exports now center on `ProposalResult`, `ProposalResultOption`, the pipeline entry, and stage-specific failure surfaces.
 - `ProposalOption` and `ProposalSet` are no longer exported from `jeff.cognitive.proposal` or `jeff.cognitive`; they remain only in `jeff.cognitive.proposal.contracts` for explicit compatibility-only construction.
 - Older `ValidatedProposalGenerationResult`, `ValidatedProposalOption`, and `ProposalDownstreamHandoff` shapes are removed as public primary surfaces.
+- Post-selection research continuation may now also preserve a proposal-support package, a proposal-input package, and when the required bounded runtime/context inputs exist a preserved proposal output through the explicit proposal-generation bridge.
 
 # Important Invariants
 
@@ -51,6 +57,12 @@
 - Proposal may return `0..3` serious options only.
 - Honest scarcity is required when fewer than two serious options exist.
 - Near-duplicate padding remains forbidden.
+- Upstream proposal-support packages remain support-only and do not count as proposal output, selection, permission, or execution authority.
+- Proposal-input packages remain support-only and do not count as proposal output, selection, permission, or execution authority.
+- Proposal-input packages must preserve decomposed support, visible uncertainty, visible contradiction notes, and missing-information markers rather than collapsing them into hidden choices.
+- Proposal-generation bridge results remain structural and non-authorizing whether they preserve proposal output or a truthful non-generation boundary.
+- Proposal output remains proposal output only; it does not become selection, permission, action, governance, or execution authority.
+- Any downstream Selection continuation remains separate from Proposal ownership even when orchestration preserves Selection output after Proposal output.
 
 # Active Risks / Unresolved Issues
 
@@ -59,15 +71,15 @@
 - Proposal runtime currently returns raw text only before parsing; no normalization or repair layer exists yet.
 - The primary downstream handoff currently stays Proposal-local and intentionally does not shape Selection semantics yet.
 - Proposal validation currently uses proposal-local authority-language checks because the repo does not yet have a shared bounded cognition validation utility.
+- Post-selection proposal generation now depends on explicit runtime services being provided by the calling boundary; missing runtime/context inputs truthfully hold at the proposal-input boundary instead of guessing.
 - `ProposalResult` still carries `proposal_set` and per-option `proposal` compatibility objects internally, so fully removing `ProposalOption` / `ProposalSet` requires a separate contract-removal pass rather than another downstream migration.
 
 # Next Continuation Steps
 
-- Add Proposal runtime calling only in later bounded slices.
 - Keep generation-entry work separate from later parsing, normalization, and runtime invocation.
 - Keep runtime handoff separate from later parsing, normalization, validation, and any formatter/repair behavior.
 - Keep validation separate from any later repair, retry, normalization, or selection handoff behavior.
-- Keep the thin API entry compositional only; do not let it absorb selection, repair, or orchestration behavior.
+- Keep the thin API entry and proposal-generation bridge compositional only; do not let them absorb selection, repair, or orchestration behavior.
 - Keep contract ownership in this package even if runtime surfaces are added later.
 
 # Related Handoffs

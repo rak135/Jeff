@@ -98,6 +98,37 @@ Run the full suite:
 python -m pytest -q
 ```
 
+## Native Windows PostgreSQL Memory Tests
+
+Memory v1 PostgreSQL validation is Windows-native only in this repo. Do not use Docker or WSL for this path.
+
+Preflight a real PostgreSQL-backed test database:
+
+```text
+powershell -ExecutionPolicy Bypass -File .\scripts\windows-postgres-memory-preflight.ps1 -Dsn "postgresql://user:pass@localhost:5432/jeff_test"
+```
+
+Run the real PostgreSQL integration file:
+
+```text
+$env:JEFF_TEST_POSTGRES_DSN="postgresql://user:pass@localhost:5432/jeff_test"
+.\.venv\Scripts\python.exe -m pytest tests\integration\memory\test_postgres_memory.py -v
+```
+
+Run the broader memory suite against the same database:
+
+```text
+$env:JEFF_TEST_POSTGRES_DSN="postgresql://user:pass@localhost:5432/jeff_test"
+.\.venv\Scripts\python.exe -m pytest tests\unit\memory tests\integration\memory -q
+```
+
+Notes:
+
+- `.venv` is only for Python packages such as `pytest` and `psycopg2-binary`
+- PostgreSQL server and `pgvector` are native Windows installs outside `.venv`
+- the target database must already accept the DSN and have `CREATE EXTENSION vector` available to the PostgreSQL integration path
+- on PostgreSQL 18+, if `pgvector` is staged outside the default PostgreSQL tree, `extension_control_path` must point at the custom prefix and `dynamic_library_path` must include both the custom `lib` directory and PostgreSQL's own `$libdir`
+
 ## Current Caveats
 
 - startup always uses explicit demo truth state; research runtime becomes available only when local `jeff.runtime.toml` is present

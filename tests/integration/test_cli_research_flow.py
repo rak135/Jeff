@@ -31,7 +31,7 @@ def test_cli_docs_research_runs_end_to_end_with_persistence_and_rendered_result(
     assert "summary=The documents support a bounded rollout." in result.text
     assert "plan.md | " in result.text
     assert str(document) in result.text
-    assert "persistence=research artifact persisted as support by default" in result.text
+    assert "persistence=research artifact persisted as support at " in result.text
     assert len(records) == 1
     assert records[0].run_id == "run-1"
 

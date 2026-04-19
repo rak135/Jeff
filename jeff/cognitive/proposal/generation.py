@@ -173,7 +173,7 @@ def _format_scope(scope: Scope) -> str:
 def _format_truth_snapshot(context_package: ContextPackage) -> str:
     return "\n".join(
         f"truth_record_{index}|family={truth_record.truth_family}|summary={truth_record.summary}"
-        for index, truth_record in enumerate(context_package.truth_records, start=1)
+        for index, truth_record in enumerate(context_package.ordered_truth_records, start=1)
     )
 
 
@@ -191,8 +191,8 @@ def _format_research_support(request: ProposalGenerationRequest) -> str:
 
     research_support_inputs = [
         support_input
-        for support_input in request.context_package.support_inputs
-        if support_input.source_family == "research"
+        for support_input in request.context_package.ordered_support_inputs
+        if support_input.source_family in {"research", "archive"}
     ]
     for index, support_input in enumerate(research_support_inputs, start=1):
         lines.append(
@@ -216,8 +216,8 @@ def _format_research_support(request: ProposalGenerationRequest) -> str:
 def _format_other_support(context_package: ContextPackage) -> str:
     non_research_support = [
         support_input
-        for support_input in context_package.support_inputs
-        if support_input.source_family != "research"
+        for support_input in context_package.ordered_support_inputs
+        if support_input.source_family not in {"research", "archive"}
     ]
     if not non_research_support:
         return "NONE"

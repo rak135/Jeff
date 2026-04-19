@@ -16,6 +16,20 @@ from .generation import (
     invoke_proposal_generation_with_runtime,
     ProposalGenerationRuntimeError,
 )
+from .proposal_generation_bridge import (
+    ProposalGenerationBridgeError,
+    ProposalGenerationBridgeIssue,
+    ProposalGenerationBridgeRequest,
+    ProposalGenerationBridgeResult,
+    build_and_run_proposal_generation,
+)
+from .proposal_support_package_consumer import (
+    ProposalInputPackage,
+    ProposalSupportConsumerError,
+    ProposalSupportConsumerIssue,
+    ProposalSupportConsumerRequest,
+    consume_proposal_support_package,
+)
 from .parsing import (
     ParsedProposalGenerationResult,
     ParsedProposalOption,
@@ -36,6 +50,11 @@ __all__ = [
     "ProposalGenerationRawResult",
     "ProposalGenerationRequest",
     "ProposalGenerationRuntimeError",
+    "ProposalGenerationBridgeError",
+    "ProposalGenerationBridgeIssue",
+    "ProposalGenerationBridgeRequest",
+    "ProposalGenerationBridgeResult",
+    "ProposalInputPackage",
     "ProposalGenerationValidationError",
     "ProposalPipelineFailure",
     "ProposalPipelineFailureStage",
@@ -43,9 +62,14 @@ __all__ = [
     "ProposalPipelineSuccess",
     "ProposalResult",
     "ProposalResultOption",
+    "ProposalSupportConsumerError",
+    "ProposalSupportConsumerIssue",
+    "ProposalSupportConsumerRequest",
     "ProposalType",
     "ProposalValidationIssue",
+    "build_and_run_proposal_generation",
     "build_proposal_generation_prompt_bundle",
+    "consume_proposal_support_package",
     "invoke_proposal_generation_with_runtime",
     "parse_proposal_generation_result",
     "run_proposal_generation_pipeline",

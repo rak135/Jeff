@@ -6,6 +6,7 @@ All pipeline and retrieval code depends on this contract, not on any concrete st
 
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from jeff.core.schemas import MemoryId
@@ -110,4 +111,14 @@ class MemoryStoreProtocol(Protocol):
 
     def store_maintenance_job(self, job: "MaintenanceJobRecord") -> None:
         """Persist a maintenance job record."""
+        ...
+
+    # --- Transaction control ---
+
+    def atomic(self) -> AbstractContextManager[None]:
+        """Context manager that groups mutations into one atomic operation.
+
+        On PostgreSQL: commit succeeds only if all steps inside complete.
+        On InMemoryMemoryStore: no-op (dict mutations are inherently atomic in CPython).
+        """
         ...

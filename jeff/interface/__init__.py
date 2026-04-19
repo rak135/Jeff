@@ -1,7 +1,7 @@
 """CLI-first truthful operator surface."""
 
 from .cli import JeffCLI
-from .commands import CommandResult, InterfaceContext, execute_command
+from .commands import CommandResult, InterfaceContext, assemble_live_context_package, execute_command
 from .session import CliSession, SessionScope
 
 __all__ = [
@@ -10,5 +10,6 @@ __all__ = [
     "InterfaceContext",
     "JeffCLI",
     "SessionScope",
+    "assemble_live_context_package",
     "execute_command",
 ]

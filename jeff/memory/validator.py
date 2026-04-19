@@ -105,7 +105,7 @@ def validate_candidate(candidate: MemoryCandidate) -> MemoryWriteDecision | None
             write_outcome="defer",
             candidate_id=candidate.candidate_id,
             defer_reason_code="insufficient_support",
-            reasons=("volatile stability with weak support cannot be committed in v1",),
+            reasons=("support is not yet stable or strong enough for committed memory",),
         )
 
     return None  # validation passed

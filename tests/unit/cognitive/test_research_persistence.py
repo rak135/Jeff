@@ -15,6 +15,11 @@ from jeff.cognitive import (
     build_research_artifact_record,
     validate_research_artifact_record,
 )
+from jeff.cognitive.research.archive import (
+    ResearchArchiveStore,
+    archive_research_record,
+    retrieve_project_archive,
+)
 
 
 def test_build_research_artifact_record_preserves_scope_sources_evidence_and_output() -> None:
@@ -189,6 +194,112 @@ def test_research_artifact_validation_rejects_obvious_report_dump_summary() -> N
 
     with pytest.raises(ValueError, match="summary must be concise prose"):
         validate_research_artifact_record(record)
+
+
+def test_archive_research_record_persists_project_scoped_artifacts_without_memory_or_knowledge(tmp_path: Path) -> None:
+    record = build_research_artifact_record(_request(), _evidence_pack(), _artifact())
+    store = ResearchArchiveStore(tmp_path / "archive")
+
+    archived = archive_research_record(record, store=store, target_project_id="project-1")
+    families = {artifact.artifact_family for artifact in archived}
+
+    assert families == {"research_brief", "evidence_bundle", "source_set"}
+    assert store.path_for(archived[0]).parent == store.artifacts_dir_for("project-1")
+    assert not (store.root_dir / "projects" / "project-1" / "memory").exists()
+    assert not (store.root_dir / "projects" / "project-1" / "research" / "knowledge").exists()
+
+
+def test_archive_research_record_rejects_wrong_project_write(tmp_path: Path) -> None:
+    record = build_research_artifact_record(_request(), _evidence_pack(), _artifact())
+    store = ResearchArchiveStore(tmp_path / "archive")
+
+    with pytest.raises(ValueError, match="cannot write across projects"):
+        archive_research_record(record, store=store, target_project_id="project-2")
+
+    assert not store.artifacts_dir_for("project-2").exists()
+
+
+def test_archive_research_record_can_emit_explicit_history_only_when_dated(tmp_path: Path) -> None:
+    record = build_research_artifact_record(_request(), _evidence_pack(), _artifact())
+    store = ResearchArchiveStore(tmp_path / "archive")
+
+    archived = archive_research_record(
+        record,
+        store=store,
+        target_project_id="project-1",
+        effective_date="2026-04-19",
+        freshness_posture="dated",
+    )
+    history = [artifact for artifact in archived if artifact.artifact_family == "brief_history_record"]
+    result = retrieve_project_archive(
+        purpose="dated archive inspection",
+        project_id="project-1",
+        work_unit_id="wu-1",
+        run_id="run-1",
+        history_only=True,
+        effective_date="2026-04-19",
+        store=store,
+    )
+
+    assert len(history) == 1
+    assert history[0].effective_date == "2026-04-19"
+    assert result.explicitly_historical is True
+    assert result.records == tuple(history)
+
+
+def test_archive_research_record_persists_event_history_when_event_shaped_and_dated(tmp_path: Path) -> None:
+    request = ResearchRequest(
+        question="What changed in the rollout on 2026-04-19?",
+        project_id="project-1",
+        work_unit_id="wu-event",
+        run_id="run-event",
+        source_mode="web",
+    )
+    evidence_pack = EvidencePack(
+        question=request.question,
+        sources=(
+            SourceItem(
+                source_id="source-1",
+                source_type="web",
+                title="Release note",
+                locator="https://example.com/release",
+                snippet="The vendor announced the rollout change.",
+                published_at="2026-04-19T09:00:00Z",
+            ),
+        ),
+        evidence_items=(EvidenceItem(text="The vendor announced the rollout change.", source_refs=("source-1",)),),
+    )
+    artifact = ResearchArtifact(
+        question=request.question,
+        summary="The vendor announced a rollout change on 2026-04-19.",
+        findings=(ResearchFinding(text="The rollout change was announced on 2026-04-19.", source_refs=("source-1",)),),
+        inferences=("The change is a dated event, not a timeless fact.",),
+        uncertainties=("Customer impact is still being assessed.",),
+        recommendation=None,
+        source_ids=("source-1",),
+    )
+    record = build_research_artifact_record(request, evidence_pack, artifact)
+    store = ResearchArchiveStore(tmp_path / "archive")
+
+    archived = archive_research_record(record, store=store, target_project_id="project-1")
+    event_records = [item for item in archived if item.artifact_family == "event_history_record"]
+
+    assert len(event_records) == 1
+    assert event_records[0].event_date == "2026-04-19"
+    assert event_records[0].source_refs == ("source-1",)
+    assert event_records[0].uncertainty == ("Customer impact is still being assessed.",)
+    assert store.path_for(event_records[0]).parent == store.history_dir_for("project-1")
+    assert not (store.root_dir / "projects" / "project-1" / "memory").exists()
+    assert not (store.root_dir / "projects" / "project-1" / "research" / "knowledge").exists()
+
+
+def test_archive_research_record_does_not_misclassify_non_event_brief_as_event_history(tmp_path: Path) -> None:
+    record = build_research_artifact_record(_request(), _evidence_pack(), _artifact())
+    store = ResearchArchiveStore(tmp_path / "archive")
+
+    archived = archive_research_record(record, store=store, target_project_id="project-1")
+
+    assert all(item.artifact_family != "event_history_record" for item in archived)
 
 
 def _request() -> ResearchRequest:

@@ -1,5 +1,7 @@
 import pytest
 
+import jeff.interface.commands as commands_module
+
 from jeff.interface import InterfaceContext, JeffCLI
 
 from tests.fixtures.cli import build_flow_run, build_state_with_runs
@@ -17,6 +19,8 @@ def test_inspect_auto_binds_existing_run_in_selected_work_unit() -> None:
 
     assert "auto-selected current run: run-1" in text
     assert "RUN run-1" in text
+    assert "[support][live_context] purpose=operator explanation proposal support CLI coverage" in text
+    assert "[support][live_context] truth_families=project,work_unit,run" in text
     assert "[support][proposal] serious_option_count=2" in text
     assert cli.session.scope.run_id == "run-1"
     assert "run-1" in cli.execute("/inspect").context.selection_reviews
@@ -32,10 +36,35 @@ def test_inspect_creates_new_run_through_transition_path_when_none_exist() -> No
 
     assert "created and selected new run: run-1" in text
     assert "RUN run-1" in text
+    assert "[support][live_context] purpose=operator explanation proposal support CLI coverage" in text
+    assert "[support][live_context] truth_families=project,work_unit,run" in text
     assert "[derived] no orchestrator flow is attached to this run" in text
     assert cli.session.scope.run_id == "run-1"
     assert '"run_id": "run-1"' in cli.run_one_shot("/show", json_output=True)
     assert "- run-1 lifecycle=created" in cli.run_one_shot("/run list")
+
+
+def test_inspect_calls_live_context_assembly_once_for_the_selected_run(monkeypatch) -> None:
+    state, scope = build_state_with_runs()
+    flow_run = build_flow_run(scope)
+    cli = JeffCLI(context=InterfaceContext(state=state, flow_runs={str(scope.run_id): flow_run}))
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+
+    call_count = {"value": 0}
+    original = commands_module.assemble_live_context_package
+
+    def _counting_live_context(**kwargs):
+        call_count["value"] += 1
+        return original(**kwargs)
+
+    monkeypatch.setattr(commands_module, "assemble_live_context_package", _counting_live_context)
+
+    result = cli.execute("/inspect")
+
+    assert call_count["value"] == 1
+    assert result.json_payload is not None
+    assert result.json_payload["view"] == "run_show"
 
 
 def test_historical_show_auto_binds_existing_run_without_creating_new_one() -> None:

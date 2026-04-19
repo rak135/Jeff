@@ -9,6 +9,7 @@ Global/system memory is hard-forbidden; project_id scoping is enforced by caller
 
 from __future__ import annotations
 
+import contextlib
 import math
 
 from jeff.core.schemas import MemoryId, coerce_memory_id, coerce_project_id
@@ -183,6 +184,13 @@ class InMemoryMemoryStore:
 
     def store_maintenance_job(self, job) -> None:
         self._maintenance_jobs.append(job)
+
+    # --- Transaction control ---
+
+    @contextlib.contextmanager
+    def atomic(self):
+        """No-op context manager — in-memory store has no transaction boundaries."""
+        yield
 
 
 def _vec_norm(v: list[float]) -> float:

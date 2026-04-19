@@ -66,6 +66,22 @@ def validate_stage_sequence(
     stages: tuple[StageName, ...],
 ) -> ValidationResult:
     expected = stage_order_for_flow(flow_family)
+    if flow_family == "conditional_research_followup":
+        allowed = {
+            expected,
+            ("context", "proposal", "selection", "research", "planning", "action", "governance"),
+        }
+        if stages not in allowed:
+            return ValidationResult(
+                valid=False,
+                code="illegal_stage_order",
+                reason=(
+                    "conditional_research_followup must use the explicit stage order "
+                    f"{expected} or the optional planning-enabled order "
+                    "('context', 'proposal', 'selection', 'research', 'planning', 'action', 'governance')"
+                ),
+            )
+        return ValidationResult(valid=True)
     if stages != expected:
         return ValidationResult(
             valid=False,

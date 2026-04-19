@@ -4,12 +4,14 @@ Memory v1 is project-scoped only.  Global/system memory is hard-forbidden.
 Only committed memory_ids may be referenced canonically.
 """
 
+from .embedder import HashEmbedder, NullEmbedder, VectorEmbedder
 from .models import (
     CommittedMemoryRecord,
     MemoryCandidate,
     MemorySupportRef,
     MemoryWriteDecision,
 )
+from .postgres_store import PostgresMemoryStore
 from .retrieval import (
     MemoryRetrievalRequest,
     MemoryRetrievalResult,
@@ -26,6 +28,7 @@ from .schemas import (
     MaintenanceJobRecord,
 )
 from .store import InMemoryMemoryStore
+from .store_protocol import MemoryStoreProtocol
 from .types import (
     CandidateStatus,
     ConflictPosture,
@@ -40,7 +43,9 @@ from .types import (
 )
 from .write_pipeline import (
     create_memory_candidate,
+    merge_into_candidate,
     process_candidate,
+    supersede_candidate,
     write_memory_candidate,
 )
 
@@ -65,6 +70,12 @@ __all__ = [
     "retrieve_memory",
     # Store
     "InMemoryMemoryStore",
+    "MemoryStoreProtocol",
+    "PostgresMemoryStore",
+    # Embedders
+    "HashEmbedder",
+    "NullEmbedder",
+    "VectorEmbedder",
     # Types
     "CandidateStatus",
     "ConflictPosture",
@@ -78,6 +89,8 @@ __all__ = [
     "WriteOutcome",
     # Write pipeline
     "create_memory_candidate",
+    "merge_into_candidate",
     "process_candidate",
+    "supersede_candidate",
     "write_memory_candidate",
 ]

@@ -27,6 +27,8 @@
 - `jeff/cognitive/post_selection/action_formation.py`
 - `jeff/cognitive/post_selection/plan_action_bridge.py`
 - `jeff/cognitive/post_selection/research_output_sufficiency_bridge.py`
+- `jeff/cognitive/post_selection/research_to_decision_support_bridge.py`
+- `jeff/cognitive/post_selection/research_to_proposal_consumer.py`
 - `jeff/cognitive/post_selection/governance_handoff.py`
 - `jeff/cognitive/post_selection/next_stage_resolution.py`
 - `jeff/cognitive/post_selection/HANDOFF.md`
@@ -41,10 +43,20 @@
 - Planning may now also bridge into `Action`, but only through the explicit fail-closed `plan_action_bridge` step.
 - The `research_followup` route is no longer only a structural routing label: orchestrator may now enter the existing research stage and preserve a bounded `ResearchArtifact`.
 - Post-selection research output now also passes through the explicit fail-closed `research_output_sufficiency_bridge` step before orchestration stops at the research boundary.
+- When research is sufficient, post-selection research output may now also pass through the explicit fail-closed `research_to_decision_support_bridge` step and preserve a bounded decision-support handoff object.
+- When a lawful research decision-support handoff exists, post-selection may now also pass through the explicit fail-closed `research_to_proposal_consumer` step and preserve a bounded proposal-support package for later proposal consumption.
+- When a lawful proposal-support package exists, orchestrator may now also hand it into the proposal-local fail-closed consumer and preserve a bounded proposal-input package for later proposal generation.
+- When a lawful proposal-input package exists and the bounded repo-local generation inputs are explicitly present, orchestration may now also pass it through the proposal-local fail-closed proposal-generation bridge and preserve bounded proposal output.
 - Only one explicit non-review intended step with plan linkage may form `Action`; non-bridgeable plans still stop truthfully at the planning boundary.
 - Governance remains the next authority after a formed planned action; planning still does not grant permission.
-- Research sufficiency evaluation is structural and non-authorizing: sufficient output means bounded decision-support-ready only, and insufficient output must preserve explicit unresolved items.
-- Downstream after research remains bounded by current repo reality: there is still no repo-owned research-to-proposal, research-to-selection, research-to-action, governance, or execution bridge inside this package.
+- Research sufficiency evaluation is structural and non-authorizing: insufficient output must preserve explicit unresolved items.
+- Research decision-support handoff building is structural and non-authorizing: it preserves decomposed support for later downstream consumption only and does not auto-return into proposal, selection, action, governance, or execution.
+- Research-to-proposal consumption is structural and non-authorizing: it preserves decomposed support as a proposal-support package and does not auto-run proposal generation or continue into selection, action, governance, or execution.
+- Proposal-input package building is proposal-local and non-authorizing: it preserves decomposed support for later proposal generation only and does not auto-run proposal generation or continue into selection, action, governance, or execution.
+- Proposal-generation bridge execution remains structural and non-authorizing: it may preserve proposal output, but it does not choose an option by itself and does not auto-continue into action, governance, or execution.
+- When lawful preserved proposal output exists after research follow-up, orchestrator may now hand it into the explicit Selection-local proposal-output-to-selection bridge and preserve bounded Selection output.
+- When that preserved post-research `SelectionResult` exists, orchestrator may now reuse this same downstream post-selection chain to continue truthfully into terminal non-selection, escalation, planning, or governance boundaries without creating a parallel second interpretation layer.
+- If that continued downstream chain would point back to `research_followup`, orchestration now stops truthfully at an explicit anti-loop boundary instead of silently recursing.
 - Other routed targets remain structural downstream results surfaced truthfully to orchestration; they are not hidden execution branches.
 
 # Important Invariants
@@ -57,10 +69,18 @@
 - Planned Action formation remains structural and fail-closed; it must not guess from vague or multi-step plan prose.
 - Research follow-up remains support-only and non-authorizing even when orchestration enters the research stage.
 - Research sufficiency evaluation must not hide contradictions, missing evidence, or unresolved items behind vague closure language.
-- Decision-support-ready research output is still not permission, not governance, and not execution authority.
+- Decision-support-ready research output, decision-support handoff output, and proposal-support package output are still not proposal output, not proposal choice, not selection, not permission, not governance, and not execution authority.
+- Proposal-input package output is still not proposal output, not proposal choice, not selection, not permission, not governance, and not execution authority.
+- Proposal output preserved after research is still only proposal output; it is not proposal choice, not selection, not permission, not governance, and not execution authority.
+- Selection output preserved after that explicit downstream bridge is still only Selection output; it is not action, not permission, not governance, and not execution authority.
+- Continued downstream use of preserved post-research Selection output must reuse this package's existing bridge law rather than forking a second downstream workflow.
+- Research decision-support handoff must preserve uncertainty and contradiction visibility rather than compressing everything into one prose decision blob.
+- Research proposal-support packages must preserve decomposed support, visible uncertainty, visible contradiction notes, and missing-information markers rather than collapsing them into hidden proposal decisions.
+- Missing runtime/context inputs for post-selection proposal generation must hold truthfully at the proposal-input boundary instead of guessing or silently skipping the missing requirement.
 - Governance handoff stays separate from governance policy semantics and from execution.
 - The package does not own planning semantics, research-followup semantics, governance semantics, or execution semantics.
 - No bridge step implies approval or execution start.
+- Research-followup re-entry from continued post-research Selection output must fail closed at an explicit anti-loop boundary unless a later dedicated slice lawfully adds that recursion.
 
 # Next Continuation Steps
 

@@ -11,7 +11,17 @@
       "Bash(ls *)",
       "Bash(xargs grep *)",
       "Bash(python *)",
-      "Bash(grep -E \"\\\\.md$\")"
+      "Bash(grep -E \"\\\\.md$\")",
+      "Bash(pip install *)",
+      "Bash(pg_ctl --version)",
+      "Bash(pg_isready)",
+      "Bash(where pg_ctl)",
+      "Bash(where psql *)",
+      "Bash(sc query *)",
+      "Bash(docker --version)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(npm run *)"
     ]
   }
 }

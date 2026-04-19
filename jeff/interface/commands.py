@@ -12,12 +12,18 @@ from typing import Mapping
 
 from jeff.action.execution import ExecutionResult
 from jeff.cognitive import (
+    ContextPackage,
+    ProposalGenerationBridgeResult,
+    ProposalInputPackage,
     ResearchArtifactRecord,
+    ResearchArtifact,
+    ResearchFinding,
     ResearchArtifactStore,
     ResearchOperatorSurfaceError,
     ResearchRequest,
     ResearchSynthesisRuntimeError,
     ResearchSynthesisValidationError,
+    assemble_context_package,
     SelectionResult,
     handoff_persisted_research_record_to_memory,
     run_and_persist_document_research,
@@ -49,14 +55,20 @@ from jeff.cognitive.post_selection.override import (
     build_operator_selection_override,
 )
 from jeff.cognitive.proposal import ProposalResult
+from jeff.cognitive.proposal import (
+    ProposalGenerationBridgeRequest,
+    build_and_run_proposal_generation,
+)
+from jeff.cognitive.research.archive import ResearchArchiveStore
 from jeff.cognitive.research.debug import finding_source_refs_summary, summarize_values
-from jeff.cognitive.types import require_text
+from jeff.cognitive.types import TriggerInput, require_text
 from jeff.core.containers.models import Project, Run, WorkUnit
 from jeff.core.schemas import Scope
 from jeff.core.state.models import GlobalState
 from jeff.core.transition import TransitionRequest, apply_transition
 from jeff.governance import Approval, CurrentTruthSnapshot, Policy
 from jeff.infrastructure import InfrastructureServices
+from jeff.knowledge import KnowledgeStore
 from jeff.memory import InMemoryMemoryStore, MemoryWriteDecision
 from jeff.orchestrator import FlowRunResult
 from jeff.runtime_persistence import PersistedRuntimeStore
@@ -116,6 +128,8 @@ class InterfaceContext:
     selection_reviews: Mapping[str, SelectionReviewRecord] = field(default_factory=dict)
     infrastructure_services: InfrastructureServices | None = None
     research_artifact_store: ResearchArtifactStore | None = None
+    research_archive_store: ResearchArchiveStore | None = None
+    knowledge_store: KnowledgeStore | None = None
     memory_store: InMemoryMemoryStore | None = None
     research_memory_handoff_enabled: bool = True
     runtime_store: PersistedRuntimeStore | None = None
@@ -137,6 +151,157 @@ class CommandResult:
     text: str
     json_payload: dict[str, object] | None = None
     debug_events: tuple[dict[str, object], ...] = ()
+
+
+def assemble_live_context_package(
+    *,
+    context: InterfaceContext,
+    trigger_summary: str,
+    purpose: str,
+    scope: Scope,
+    support_inputs=(),
+    knowledge_topic_query: str | None = None,
+) -> ContextPackage:
+    selection_review = _selection_review_for_context(context=context, scope=scope)
+    governance_readiness = None
+    if (
+        selection_review is not None
+        and selection_review.governance_handoff_result is not None
+        and selection_review.governance_handoff_result.governance_result is not None
+    ):
+        governance_readiness = selection_review.governance_handoff_result.governance_result.readiness
+
+    return assemble_context_package(
+        trigger=TriggerInput(trigger_summary=trigger_summary),
+        purpose=purpose,
+        scope=scope,
+        state=context.state,
+        support_inputs=tuple(support_inputs),
+        memory_store=context.memory_store,
+        knowledge_store=context.knowledge_store,
+        archive_store=context.research_archive_store,
+        knowledge_topic_query=knowledge_topic_query,
+        governance_truth=None if selection_review is None else selection_review.governance_truth,
+        governance_policy=None if selection_review is None else selection_review.governance_policy,
+        governance_approval=None if selection_review is None else selection_review.governance_approval,
+        governance_readiness=governance_readiness,
+    )
+
+
+def _selection_review_for_context(*, context: InterfaceContext, scope: Scope) -> SelectionReviewRecord | None:
+    if scope.run_id is None:
+        return None
+
+    run_id = str(scope.run_id)
+    return _materialize_selection_review_from_available_data(
+        existing_review=context.selection_reviews.get(run_id),
+        flow_run=context.flow_runs.get(run_id),
+    )
+
+
+def _proposal_followup_context_purpose(question: str) -> str:
+    return f"proposal support {question}"
+
+
+def _inspect_live_context_purpose(work_unit: WorkUnit) -> str:
+    return f"operator explanation proposal support {work_unit.objective}"
+
+
+def _build_inspect_live_context_package(
+    *,
+    context: InterfaceContext,
+    project: Project,
+    work_unit: WorkUnit,
+    run: Run,
+) -> ContextPackage:
+    return assemble_live_context_package(
+        context=context,
+        trigger_summary=work_unit.objective,
+        purpose=_inspect_live_context_purpose(work_unit),
+        scope=Scope(
+            project_id=str(project.project_id),
+            work_unit_id=str(work_unit.work_unit_id),
+            run_id=str(run.run_id),
+        ),
+        knowledge_topic_query=work_unit.objective,
+    )
+
+
+def _research_record_to_artifact(record: ResearchArtifactRecord) -> ResearchArtifact:
+    return ResearchArtifact(
+        question=record.question,
+        summary=record.summary,
+        findings=tuple(
+            ResearchFinding(text=finding.text, source_refs=finding.source_refs) for finding in record.findings
+        ),
+        inferences=record.inferences,
+        uncertainties=record.uncertainties,
+        recommendation=record.recommendation,
+        source_ids=record.source_ids,
+    )
+
+
+def _proposal_input_package_from_research_artifact(
+    *,
+    record: ResearchArtifactRecord,
+    research_artifact: ResearchArtifact,
+) -> ProposalInputPackage:
+    return ProposalInputPackage(
+        package_id=f"proposal-input:{record.artifact_id}",
+        source_proposal_support_package_id=f"research-artifact:{record.artifact_id}",
+        proposal_input_ready=True,
+        supported_findings=tuple(finding.text for finding in research_artifact.findings),
+        inference_points=research_artifact.inferences,
+        uncertainty_points=research_artifact.uncertainties,
+        contradiction_notes=(),
+        recommendation_candidates=(
+            () if research_artifact.recommendation is None else (research_artifact.recommendation,)
+        ),
+        missing_information_markers=(),
+        provenance_refs=research_artifact.source_ids,
+        summary=(
+            "Proposal-input package built directly from the preserved research artifact for proposal generation only. "
+            "It remains support-only and is not proposal output, not selection, not action, not permission, not "
+            "governance, and not execution."
+        ),
+    )
+
+
+def _build_live_context_proposal_followup(
+    *,
+    context: InterfaceContext,
+    research_request: ResearchRequest,
+    record: ResearchArtifactRecord,
+) -> tuple[ContextPackage | None, ProposalGenerationBridgeResult | None, str | None]:
+    if context.infrastructure_services is None:
+        return None, None, "proposal follow-up requires configured InfrastructureServices"
+
+    research_artifact = _research_record_to_artifact(record)
+    context_package = assemble_live_context_package(
+        context=context,
+        trigger_summary=research_request.question,
+        purpose=_proposal_followup_context_purpose(research_request.question),
+        scope=research_request.scope,
+    )
+    try:
+        proposal_input_package = _proposal_input_package_from_research_artifact(
+            record=record,
+            research_artifact=research_artifact,
+        )
+        bridge_result = build_and_run_proposal_generation(
+            ProposalGenerationBridgeRequest(
+                request_id=f"{record.artifact_id}:proposal-generation",
+                proposal_input_package=proposal_input_package,
+                context_package=context_package,
+                research_artifact=research_artifact,
+                infrastructure_services=context.infrastructure_services,
+                bounded_objective=research_request.question,
+                visible_constraints=research_request.constraints,
+            )
+        )
+        return context_package, bridge_result, None
+    except Exception as exc:
+        return context_package, None, str(exc)
 
 
 def _latest_research_checkpoint(debug_events: tuple[dict[str, object], ...]) -> str | None:
@@ -468,12 +633,19 @@ def _inspect_command(*, tokens: list[str], session: CliSession, context: Interfa
     )
     flow_run = next_context.flow_runs.get(str(run.run_id))
     next_context, selection_review = _ensure_selection_review_for_run(context=next_context, run=run, flow_run=flow_run)
+    live_context_package = _build_inspect_live_context_package(
+        context=next_context,
+        project=project,
+        work_unit=work_unit,
+        run=run,
+    )
     payload = run_show_json(
         project=project,
         work_unit=work_unit,
         run=run,
         flow_run=flow_run,
         selection_review=selection_review,
+        live_context_package=live_context_package,
     )
     text = render_run_show(payload)
     if notice is not None:
@@ -860,6 +1032,8 @@ def _replace_selection_review(
         selection_reviews=next_reviews,
         infrastructure_services=context.infrastructure_services,
         research_artifact_store=context.research_artifact_store,
+        research_archive_store=context.research_archive_store,
+        knowledge_store=context.knowledge_store,
         memory_store=context.memory_store,
         research_memory_handoff_enabled=context.research_memory_handoff_enabled,
         runtime_store=context.runtime_store,
@@ -948,6 +1122,21 @@ def _research_command(
                 exc=exc,
                 debug_events=tuple(debug_collector.events),
             ) from exc
+        live_context_package = None
+        proposal_followup_result = None
+        proposal_followup_issue = None
+        try:
+            (
+                live_context_package,
+                proposal_followup_result,
+                proposal_followup_issue,
+            ) = _build_live_context_proposal_followup(
+                context=next_context,
+                research_request=research_request,
+                record=record,
+            )
+        except Exception as exc:
+            proposal_followup_issue = str(exc)
         memory_handoff_result = _maybe_handoff_research_record_to_memory(
             context=next_context,
             spec=spec,
@@ -977,6 +1166,9 @@ def _research_command(
                 memory_handoff_result=memory_handoff_result,
                 session=next_session,
                 artifact_locator=artifact_locator,
+                live_context_package=live_context_package,
+                proposal_followup_result=proposal_followup_result,
+                proposal_followup_issue=proposal_followup_issue,
             )
         except Exception as exc:
             debug_collector.emit(
@@ -1531,12 +1723,14 @@ def _run_research_backend(
                 research_request,
                 infrastructure_services,
                 artifact_store,
+                archive_store=context.research_archive_store,
                 debug_emitter=debug_emitter,
             )
         return run_and_persist_web_research(
             research_request,
             infrastructure_services,
             artifact_store,
+            archive_store=context.research_archive_store,
             debug_emitter=debug_emitter,
         )
     except ResearchSynthesisRuntimeError as exc:
@@ -1590,6 +1784,8 @@ def _replace_context_state(context: InterfaceContext, state: GlobalState) -> Int
         selection_reviews=context.selection_reviews,
         infrastructure_services=context.infrastructure_services,
         research_artifact_store=context.research_artifact_store,
+        research_archive_store=context.research_archive_store,
+        knowledge_store=context.knowledge_store,
         memory_store=context.memory_store,
         research_memory_handoff_enabled=context.research_memory_handoff_enabled,
         runtime_store=context.runtime_store,

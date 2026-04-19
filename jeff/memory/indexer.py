@@ -5,8 +5,13 @@ to the database so that search_lexical() and search_semantic() can find the reco
 The FTS vector is maintained by _store_committed_record(); this module handles the
 embedding side which requires a VectorEmbedder.
 
-Partial indexing failure must not erase committed authority: the record stays
-authoritative regardless of indexing outcome.  Only retrieval quality degrades.
+When called standalone (strict=False, the default), an embedding failure is
+reported via IndexResult.failure_reason and the exception is swallowed — this is
+used by rebuild passes and by callers that treat indexing as best-effort.
+
+When called inside the atomic write pipeline (strict=True), embedding failures
+propagate so the enclosing store.atomic() block rolls back the whole write unit
+on the PostgreSQL path.
 """
 
 from __future__ import annotations
@@ -28,8 +33,9 @@ class IndexResult:
 def index_record(
     record: CommittedMemoryRecord,
     *,
-    store,
+    store=None,
     embedder=None,
+    strict: bool = False,
 ) -> IndexResult:
     """Index a committed record for FTS and vector retrieval.
 
@@ -37,26 +43,33 @@ def index_record(
     so fts_indexed reflects whether the store supports FTS natively.
 
     Vector: If an embedder is provided, embeds the record text and calls
-    store.store_embedding().  Failure is isolated so the committed record survives.
+    store.store_embedding().
+
+    strict=False (default): embedding failures are isolated — failure_reason is set
+    and the exception is swallowed so standalone/rebuild callers degrade gracefully.
+
+    strict=True: embedding failures propagate so a caller inside store.atomic() can
+    roll the whole logical write back (PostgreSQL path).
 
     In-memory stores produce fts_indexed=False (token search is used instead).
     """
     from .postgres_store import PostgresMemoryStore  # local import avoids circular
 
-    is_postgres = isinstance(store, PostgresMemoryStore)
+    is_postgres = store is not None and isinstance(store, PostgresMemoryStore)
     fts_indexed = is_postgres  # FTS written during _store_committed_record for Postgres
 
     vector_indexed = False
     failure_reason: str | None = None
 
-    if embedder is not None:
+    if embedder is not None and store is not None:
         try:
             text = " ".join([record.summary, record.why_it_matters, *record.remembered_points])
             embedding = embedder.embed(text)
             store.store_embedding(str(record.memory_id), embedding)
             vector_indexed = True
         except Exception as exc:
-            # Partial indexing failure must not erase committed record
+            if strict:
+                raise
             failure_reason = f"embedding failed: {exc}"
 
     if not fts_indexed and not vector_indexed and embedder is None:
