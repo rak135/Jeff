@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import errno
 import json
 from pathlib import Path
+import os
+from contextlib import contextmanager
+import shutil
+import sys
 from typing import Any, TYPE_CHECKING
 
 from jeff.action.execution import ExecutionResult, GovernedExecutionRequest
@@ -13,6 +18,7 @@ from jeff.action.outcome import Outcome
 from jeff.cognitive.evaluation import EvaluationResult
 from jeff.cognitive.post_selection.override import OperatorSelectionOverride
 from jeff.cognitive.proposal import ProposalResult, ProposalResultOption
+from jeff.cognitive.run_memory_handoff import RunMemoryHandoffResultSummary
 from jeff.cognitive.selection import SelectionResult
 from jeff.contracts import Action
 from jeff.core.containers.models import Project, Run, WorkUnit
@@ -34,6 +40,10 @@ _SCHEMA_VERSION = "1.0"
 _LAYOUT_VERSION = "runtime-home-v1"
 
 
+class RuntimeMutationLockError(RuntimeError):
+    """Raised when another live process already owns runtime mutation."""
+
+
 def _utc_timestamp() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -45,6 +55,34 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
     temp_path.replace(path)
 
 
+def _pid_is_running(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    if sys.platform == "win32":
+        import ctypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        STILL_ACTIVE = 259
+
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if handle == 0:
+            error = ctypes.get_last_error()
+            return error == 5
+        try:
+            exit_code = ctypes.c_ulong()
+            if kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)) == 0:
+                return False
+            return exit_code.value == STILL_ACTIVE
+        finally:
+            kernel32.CloseHandle(handle)
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
 def _read_json(path: Path) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -53,6 +91,33 @@ def _read_json(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError(f"persisted JSON file must contain an object: {path}")
     return payload
+
+
+def _is_relative_to(path: Path, base: Path) -> bool:
+    try:
+        path.relative_to(base)
+    except ValueError:
+        return False
+    return True
+
+
+def _clear_runtime_path(path: Path, *, preserved_paths: tuple[Path, ...]) -> None:
+    resolved_path = path.resolve(strict=False)
+    if resolved_path in preserved_paths:
+        return
+
+    if path.is_dir() and not path.is_symlink():
+        preserved_descendants = tuple(
+            preserved_path for preserved_path in preserved_paths if _is_relative_to(preserved_path, resolved_path)
+        )
+        if preserved_descendants:
+            for child in path.iterdir():
+                _clear_runtime_path(child, preserved_paths=preserved_paths)
+            return
+        shutil.rmtree(path)
+        return
+
+    path.unlink()
 
 
 def _scope_to_payload(scope: Scope) -> dict[str, Any]:
@@ -77,6 +142,9 @@ def _run_to_payload(run: Run) -> dict[str, Any]:
         "project_id": str(run.project_id),
         "work_unit_id": str(run.work_unit_id),
         "run_lifecycle_state": run.run_lifecycle_state,
+        "last_execution_status": run.last_execution_status,
+        "last_outcome_state": run.last_outcome_state,
+        "last_evaluation_verdict": run.last_evaluation_verdict,
     }
 
 
@@ -86,6 +154,9 @@ def _run_from_payload(payload: dict[str, Any]) -> Run:
         project_id=payload["project_id"],
         work_unit_id=payload["work_unit_id"],
         run_lifecycle_state=payload["run_lifecycle_state"],
+        last_execution_status=payload.get("last_execution_status"),
+        last_outcome_state=payload.get("last_outcome_state"),
+        last_evaluation_verdict=payload.get("last_evaluation_verdict"),
     )
 
 
@@ -433,6 +504,13 @@ def _execution_result_to_payload(execution_result: ExecutionResult) -> dict[str,
         "execution_warnings": list(execution_result.execution_warnings),
         "started_at": execution_result.started_at,
         "ended_at": execution_result.ended_at,
+        "execution_family": execution_result.execution_family,
+        "execution_command_id": execution_result.execution_command_id,
+        "executed_command": execution_result.executed_command,
+        "working_directory": execution_result.working_directory,
+        "exit_code": execution_result.exit_code,
+        "stdout_excerpt": execution_result.stdout_excerpt,
+        "stderr_excerpt": execution_result.stderr_excerpt,
     }
 
 
@@ -446,6 +524,13 @@ def _execution_result_from_payload(payload: dict[str, Any]) -> ExecutionResult:
         execution_warnings=tuple(payload.get("execution_warnings", ())),
         started_at=payload.get("started_at"),
         ended_at=payload.get("ended_at"),
+        execution_family=payload.get("execution_family"),
+        execution_command_id=payload.get("execution_command_id"),
+        executed_command=payload.get("executed_command"),
+        working_directory=payload.get("working_directory"),
+        exit_code=payload.get("exit_code"),
+        stdout_excerpt=payload.get("stdout_excerpt"),
+        stderr_excerpt=payload.get("stderr_excerpt"),
     )
 
 
@@ -687,6 +772,10 @@ def _flow_run_to_payload(run_id: str, flow_run: FlowRunResult) -> dict[str, Any]
             None if flow_run.routing_decision is None else _routing_decision_to_payload(flow_run.routing_decision)
         ),
         "selection_failure": None,
+        "objective_summary": flow_run.objective_summary,
+        "memory_handoff_attempted": flow_run.memory_handoff_attempted,
+        "memory_handoff_result": _memory_write_decision_to_payload(flow_run.memory_handoff_result),
+        "memory_handoff_note": flow_run.memory_handoff_note,
     }
 
 
@@ -705,8 +794,34 @@ def _flow_run_from_payload(payload: dict[str, Any], *, state: GlobalState) -> tu
             else _routing_decision_from_payload(payload["routing_decision"])
         ),
         selection_failure=None,
+        objective_summary=payload.get("objective_summary"),
+        memory_handoff_attempted=payload.get("memory_handoff_attempted", False),
+        memory_handoff_result=_memory_write_decision_from_payload(payload.get("memory_handoff_result")),
+        memory_handoff_note=payload.get("memory_handoff_note"),
     )
     return payload["run_id"], flow_run
+
+
+def _memory_write_decision_to_payload(memory_write: RunMemoryHandoffResultSummary | None) -> dict[str, Any] | None:
+    if memory_write is None:
+        return None
+    return {
+        "write_outcome": memory_write.write_outcome,
+        "candidate_id": str(memory_write.candidate_id),
+        "memory_id": None if memory_write.memory_id is None else str(memory_write.memory_id),
+        "reasons": list(memory_write.reasons),
+    }
+
+
+def _memory_write_decision_from_payload(payload: dict[str, Any] | None) -> RunMemoryHandoffResultSummary | None:
+    if payload is None:
+        return None
+    return RunMemoryHandoffResultSummary(
+        write_outcome=payload["write_outcome"],
+        candidate_id=payload["candidate_id"],
+        memory_id=payload.get("memory_id"),
+        reasons=tuple(payload.get("reasons", ())),
+    )
 
 
 def _selection_review_to_payload(run_id: str, selection_review: SelectionReviewRecord) -> dict[str, Any]:
@@ -852,6 +967,10 @@ class JeffRuntimeHome:
         return self.config_dir / "runtime.lock.json"
 
     @property
+    def mutation_lock_path(self) -> Path:
+        return self.config_dir / "runtime.mutation.lock"
+
+    @property
     def canonical_state_path(self) -> Path:
         return self.state_dir / "canonical_state.json"
 
@@ -882,11 +1001,41 @@ class JeffRuntimeHome:
                 },
             )
 
+    def reset(self, *, preserve_paths: tuple[Path, ...] = ()) -> None:
+        if not self.root_dir.exists():
+            return
+
+        resolved_root = self.root_dir.resolve(strict=False)
+        resolved_preserve_paths = tuple(path.resolve(strict=False) for path in preserve_paths)
+        for preserved_path in resolved_preserve_paths:
+            if not _is_relative_to(preserved_path, resolved_root):
+                raise ValueError("runtime reset preserve_paths must stay inside the runtime root")
+
+        for child in self.root_dir.iterdir():
+            _clear_runtime_path(child, preserved_paths=resolved_preserve_paths)
+
+
+@dataclass
+class _RuntimeMutationLock:
+    path: Path
+    fd: int
+
+    def release(self) -> None:
+        try:
+            os.close(self.fd)
+        finally:
+            try:
+                self.path.unlink()
+            except FileNotFoundError:
+                pass
+
 
 class PersistedRuntimeStore:
     def __init__(self, home: JeffRuntimeHome) -> None:
         self.home = home
         self.home.ensure_layout()
+        self._held_mutation_lock: _RuntimeMutationLock | None = None
+        self._mutation_lock_depth = 0
 
     @classmethod
     def from_base_dir(cls, base_dir: str | Path | None = None) -> "PersistedRuntimeStore":
@@ -894,6 +1043,81 @@ class PersistedRuntimeStore:
 
     def canonical_state_exists(self) -> bool:
         return self.home.canonical_state_path.exists()
+
+    def reset_runtime_home(self) -> None:
+        with self.mutation_guard():
+            self.home.reset(preserve_paths=(self.home.mutation_lock_path,))
+            self.home.ensure_layout()
+
+    def _read_existing_mutation_lock(self) -> dict[str, Any] | None:
+        if not self.home.mutation_lock_path.exists():
+            return None
+        try:
+            payload = _read_json(self.home.mutation_lock_path)
+        except ValueError:
+            return None
+        return payload
+
+    def acquire_mutation_lock(self) -> _RuntimeMutationLock:
+        self.home.ensure_layout()
+        path = self.home.mutation_lock_path
+        payload = {
+            "schema_version": _SCHEMA_VERSION,
+            "record_class": "runtime_mutation_lock",
+            "pid": os.getpid(),
+            "created_at": _utc_timestamp(),
+            "runtime_root": str(self.home.root_dir.resolve()),
+        }
+        encoded = json.dumps(payload, indent=2, sort_keys=True).encode("utf-8")
+
+        while True:
+            try:
+                fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            except FileExistsError as exc:
+                existing = self._read_existing_mutation_lock() or {}
+                existing_pid = existing.get("pid")
+                if isinstance(existing_pid, int) and not _pid_is_running(existing_pid):
+                    try:
+                        path.unlink()
+                    except FileNotFoundError:
+                        pass
+                    continue
+                owner = f"pid={existing_pid}" if isinstance(existing_pid, int) else "unknown owner"
+                created_at = existing.get("created_at") if isinstance(existing.get("created_at"), str) else "unknown time"
+                raise RuntimeMutationLockError(
+                    "persisted runtime mutation is already in progress by another Jeff process "
+                    f"({owner}, acquired_at={created_at}). Try again after it finishes."
+                ) from exc
+            except OSError as exc:
+                if exc.errno == errno.EEXIST:
+                    continue
+                raise
+            try:
+                os.write(fd, encoded)
+                return _RuntimeMutationLock(path=path, fd=fd)
+            except Exception:
+                os.close(fd)
+                try:
+                    path.unlink()
+                except FileNotFoundError:
+                    pass
+                raise
+
+    @contextmanager
+    def mutation_guard(self):
+        if self._held_mutation_lock is None:
+            lock = self.acquire_mutation_lock()
+            self._held_mutation_lock = lock
+        else:
+            lock = self._held_mutation_lock
+        self._mutation_lock_depth += 1
+        try:
+            yield
+        finally:
+            self._mutation_lock_depth -= 1
+            if self._mutation_lock_depth == 0:
+                lock.release()
+                self._held_mutation_lock = None
 
     def load_canonical_state(self) -> GlobalState:
         payload = _read_json(self.home.canonical_state_path)
@@ -911,10 +1135,11 @@ class PersistedRuntimeStore:
         )
 
     def apply_transition(self, state: GlobalState, request: TransitionRequest) -> TransitionResult:
-        result = apply_transition(state, request)
-        self.save_transition_record(request=request, result=result)
-        if result.transition_result == "committed":
-            self.save_canonical_state(result.state)
+        with self.mutation_guard():
+            result = apply_transition(state, request)
+            self.save_transition_record(request=request, result=result)
+            if result.transition_result == "committed":
+                self.save_canonical_state(result.state)
         return result
 
     def save_transition_record(self, *, request: TransitionRequest, result: TransitionResult) -> Path:
@@ -933,7 +1158,8 @@ class PersistedRuntimeStore:
 
     def save_flow_run(self, run_id: str, flow_run: FlowRunResult) -> Path:
         path = self.home.flow_runs_dir / f"{run_id}.json"
-        _write_json(path, _flow_run_to_payload(run_id, flow_run))
+        with self.mutation_guard():
+            _write_json(path, _flow_run_to_payload(run_id, flow_run))
         return path
 
     def load_flow_runs(self, *, state: GlobalState | None = None) -> dict[str, FlowRunResult]:
@@ -946,7 +1172,8 @@ class PersistedRuntimeStore:
 
     def save_selection_review(self, run_id: str, selection_review: SelectionReviewRecord) -> Path:
         path = self.home.selection_reviews_dir / f"{run_id}.json"
-        _write_json(path, _selection_review_to_payload(run_id, selection_review))
+        with self.mutation_guard():
+            _write_json(path, _selection_review_to_payload(run_id, selection_review))
         return path
 
     def load_selection_reviews(self) -> dict[str, SelectionReviewRecord]:
@@ -972,4 +1199,5 @@ class PersistedRuntimeStore:
 __all__ = [
     "JeffRuntimeHome",
     "PersistedRuntimeStore",
+    "RuntimeMutationLockError",
 ]

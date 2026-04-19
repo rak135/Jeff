@@ -50,3 +50,56 @@ def test_lifecycle_view_preserves_escalated_posture() -> None:
     assert "lifecycle_state=escalated" in text
     assert "reason_summary=truth mismatch requires operator judgment" in text
     assert "health_posture=escalated" in text
+
+
+def test_show_emits_request_entry_hint_only_for_approval_required_runs() -> None:
+    context, _ = build_interface_context_with_flow(
+        flow_family="blocked_or_escalation",
+        lifecycle_state="waiting",
+        current_stage="governance",
+        approval_required=True,
+        approval_granted=False,
+        routed_outcome="approval_required",
+        route_reason="required approval is absent",
+    )
+    cli = JeffCLI(context=context)
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+    cli.run_one_shot("/run use run-1")
+
+    text = cli.run_one_shot("/show")
+
+    assert "[next] request_entry=/approve run-1 | /reject run-1" in text
+
+
+def test_show_emits_revalidate_hint_only_when_revalidation_is_lawful() -> None:
+    context, _ = build_interface_context_with_flow(
+        flow_family="blocked_or_escalation",
+        lifecycle_state="waiting",
+        current_stage="governance",
+        approval_required=True,
+        approval_granted=True,
+        routed_outcome="revalidate",
+        route_reason="bounded approval recorded; explicit /revalidate is required before execution continues",
+    )
+    cli = JeffCLI(context=context)
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+    cli.run_one_shot("/run use run-1")
+
+    text = cli.run_one_shot("/show")
+
+    assert "[next] request_entry=/reject run-1 | /revalidate run-1" in text
+
+
+def test_show_omits_request_entry_hint_for_ordinary_runs() -> None:
+    context, _ = build_interface_context_with_flow(lifecycle_state="completed", current_stage="evaluation")
+    cli = JeffCLI(context=context)
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+    cli.run_one_shot("/run use run-1")
+
+    text = cli.run_one_shot("/show")
+
+    assert "[next] request_entry=" not in text
+    assert "[next] receipt_only_request_entry=" not in text

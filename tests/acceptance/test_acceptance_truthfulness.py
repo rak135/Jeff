@@ -74,7 +74,7 @@ def test_approval_gated_flow_stops_honestly_before_execution() -> None:
     assert result.routing_decision.routed_outcome == "approval_required"
 
 
-def test_cli_approval_receipt_stays_request_only() -> None:
+def test_cli_approval_records_bound_operator_state_without_claiming_execution() -> None:
     context, _ = build_interface_context_with_flow(
         flow_family="blocked_or_escalation",
         lifecycle_state="waiting",
@@ -91,10 +91,16 @@ def test_cli_approval_receipt_stays_request_only() -> None:
 
     show_payload = json.loads(cli.run_one_shot("/show", json_output=True))
     receipt_payload = json.loads(cli.run_one_shot("/approve", json_output=True))
+    show_after = json.loads(cli.run_one_shot("/show", json_output=True))
 
     assert show_payload["derived"]["selected_proposal_id"] == "proposal-1"
     assert show_payload["derived"]["allowed_now"] is False
     assert show_payload["derived"]["approval_verdict"] == "absent"
     assert receipt_payload["derived"]["accepted"] is True
-    assert receipt_payload["derived"]["effect_state"] == "request_accepted"
-    assert "does not imply apply, completion, or truth mutation" in receipt_payload["support"]["note"]
+    assert receipt_payload["derived"]["effect_state"] == "approval_recorded"
+    assert receipt_payload["support"]["detail"]["approval_verdict"] == "granted"
+    assert receipt_payload["support"]["detail"]["next_routed_outcome"] == "revalidate"
+    assert show_after["derived"]["approval_verdict"] == "granted"
+    assert show_after["support"]["routing_decision"]["routed_outcome"] == "revalidate"
+    assert show_after["support"]["request_entry_hint"]["conditional_commands"] == ["/reject run-1", "/revalidate run-1"]
+    assert show_after["derived"]["execution_status"] is None

@@ -58,3 +58,16 @@ def test_show_view_keeps_support_artifacts_out_of_canonical_truth() -> None:
     assert "recent_events" not in payload["truth"]
     assert payload["support"]["routing_decision"]["source_stage"] == "evaluation"
     assert payload["support"]["recent_events"][-1]["stage"] == "evaluation"
+
+
+def test_cli_help_describes_bounded_runtime_contract_truthfully() -> None:
+    context, _ = build_interface_context_with_flow()
+    cli = JeffCLI(context=context)
+
+    text = cli.run_one_shot("/help")
+
+    assert "A local jeff.runtime.toml enables /run <repo-local-validation-objective> and /research ..." in text
+    assert "/run runs one bounded repo-local pytest validation plan under the current model configuration." in text
+    assert "Conditionally available request-entry:" in text
+    assert "Bounded receipt-only request-entry:" in text
+    assert "approve/revalidate/reject only apply when the current run routed to the required request-entry state." in text

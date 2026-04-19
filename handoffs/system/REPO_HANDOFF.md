@@ -1,6 +1,6 @@
 # Repo Scope / Purpose
 
-- Jeff currently ships as a CLI-first, in-memory v1 backbone.
+- Jeff currently ships as a CLI-first persisted-runtime v1 backbone.
 - This handoff is a continuation guide for the current repo reality. Canonical meaning still lives in `v1_doc/`.
 
 # How to Start
@@ -35,17 +35,22 @@
   - one global canonical state with nested projects
   - governance with explicit approval and readiness boundaries
   - cognitive context, research, proposal, selection, planning, and evaluation contracts
-  - action execution and outcome contracts
-  - minimal memory discipline
+  - bounded action execution and outcome contracts
+  - runtime-selected research memory handoff through `MemoryStoreProtocol`
   - deterministic orchestrator sequencing, validation, routing, lifecycle, and trace
   - CLI-first truthful operator surface
   - explicit bootstrap/start path through `python -m jeff`
-- Startup currently bootstraps one explicit in-memory demo project, work unit, run, and bounded flow trace.
+- Startup loads or initializes `.jeff_runtime`, reuses persisted canonical state and support records across restarts, and exposes one explicit clean-room path through `--reset-runtime`.
+- A local `jeff.runtime.toml` enables the bounded `/run <objective>` path and research commands.
+- `/run <objective>` currently executes one repo-local validation slice with captured execution evidence and transition-backed run truth.
+- `approve` records bound approval, `revalidate` continues or fails closed, and `reject` terminally blocks that continuation for the current bounded run.
+- Session scope remains process-local; `/project use`, `/work use`, and `/run use` do not mutate canonical truth.
 - The repo is intentionally not a GUI product, broad API product, advanced memory platform, autonomous continuation system, or richer workflow engine.
 
 # Cross-Module Risks / Unresolved Issues
 
-- Runtime state is demo-only and in-memory; there is no persisted operator state yet.
+- Jeff still has only one bounded `/run` action family; it is not a broad command runner.
+- Research memory remains intentionally narrow operator value; there is still no broad `/memory` CLI.
 - Handoffs must stay subordinate to `v1_doc/`; if canon and implementation diverge, the gap needs to be named rather than smoothed over.
 - Orchestrator and interface are intentionally narrow; future work must not let them absorb business logic or hidden control flow.
 

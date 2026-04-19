@@ -320,5 +320,6 @@ def test_cli_views_keep_truth_derived_support_and_permission_distinctions() -> N
     assert show_payload["derived"]["allowed_now"] is False
     assert show_payload["derived"]["approval_verdict"] == "absent"
     assert show_payload["support"]["routing_decision"]["routed_outcome"] == "approval_required"
-    assert receipt_payload["derived"]["effect_state"] == "request_accepted"
-    assert "does not imply apply, completion, or truth mutation" in receipt_payload["support"]["note"]
+    assert receipt_payload["derived"]["effect_state"] == "approval_recorded"
+    assert receipt_payload["support"]["detail"]["approval_verdict"] == "granted"
+    assert receipt_payload["support"]["detail"]["next_routed_outcome"] == "revalidate"

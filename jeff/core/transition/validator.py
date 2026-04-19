@@ -148,6 +148,52 @@ def _validate_scope(
             )
         return issues
 
+    if request.transition_type == "update_run":
+        if request.scope.work_unit_id is None:
+            issues.append(
+                ValidationIssue(
+                    code="missing_work_unit_scope",
+                    message="update_run requires work_unit_id in scope",
+                    field_path="scope.work_unit_id",
+                    related_id=str(request.scope.project_id),
+                ),
+            )
+            return issues
+
+        work_unit = project.work_units.get(request.scope.work_unit_id)
+        if work_unit is None:
+            issues.append(
+                ValidationIssue(
+                    code="unknown_work_unit",
+                    message="work_unit_id must resolve inside the scoped project",
+                    field_path="scope.work_unit_id",
+                    related_id=str(request.scope.work_unit_id),
+                ),
+            )
+            return issues
+
+        if request.scope.run_id is None:
+            issues.append(
+                ValidationIssue(
+                    code="missing_run_scope",
+                    message="update_run requires run_id in scope",
+                    field_path="scope.run_id",
+                    related_id=str(request.scope.work_unit_id),
+                ),
+            )
+            return issues
+
+        if request.scope.run_id not in work_unit.runs:
+            issues.append(
+                ValidationIssue(
+                    code="unknown_run",
+                    message="run_id must resolve inside the scoped work unit",
+                    field_path="scope.run_id",
+                    related_id=str(request.scope.run_id),
+                ),
+            )
+        return issues
+
     if request.scope.work_unit_id is None:
         issues.append(
             ValidationIssue(
@@ -193,6 +239,7 @@ def _validate_payload_shape(
         "create_project": ("name",),
         "create_work_unit": ("work_unit_id", "objective"),
         "create_run": ("run_id",),
+        "update_run": ("run_lifecycle_state",),
     }
     allowed_fields: Mapping[str, tuple[str, ...]] = {
         "create_project": ("name", "project_lifecycle_state"),
@@ -202,6 +249,12 @@ def _validate_payload_shape(
             "work_unit_lifecycle_state",
         ),
         "create_run": ("run_id", "run_lifecycle_state"),
+        "update_run": (
+            "run_lifecycle_state",
+            "last_execution_status",
+            "last_outcome_state",
+            "last_evaluation_verdict",
+        ),
     }
 
     issues: list[ValidationIssue] = []

@@ -38,6 +38,74 @@ research = "fake-research"
     assert context.memory_store is not None
 
 
+def test_startup_preflight_reports_in_memory_memory_backend_status(tmp_path: Path) -> None:
+    _write_runtime_config(
+        tmp_path,
+        """
+[runtime]
+default_adapter_id = "fake-default"
+
+[research]
+artifact_store_root = ".jeff_runtime"
+enable_memory_handoff = true
+
+[[adapters]]
+adapter_id = "fake-default"
+provider_kind = "fake"
+model_name = "fake-model"
+""".strip(),
+    )
+
+    checks = run_startup_preflight(base_dir=tmp_path)
+
+    assert any("bounded /run objective path enabled: repo-local validation" in check for check in checks)
+    assert any("research memory backend configured: in_memory" in check for check in checks)
+
+
+def test_bootstrap_can_select_postgres_memory_backend_from_runtime_config(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    import jeff.bootstrap as bootstrap_module
+    from jeff.memory import InMemoryMemoryStore
+
+    _write_runtime_config(
+        tmp_path,
+        """
+[runtime]
+default_adapter_id = "fake-default"
+
+[research]
+artifact_store_root = ".jeff_runtime"
+enable_memory_handoff = true
+
+[research.memory]
+backend = "postgres"
+postgres_dsn = "postgresql://user:pass@localhost:5432/jeff_test"
+
+[[adapters]]
+adapter_id = "fake-default"
+provider_kind = "fake"
+model_name = "fake-model"
+""".strip(),
+    )
+
+    calls: list[tuple[str, int]] = []
+
+    def _fake_build_postgres_memory_store(memory_config):
+        calls.append((memory_config.backend, memory_config.postgres_embedding_dim))
+        return InMemoryMemoryStore()
+
+    monkeypatch.setattr(bootstrap_module, "_build_postgres_memory_store", _fake_build_postgres_memory_store)
+
+    context = build_startup_interface_context(base_dir=tmp_path)
+    checks = run_startup_preflight(base_dir=tmp_path)
+
+    assert context.memory_store is not None
+    assert calls[0] == ("postgres", 64)
+    assert any("research memory backend configured: postgres" in check for check in checks)
+
+
 def test_bootstrap_assembles_infrastructure_runtime_and_supports_research_purpose_lookup(tmp_path: Path) -> None:
     _write_runtime_config(
         tmp_path,
@@ -85,6 +153,7 @@ def test_missing_config_keeps_non_research_startup_usable(tmp_path: Path) -> Non
 
     assert tuple(context.state.projects.keys()) == ("project-1",)
     assert context.infrastructure_services is None
+    assert any("bounded /run objective path unavailable because no local runtime config is loaded" in check for check in checks)
     assert any("research CLI remains unavailable" in check for check in checks)
 
 

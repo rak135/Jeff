@@ -31,6 +31,10 @@ def session_scope_json(session: CliSession) -> dict[str, Any]:
             "output_mode": session.output_mode,
             "json_output": session.json_output,
         },
+        "support": {
+            "scope_model": "session-local/process-local only",
+            "one_shot_scope_flags": ["--project", "--work", "--run"],
+        },
     }
 
 
@@ -102,6 +106,9 @@ def run_show_json(
             "work_unit_lifecycle_state": work_unit.work_unit_lifecycle_state,
             "run_id": str(run.run_id),
             "run_lifecycle_state": run.run_lifecycle_state,
+            "last_execution_status": run.last_execution_status,
+            "last_outcome_state": run.last_outcome_state,
+            "last_evaluation_verdict": run.last_evaluation_verdict,
         },
         "derived": {},
         "support": {},
@@ -111,6 +118,7 @@ def run_show_json(
         payload["derived"] = {"flow_visible": False}
         payload["support"] = {
             "live_context": _live_context_summary_json(live_context_package),
+            "execution_summary": _execution_summary_json(flow_run=None),
             "proposal_summary": _proposal_summary_json(selection_review=selection_review, flow_run=None),
             "evaluation_summary": _evaluation_summary_json(flow_run=None),
         }
@@ -118,8 +126,11 @@ def run_show_json(
 
     payload["derived"] = _flow_derived_json(flow_run)
     payload["support"] = {
+        "flow_reason_summary": flow_run.lifecycle.reason_summary,
         "routing_decision": routing_json(flow_run),
+        "request_entry_hint": _request_entry_hint_json(flow_run=flow_run, selection_review=selection_review),
         "live_context": _live_context_summary_json(live_context_package),
+        "execution_summary": _execution_summary_json(flow_run=flow_run),
         "proposal_summary": _proposal_summary_json(selection_review=selection_review, flow_run=flow_run),
         "evaluation_summary": _evaluation_summary_json(flow_run=flow_run),
         "recent_events": trace_json(flow_run)["support"]["events"][-5:],
@@ -381,8 +392,10 @@ def request_receipt_json(
     request_type: str,
     target: str,
     accepted: bool,
+    effect_state: str | None = None,
     scope: dict[str, str | None],
     note: str,
+    detail: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "view": "request_receipt",
@@ -390,11 +403,12 @@ def request_receipt_json(
             "request_type": request_type,
             "target": target,
             "accepted": accepted,
-            "effect_state": "request_accepted" if accepted else "request_rejected",
+            "effect_state": effect_state or ("request_accepted" if accepted else "request_rejected"),
         },
         "session": scope,
         "support": {
             "note": note,
+            "detail": {} if detail is None else detail,
         },
     }
 
@@ -407,7 +421,7 @@ def research_result_json(
     research_mode: str,
     handoff_memory_requested: bool,
     record: ResearchArtifactRecord,
-    memory_handoff_result: MemoryWriteDecision | None,
+    memory_handoff_result: object | None,
     session: CliSession,
     artifact_locator: str | None = None,
     live_context_package: ContextPackage | None = None,
@@ -572,6 +586,43 @@ def routing_json(flow_run: FlowRunResult) -> dict[str, Any] | None:
     }
 
 
+def _request_entry_hint_json(*, flow_run: FlowRunResult, selection_review: object | None) -> dict[str, Any] | None:
+    routing = flow_run.routing_decision
+    if routing is None:
+        return None
+
+    run_id = flow_run.lifecycle.scope.run_id
+    if run_id is None:
+        return None
+
+    approval = None if selection_review is None else getattr(selection_review, "governance_approval", None)
+    approval_verdict = None if approval is None else getattr(approval, "approval_verdict", None)
+
+    conditional_commands: list[str] = []
+    receipt_only_commands: list[str] = []
+    if routing.routed_outcome == "approval_required":
+        conditional_commands = [f"/approve {run_id}", f"/reject {run_id}"]
+    elif routing.routed_outcome == "revalidate":
+        conditional_commands = [f"/reject {run_id}"]
+        if approval_verdict == "granted":
+            conditional_commands.append(f"/revalidate {run_id}")
+    elif routing.routed_outcome == "retry":
+        receipt_only_commands = [f"/retry {run_id}"]
+    elif routing.routed_outcome == "recover":
+        receipt_only_commands = [f"/recover {run_id}"]
+
+    if not conditional_commands and not receipt_only_commands:
+        return None
+
+    return {
+        "available": True,
+        "current_routed_outcome": routing.routed_outcome,
+        "conditional_commands": conditional_commands,
+        "receipt_only_commands": receipt_only_commands,
+        "state_summary": f"current run routed to {routing.routed_outcome}",
+    }
+
+
 def _flow_derived_json(flow_run: FlowRunResult) -> dict[str, Any]:
     selection = flow_run.outputs.get("selection")
     governance = flow_run.outputs.get("governance")
@@ -595,6 +646,9 @@ def _flow_derived_json(flow_run: FlowRunResult) -> dict[str, Any]:
         "outcome_state": None if outcome is None else outcome.outcome_state,
         "evaluation_verdict": None if evaluation is None else evaluation.evaluation_verdict,
         "transition_result": None if transition is None else transition.transition_result,
+        "memory_handoff_attempted": flow_run.memory_handoff_attempted,
+        "memory_handoff_result": _memory_handoff_json(flow_run.memory_handoff_result),
+        "memory_handoff_note": flow_run.memory_handoff_note,
     }
 
 
@@ -682,6 +736,50 @@ def _evaluation_summary_json(*, flow_run: FlowRunResult | None) -> dict[str, Any
     }
 
 
+def _execution_summary_json(*, flow_run: FlowRunResult | None) -> dict[str, Any]:
+    if flow_run is None:
+        return {
+            "available": False,
+            "execution_family": None,
+            "execution_command_id": None,
+            "executed_command": None,
+            "working_directory": None,
+            "exit_code": None,
+            "output_summary": None,
+            "stdout_excerpt": None,
+            "stderr_excerpt": None,
+            "missing_reason": "no execution summary is available for this run",
+        }
+
+    execution = flow_run.outputs.get("execution")
+    if execution is None:
+        return {
+            "available": False,
+            "execution_family": None,
+            "execution_command_id": None,
+            "executed_command": None,
+            "working_directory": None,
+            "exit_code": None,
+            "output_summary": None,
+            "stdout_excerpt": None,
+            "stderr_excerpt": None,
+            "missing_reason": "no execution summary is available for this run",
+        }
+
+    return {
+        "available": True,
+        "execution_family": execution.execution_family,
+        "execution_command_id": execution.execution_command_id,
+        "executed_command": execution.executed_command,
+        "working_directory": execution.working_directory,
+        "exit_code": execution.exit_code,
+        "output_summary": execution.output_summary,
+        "stdout_excerpt": execution.stdout_excerpt,
+        "stderr_excerpt": execution.stderr_excerpt,
+        "missing_reason": None,
+    }
+
+
 def _telemetry_json(flow_run: FlowRunResult) -> dict[str, Any]:
     elapsed_seconds = None
     if len(flow_run.events) >= 2:
@@ -744,7 +842,7 @@ def _project_research_source(source: Any) -> dict[str, Any]:
     }
 
 
-def _memory_handoff_json(memory_handoff_result: MemoryWriteDecision | None) -> dict[str, Any] | None:
+def _memory_handoff_json(memory_handoff_result: object | None) -> dict[str, Any] | None:
     if memory_handoff_result is None:
         return None
     payload = {
@@ -753,10 +851,11 @@ def _memory_handoff_json(memory_handoff_result: MemoryWriteDecision | None) -> d
         "memory_id": None if memory_handoff_result.memory_id is None else str(memory_handoff_result.memory_id),
         "reasons": list(memory_handoff_result.reasons),
     }
-    if memory_handoff_result.committed_record is not None:
+    committed_record = getattr(memory_handoff_result, "committed_record", None)
+    if committed_record is not None:
         payload["committed_record"] = {
-            **asdict(memory_handoff_result.committed_record),
-            "memory_id": str(memory_handoff_result.committed_record.memory_id),
+            **asdict(committed_record),
+            "memory_id": str(committed_record.memory_id),
         }
     else:
         payload["committed_record"] = None

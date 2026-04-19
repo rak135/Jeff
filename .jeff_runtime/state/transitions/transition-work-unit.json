@@ -1,10 +1,10 @@
 {
   "record_class": "transition_audit_support",
-  "recorded_at": "2026-04-18T17:02:23+00:00",
+  "recorded_at": "2026-04-19T16:28:40+00:00",
   "request": {
     "basis_state_version": 1,
     "payload": {
-      "objective": "Inspect the current Jeff v1 backbone through the CLI.",
+      "objective": "Current bounded Jeff work.",
       "work_unit_id": "wu-1"
     },
     "scope": {

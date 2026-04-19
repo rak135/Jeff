@@ -82,7 +82,7 @@ def test_selection_show_reports_missing_downstream_objects_honestly() -> None:
     assert "[override] note=no override recorded" in text
     assert "[resolved_choice] effective_source=selection effective_proposal_id=proposal-1" in text
     assert "[action_formation] action_formed=True" in text
-    assert "[governance_handoff] missing=governance handoff has not been recorded" in text
+    assert "[governance_handoff] governance_evaluated=True governance_outcome=allowed_now allowed_now=True" in text
 
 
 def test_selection_show_is_read_only_and_does_not_add_write_behavior() -> None:

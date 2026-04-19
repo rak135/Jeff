@@ -6,7 +6,7 @@ import hashlib
 from dataclasses import dataclass
 
 from jeff.core.schemas import Scope
-from jeff.memory import InMemoryMemoryStore, MemorySupportRef, MemoryWriteDecision, create_memory_candidate, write_memory_candidate
+from jeff.memory import MemoryStoreProtocol, MemorySupportRef, MemoryWriteDecision, create_memory_candidate, write_memory_candidate
 
 from .contracts import ResearchArtifact, ResearchRequest
 from .persistence import ResearchArtifactRecord
@@ -117,7 +117,7 @@ def should_handoff_research_to_memory(
 def handoff_research_to_memory(
     research_request: ResearchRequest,
     artifact: ResearchArtifact,
-    memory_store: InMemoryMemoryStore,
+    memory_store: MemoryStoreProtocol,
     artifact_record: ResearchArtifactRecord | None = None,
 ) -> MemoryWriteDecision | None:
     if not should_handoff_research_to_memory(artifact=artifact, artifact_record=artifact_record):
@@ -157,7 +157,7 @@ def handoff_research_to_memory(
 
 def handoff_persisted_research_record_to_memory(
     artifact_record: ResearchArtifactRecord,
-    memory_store: InMemoryMemoryStore,
+    memory_store: MemoryStoreProtocol,
 ) -> MemoryWriteDecision | None:
     artifact = ResearchArtifact(
         question=artifact_record.question,

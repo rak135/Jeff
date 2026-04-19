@@ -7,6 +7,7 @@ from jeff.core.schemas import Scope
 from jeff.core.state import bootstrap_global_state
 from jeff.core.transition import TransitionRequest, TransitionResult, apply_transition
 from jeff.governance import Approval, CurrentTruthSnapshot, Policy, evaluate_action_entry
+from jeff.interface.command_common import sync_run_truth_from_flow
 from jeff.interface.commands import InterfaceContext
 from jeff.orchestrator.lifecycle import FlowLifecycle
 from jeff.orchestrator.routing import RoutingDecision
@@ -136,10 +137,14 @@ def build_flow_run(
         approval=approval,
         truth=CurrentTruthSnapshot(scope=scope, state_version=3),
     )
+    governance_truth = CurrentTruthSnapshot(scope=scope, state_version=3)
     outputs: dict[str, object] = {
         "proposal": proposal_result,
         "selection": selection,
         "governance": governance,
+        "governance_policy": policy,
+        "governance_approval": Approval.absent() if approval is None else approval,
+        "governance_truth": governance_truth,
     }
 
     if governance.allowed_now:
@@ -263,5 +268,10 @@ def build_interface_context_with_flow(**flow_kwargs: object) -> tuple[InterfaceC
     context = InterfaceContext(
         state=state,
         flow_runs={str(scope.run_id): flow_run},
+    )
+    context, _ = sync_run_truth_from_flow(
+        context=context,
+        run=context.state.projects[str(scope.project_id)].work_units[str(scope.work_unit_id)].runs[str(scope.run_id)],
+        flow_run=flow_run,
     )
     return context, scope

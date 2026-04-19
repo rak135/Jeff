@@ -10,6 +10,7 @@ from jeff.cognitive.selection import SelectionResult
 from jeff.core.schemas import Scope
 from jeff.governance import Approval, CurrentTruthSnapshot, Policy
 from jeff.interface import InterfaceContext, JeffCLI
+from jeff.interface.command_common import sync_run_truth_from_flow
 from jeff.interface.commands import SelectionReviewRecord
 from jeff.knowledge import KnowledgeStore, create_source_digest_from_research_record, create_topic_note, save_knowledge_artifact
 from jeff.memory import InMemoryMemoryStore, MemorySupportRef, create_memory_candidate, write_memory_candidate
@@ -40,7 +41,10 @@ def test_inspect_live_context_surfaces_truth_first_and_lawful_governance_support
         "work_unit_id": "wu-1",
         "work_unit_lifecycle_state": "open",
         "run_id": "run-1",
-        "run_lifecycle_state": "created",
+        "run_lifecycle_state": "active",
+        "last_execution_status": "completed",
+        "last_outcome_state": "complete",
+        "last_evaluation_verdict": "acceptable",
     }
     assert "live_context" not in payload["truth"]
     assert payload["support"]["live_context"]["truth_families"][:3] == ["project", "work_unit", "run"]
@@ -128,8 +132,7 @@ def _build_cli_with_live_context_support(
     if include_governance:
         selection_reviews[str(scope.run_id)] = _selection_review_record(scope)
 
-    return JeffCLI(
-        context=InterfaceContext(
+    context = InterfaceContext(
             state=state,
             flow_runs={str(scope.run_id): flow_run},
             selection_reviews=selection_reviews,
@@ -137,7 +140,12 @@ def _build_cli_with_live_context_support(
             knowledge_store=knowledge_store,
             research_archive_store=archive_store,
         )
+    context, _ = sync_run_truth_from_flow(
+        context=context,
+        run=context.state.projects[str(scope.project_id)].work_units[str(scope.work_unit_id)].runs[str(scope.run_id)],
+        flow_run=flow_run,
     )
+    return JeffCLI(context=context)
 
 
 def _seed_memory_support(memory_store: InMemoryMemoryStore) -> None:

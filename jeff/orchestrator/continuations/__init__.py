@@ -1,5 +1,7 @@
 """Orchestration-local continuation helpers extracted from the runner."""
 
+from .approval import continue_approval_workflow
+
 RESEARCH_SUFFICIENCY_OUTPUT_KEY = "research_output_sufficiency"
 RESEARCH_DECISION_SUPPORT_OUTPUT_KEY = "research_decision_support_handoff"
 RESEARCH_PROPOSAL_SUPPORT_OUTPUT_KEY = "research_proposal_support_package"
@@ -18,4 +20,5 @@ __all__ = [
     "RESEARCH_SUFFICIENCY_OUTPUT_KEY",
     "SELECTION_BRIDGE_OUTPUT_KEY",
     "SELECTION_OUTPUT_OUTPUT_KEY",
+    "continue_approval_workflow",
 ]

@@ -40,6 +40,9 @@ class Run:
     project_id: ProjectId
     work_unit_id: WorkUnitId
     run_lifecycle_state: str = "created"
+    last_execution_status: str | None = None
+    last_outcome_state: str | None = None
+    last_evaluation_verdict: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "run_id", coerce_run_id(str(self.run_id)))
@@ -57,6 +60,24 @@ class Run:
                 field_name="run_lifecycle_state",
             ),
         )
+        if self.last_execution_status is not None:
+            object.__setattr__(
+                self,
+                "last_execution_status",
+                _require_non_empty(self.last_execution_status, field_name="last_execution_status"),
+            )
+        if self.last_outcome_state is not None:
+            object.__setattr__(
+                self,
+                "last_outcome_state",
+                _require_non_empty(self.last_outcome_state, field_name="last_outcome_state"),
+            )
+        if self.last_evaluation_verdict is not None:
+            object.__setattr__(
+                self,
+                "last_evaluation_verdict",
+                _require_non_empty(self.last_evaluation_verdict, field_name="last_evaluation_verdict"),
+            )
 
 
 @dataclass(frozen=True, slots=True)

@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from jeff.governance import Approval, CurrentTruthSnapshot, Policy
     from jeff.infrastructure import InfrastructureServices
     from jeff.knowledge import KnowledgeStore
-    from jeff.memory import InMemoryMemoryStore
+    from jeff.memory import MemoryStoreProtocol
     from jeff.orchestrator import FlowRunResult
     from jeff.runtime_persistence import PersistedRuntimeStore
 
@@ -56,7 +56,7 @@ class InterfaceContext:
     research_artifact_store: ResearchArtifactStore | None = None
     research_archive_store: ResearchArchiveStore | None = None
     knowledge_store: KnowledgeStore | None = None
-    memory_store: InMemoryMemoryStore | None = None
+    memory_store: MemoryStoreProtocol | None = None
     research_memory_handoff_enabled: bool = True
     runtime_store: PersistedRuntimeStore | None = None
     startup_summary: str | None = None

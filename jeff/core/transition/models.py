@@ -11,9 +11,9 @@ from jeff.core.schemas.ids import TransitionId, coerce_transition_id
 from jeff.core.schemas.scope import Scope
 from jeff.core.state.models import GlobalState
 
-TransitionType = Literal["create_project", "create_work_unit", "create_run"]
+TransitionType = Literal["create_project", "create_work_unit", "create_run", "update_run"]
 TransitionOutcome = Literal["committed", "rejected"]
-ALLOWED_TRANSITION_TYPES = {"create_project", "create_work_unit", "create_run"}
+ALLOWED_TRANSITION_TYPES = {"create_project", "create_work_unit", "create_run", "update_run"}
 
 
 def _freeze_payload(value: Mapping[str, object] | None) -> Mapping[str, object]:

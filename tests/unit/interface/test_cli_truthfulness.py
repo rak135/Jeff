@@ -1,4 +1,5 @@
 import json
+import pytest
 
 from jeff.interface import JeffCLI
 
@@ -65,7 +66,33 @@ def test_request_command_output_distinguishes_acceptance_from_effect() -> None:
 
     assert "accepted=True" in text
     assert "effect_state=request_accepted" in text
-    assert "does not imply apply, completion, or truth mutation" in text
+    assert "remains a bounded receipt-only command in v1" in text
+
+
+def test_approve_command_records_bounded_approval_without_claiming_execution() -> None:
+    context, _ = build_interface_context_with_flow(
+        flow_family="blocked_or_escalation",
+        lifecycle_state="waiting",
+        current_stage="governance",
+        approval_required=True,
+        approval_granted=False,
+        routed_outcome="approval_required",
+        route_reason="required approval is absent",
+    )
+    cli = JeffCLI(context=context)
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+    cli.run_one_shot("/run use run-1")
+
+    text = cli.run_one_shot("/approve")
+    show_text = cli.run_one_shot("/show")
+
+    assert "effect_state=approval_recorded" in text
+    assert "next_routed_outcome=revalidate" in text
+    assert "explicit /revalidate" in text
+    assert "approval_verdict=granted" in show_text
+    assert "routed_outcome=revalidate" in show_text
+    assert "execution_status=-" in show_text
 
 
 def test_blocked_and_inconclusive_states_remain_visible() -> None:
@@ -88,3 +115,21 @@ def test_blocked_and_inconclusive_states_remain_visible() -> None:
     assert "outcome_state=inconclusive" in text
     assert "evaluation_verdict=inconclusive" in text
     assert "[support][evaluation] verdict=inconclusive recommended_next_step=request_clarification" in text
+
+
+def test_request_unavailable_message_names_required_routed_outcome() -> None:
+    context, _ = build_interface_context_with_flow(
+        flow_family="evaluation_driven_followup",
+        lifecycle_state="completed",
+        current_stage="evaluation",
+        routed_outcome="retry",
+        route_kind="follow_up",
+        route_reason="evaluation recommended bounded retry",
+    )
+    cli = JeffCLI(context=context)
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+    cli.run_one_shot("/run use run-1")
+
+    with pytest.raises(ValueError, match="it requires a run routed to approval_required"):
+        cli.run_one_shot("/approve")

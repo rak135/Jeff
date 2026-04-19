@@ -14,16 +14,25 @@ def build_parser() -> argparse.ArgumentParser:
         prog="python -m jeff",
         description=(
             "Start the current Jeff v1 CLI-first backbone. "
-            "This startup path loads or initializes a persisted runtime workspace under .jeff_runtime/ and can load local runtime config "
-            "for research when jeff.runtime.toml is present."
+            "This startup path loads or initializes a persisted runtime workspace under .jeff_runtime/. "
+            "Local runtime config in jeff.runtime.toml enables the bounded repo-local validation /run objective path and research commands."
         ),
         epilog=(
             "Examples:\n"
             "  python -m jeff --help\n"
             "  python -m jeff --bootstrap-check\n"
+            "  python -m jeff --reset-runtime --bootstrap-check\n"
             "  python -m jeff --command \"/help\"\n"
-            "  python -m jeff --command \"/show run-1\" --json\n"
-            "  python -m jeff"
+            "  python -m jeff --project project-1 --work wu-1 --command \"/run list\" --json\n"
+            "  python -m jeff\n"
+            "\n"
+            "PowerShell quoting:\n"
+            "  In PowerShell, inner quotes in --command need backtick escaping:\n"
+            '  python -m jeff --command "/research docs `"`"summary`"`" README.md"\n'
+            "\n"
+            "Console script:\n"
+            "  After pip install -e . the jeff entry point is available as a bare command.\n"
+            "  Without the install, use python -m jeff."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -31,7 +40,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--bootstrap-check",
         action="store_true",
-        help="run deterministic startup checks and exit",
+        help="run deterministic startup checks and report runtime, /run, research, and memory status",
+    )
+    parser.add_argument(
+        "--reset-runtime",
+        action="store_true",
+        help="delete the local .jeff_runtime workspace and rebuild it on next startup",
     )
     parser.add_argument(
         "--command",
@@ -44,7 +58,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run", metavar="RUN_ID", help="set one-shot or startup run scope locally")
     parser.add_argument(
         "--json",
-        action="store_true",
+        action="store_const",
+        const=True,
+        default=None,
         help="render one-shot command output as JSON where the command supports it",
     )
     return parser
@@ -57,7 +73,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.version:
         print(f"jeff {__version__}")
         return 0
-    if args.json and args.command is None:
+    if args.json is True and args.command is None:
         parser.error("--json requires --command")
     if args.work is not None and args.project is None:
         parser.error("--work requires --project")
@@ -67,10 +83,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         from jeff.bootstrap import build_startup_interface_context, run_startup_preflight
         from jeff.interface import CliSession, JeffCLI, SessionScope
+        from jeff.runtime_persistence import PersistedRuntimeStore
     except Exception as exc:
         return _print_error(f"startup imports failed: {exc}")
 
     try:
+        if args.reset_runtime:
+            runtime_store = PersistedRuntimeStore.from_base_dir()
+            runtime_store.reset_runtime_home()
+            print(f"reset local runtime workspace at {runtime_store.home.root_dir}")
         checks = run_startup_preflight()
         if args.bootstrap_check:
             print("bootstrap checks passed")
@@ -98,7 +119,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         if not sys.stdin.isatty():
             parser.print_help()
-            print("\nNo interactive terminal detected. Use --command for one-shot mode.")
+            print(
+                "\nNo interactive terminal detected. Use --command for one-shot mode; "
+                "/project use, /work use, and /run use stay process-local to this Jeff process."
+            )
+            print('Example: python -m jeff --project project-1 --work wu-1 --command "/run list" --json')
             return 0
 
         return _run_interactive(cli)

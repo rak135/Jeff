@@ -36,13 +36,17 @@ def execute_command(
         return CommandResult(context=context, session=session, text=render_help())
 
     if tokens[0] == "project":
-        return project_command(tokens=tokens, session=session, context=context)
+        result = project_command(tokens=tokens, session=session, context=context)
+        return _apply_json_mode(result, json_output=json_output)
     if tokens[0] == "work":
-        return work_command(tokens=tokens, session=session, context=context)
+        result = work_command(tokens=tokens, session=session, context=context)
+        return _apply_json_mode(result, json_output=json_output)
     if tokens[0] == "run":
-        return run_command(tokens=tokens, session=session, context=context)
+        result = run_command(tokens=tokens, session=session, context=context)
+        return _apply_json_mode(result, json_output=json_output)
     if tokens[0] == "scope":
-        return scope_command(tokens=tokens, session=session, context=context)
+        result = scope_command(tokens=tokens, session=session, context=context)
+        return _apply_json_mode(result, json_output=json_output)
     if tokens[0] == "mode":
         return mode_command(tokens=tokens, session=session, context=context)
     if tokens[0] == "json":

@@ -37,9 +37,10 @@
 
 # Current Implementation Reality
 
-- Memory storage is currently in-memory.
+- Runtime wiring now depends on `MemoryStoreProtocol` rather than a single concrete store.
+- Research memory handoff can use the runtime-selected `in_memory` or `postgres` backend.
 - Retrieval is truth-first and scope-filtered.
-- The implementation protects candidate creation and write discipline with targeted negative tests.
+- The implementation protects candidate creation, write discipline, and project isolation with targeted negative tests.
 
 # Important Invariants
 
@@ -50,12 +51,12 @@
 
 # Active Risks / Unresolved Issues
 
-- Advanced memory backends are intentionally deferred.
+- Broad memory UX remains intentionally deferred; v1 exposes only bounded research handoff and retrieval-adjacent value.
 - Any shortcut that treats retrieved memory as current truth would break this module's core contract.
 
 # Next Continuation Steps
 
-- Keep follow-up work focused on discipline and retrieval correctness unless the repo explicitly chooses a bounded backend implementation step later.
+- Keep follow-up work focused on discipline, retrieval correctness, and narrow backend truthfulness rather than expanding a `/memory` command family.
 
 # Submodule Map
 

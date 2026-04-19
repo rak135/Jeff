@@ -7,6 +7,7 @@ from jeff.bootstrap import build_startup_interface_context
 from jeff.cognitive import ResearchRequest, collect_document_sources
 from jeff.infrastructure.model_adapters.providers import ollama as ollama_module
 from jeff.interface import JeffCLI
+from jeff.memory import InMemoryMemoryStore
 
 from tests.fixtures.research import bounded_research_text_from_payload
 
@@ -143,6 +144,46 @@ def test_runtime_configured_handoff_memory_still_delegates_to_current_memory_lay
         assert "ollama" not in source_text
 
 
+def test_runtime_configured_postgres_memory_backend_can_drive_handoff_flow(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import jeff.bootstrap as bootstrap_module
+
+    question = "What does the bounded plan support?"
+    document = _write_document(tmp_path / "docs" / "plan.md")
+    collect_document_sources(
+        ResearchRequest(
+            question=question,
+            document_paths=(str(document),),
+            source_mode="local_documents",
+        )
+    )
+    _install_ollama_stub(
+        monkeypatch,
+        captured_payloads=[],
+        output_text=bounded_research_text_from_payload(
+            {
+                "summary": "The documents support a bounded rollout.",
+                "findings": [{"text": "The plan emphasizes bounded rollout.", "source_refs": ["S1"]}],
+                "inferences": ["A narrow implementation remains better supported."],
+                "uncertainties": ["No external validation was performed."],
+                "recommendation": "Proceed with the bounded path.",
+            }
+        ),
+    )
+    _write_runtime_config(tmp_path, memory_backend="postgres", postgres_dsn="postgresql://user:pass@localhost:5432/jeff_test")
+    monkeypatch.setattr(bootstrap_module, "_build_postgres_memory_store", lambda _config: InMemoryMemoryStore())
+
+    cli = JeffCLI(context=build_startup_interface_context(base_dir=tmp_path))
+
+    first = cli.run_one_shot(f'/research docs "{question}" "{document}" --handoff-memory')
+    second = cli.run_one_shot(f'/research docs "{question}" "{document}" --handoff-memory')
+
+    assert "memory_handoff=write memory_id=memory-1" in first
+    assert "memory_handoff=reject" in second
+
+
 class _FakeHttpResponse:
     def __init__(self, payload: dict[str, object]) -> None:
         self._payload = json.dumps(payload).encode("utf-8")
@@ -200,16 +241,29 @@ def _write_document(path: Path) -> Path:
     return path
 
 
-def _write_runtime_config(tmp_path: Path) -> Path:
+def _write_runtime_config(
+    tmp_path: Path,
+    *,
+    memory_backend: str = "in_memory",
+    postgres_dsn: str | None = None,
+) -> Path:
     config_path = tmp_path / "jeff.runtime.toml"
+    memory_block = ""
+    if memory_backend == "postgres":
+        memory_block = (
+            "\n[research.memory]\n"
+            f"backend = \"{memory_backend}\"\n"
+            f"postgres_dsn = \"{postgres_dsn}\"\n"
+        )
     config_path.write_text(
-        """
+        f"""
 [runtime]
 default_adapter_id = "fake-default"
 
 [research]
 artifact_store_root = ".jeff_runtime"
 enable_memory_handoff = true
+{memory_block}
 
 [[adapters]]
 adapter_id = "fake-default"

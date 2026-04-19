@@ -20,6 +20,9 @@ def test_show_json_view_preserves_truth_support_and_derived_distinctions() -> No
     assert "support" in payload
     assert "telemetry" in payload
     assert "run_lifecycle_state" in payload["truth"]
+    assert payload["truth"]["last_execution_status"] == "completed"
+    assert payload["truth"]["last_outcome_state"] == "complete"
+    assert payload["truth"]["last_evaluation_verdict"] == "acceptable"
     assert "selected_proposal_id" in payload["derived"]
     assert "governance_outcome" in payload["derived"]
     assert "recent_events" in payload["support"]
@@ -41,6 +44,7 @@ def test_inspect_json_view_keeps_live_context_in_support_not_truth() -> None:
 
     assert payload["view"] == "run_show"
     assert "live_context" not in payload["truth"]
+    assert payload["truth"]["run_lifecycle_state"] == "active"
     assert payload["support"]["live_context"]["purpose"] == "operator explanation proposal support CLI coverage"
     assert payload["support"]["live_context"]["truth_families"] == ["project", "work_unit", "run"]
     assert payload["support"]["live_context"]["ordered_support_source_families"] == []
@@ -74,3 +78,40 @@ def test_lifecycle_json_view_keeps_stage_and_health_separate() -> None:
     assert payload["derived"]["current_stage"] == "governance"
     assert payload["derived"]["active_module"] == "governance"
     assert payload["telemetry"]["health_posture"] == "blocked"
+
+
+def test_show_json_view_surfaces_only_lawful_request_entry_hints() -> None:
+    context, _ = build_interface_context_with_flow(
+        flow_family="blocked_or_escalation",
+        lifecycle_state="waiting",
+        current_stage="governance",
+        approval_required=True,
+        approval_granted=True,
+        routed_outcome="revalidate",
+        route_reason="bounded approval recorded; explicit /revalidate is required before execution continues",
+    )
+    cli = JeffCLI(context=context)
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+    cli.run_one_shot("/run use run-1")
+
+    payload = json.loads(cli.run_one_shot("/show", json_output=True))
+
+    assert payload["support"]["request_entry_hint"]["current_routed_outcome"] == "revalidate"
+    assert payload["support"]["request_entry_hint"]["conditional_commands"] == [
+        "/reject run-1",
+        "/revalidate run-1",
+    ]
+    assert payload["support"]["request_entry_hint"]["receipt_only_commands"] == []
+
+
+def test_show_json_view_omits_request_entry_hint_for_ordinary_runs() -> None:
+    context, _ = build_interface_context_with_flow(lifecycle_state="completed", current_stage="evaluation")
+    cli = JeffCLI(context=context)
+    cli.run_one_shot("/project use project-1")
+    cli.run_one_shot("/work use wu-1")
+    cli.run_one_shot("/run use run-1")
+
+    payload = json.loads(cli.run_one_shot("/show", json_output=True))
+
+    assert payload["support"]["request_entry_hint"] is None

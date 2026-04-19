@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+import sys
+
 from jeff.action import GovernedExecutionRequest, execute_governed_action, normalize_outcome
+from jeff.action.execution import RepoLocalValidationPlan
 from jeff.cognitive import ContextPackage, evaluate_outcome
 from jeff.cognitive.post_selection.action_formation import ActionFormationRequest, form_action_from_materialized_proposal
 from jeff.cognitive.post_selection.action_resolution import SelectionActionResolutionRequest, resolve_selection_action_basis
@@ -23,6 +27,7 @@ from .command_common import (
     get_run,
     get_work_unit,
     replace_flow_run,
+    sync_run_truth_from_flow,
     require_scoped_project,
     require_scoped_work_unit,
 )
@@ -45,7 +50,7 @@ def project_command(*, tokens: list[str], session: CliSession, context: Interfac
         return CommandResult(
             context=context,
             session=next_session,
-            text=f"session scope updated: project_id={project.project_id}",
+            text=f"session scope updated (process-local only): project_id={project.project_id}",
         )
     raise ValueError("project command must be 'project list' or 'project use <project_id>'")
 
@@ -67,7 +72,10 @@ def work_command(*, tokens: list[str], session: CliSession, context: InterfaceCo
         return CommandResult(
             context=context,
             session=next_session,
-            text=f"session scope updated: project_id={project.project_id} work_unit_id={work_unit.work_unit_id}",
+            text=(
+                "session scope updated (process-local only): "
+                f"project_id={project.project_id} work_unit_id={work_unit.work_unit_id}"
+            ),
         )
     raise ValueError("work command must be 'work list' or 'work use <work_unit_id>'")
 
@@ -93,7 +101,7 @@ def run_command(*, tokens: list[str], session: CliSession, context: InterfaceCon
             context=context,
             session=next_session,
             text=(
-                f"session scope updated: project_id={project.project_id} "
+                f"session scope updated (process-local only): project_id={project.project_id} "
                 f"work_unit_id={work_unit.work_unit_id} run_id={run.run_id}"
             ),
         )
@@ -112,7 +120,7 @@ def _run_objective_command(
     if context.infrastructure_services is None:
         raise ValueError(
             "run objective launch requires configured InfrastructureServices. "
-            "Add jeff.runtime.toml in the startup directory to enable the real bounded /run path."
+            "Add jeff.runtime.toml in the startup directory to enable the bounded repo-local validation /run path."
         )
 
     run, next_context = create_run_for_work_unit(context=context, project=project, work_unit=work_unit)
@@ -147,7 +155,16 @@ def _run_objective_command(
     flow_run.outputs["governance_policy"] = governance_policy
     flow_run.outputs["governance_approval"] = governance_approval
     flow_run.outputs["governance_truth"] = governance_truth
-    next_context = replace_flow_run(context=next_context, run_id=str(run.run_id), flow_run=flow_run)
+    next_context = replace_flow_run(
+        context=next_context,
+        run_id=str(run.run_id),
+        flow_run=flow_run,
+        objective_summary=objective,
+    )
+    flow_run = next_context.flow_runs[str(run.run_id)]
+    next_context, run = sync_run_truth_from_flow(context=next_context, run=run, flow_run=flow_run)
+    project = get_project(next_context, str(project.project_id))
+    work_unit = get_work_unit(project, str(work_unit.work_unit_id))
     next_context, selection_review = ensure_selection_review_for_run(
         context=next_context,
         run=run,
@@ -173,6 +190,39 @@ def _run_objective_command(
 
 def _run_live_context_purpose(objective: str) -> str:
     return f"proposal support action preparation {objective}"
+
+
+def _proposal_validation_failure_message(pipeline_result: ProposalPipelineFailure) -> str:
+    issue_codes = {issue.code for issue in pipeline_result.validation_issues}
+    if "authority_leakage" in issue_codes:
+        detail = "forbidden authority language"
+    else:
+        detail = "the bounded proposal contract was not satisfied"
+    return (
+        f"proposal validation rejected live provider output ({detail}). "
+        "/run cannot proceed; try /research docs for inspection instead."
+    )
+
+
+def _build_repo_local_validation_plan(context: InterfaceContext) -> RepoLocalValidationPlan:
+    repo_root = Path.cwd()
+    if context.runtime_store is not None:
+        repo_root = context.runtime_store.home.root_dir.parent
+    return RepoLocalValidationPlan(
+        command_id="smoke_quickstart_validation",
+        argv=(
+            sys.executable,
+            "-m",
+            "pytest",
+            "-q",
+            "tests/smoke/test_bootstrap_smoke.py",
+            "tests/smoke/test_cli_entry_smoke.py",
+            "tests/smoke/test_quickstart_paths.py",
+        ),
+        working_directory=str(repo_root),
+        description="Run the bounded repo-local CLI/bootstrap smoke validation suite.",
+        timeout_seconds=180,
+    )
 
 
 def _run_bounded_execution_flow(
@@ -201,6 +251,8 @@ def _run_bounded_execution_flow(
             infrastructure_services=context.infrastructure_services,
         )
         if isinstance(pipeline_result, ProposalPipelineFailure):
+            if pipeline_result.failure_stage == "validation":
+                raise ValueError(_proposal_validation_failure_message(pipeline_result))
             raise ValueError(
                 f"proposal generation ended at {pipeline_result.failure_stage}: {pipeline_result.error}"
             )
@@ -256,26 +308,49 @@ def _run_bounded_execution_flow(
         )
 
     def execution_stage(governance_output):
+        execution_plan = _build_repo_local_validation_plan(context)
         return execute_governed_action(
             GovernedExecutionRequest(action=action_holder["action"], governance_decision=governance_output),
-            output_summary=f"Execution recorded the bounded repo-local run objective: {objective}",
+            execution_plan=execution_plan,
         )
 
     def outcome_stage(execution_output):
+        if execution_output.execution_status == "completed":
+            return normalize_outcome(
+                execution_result=execution_output,
+                outcome_state="complete",
+                observed_completion_posture=f"execution {execution_output.execution_status}",
+                target_effect_posture="bounded repo-local validation passed",
+                artifact_posture="report not persisted",
+                side_effect_posture="contained",
+            )
+        if execution_output.execution_status == "interrupted":
+            return normalize_outcome(
+                execution_result=execution_output,
+                outcome_state="inconclusive",
+                observed_completion_posture=f"execution {execution_output.execution_status}",
+                target_effect_posture="bounded repo-local validation did not finish cleanly",
+                artifact_posture="report unavailable",
+                side_effect_posture="contained",
+                uncertainty_markers=("validation execution did not finish cleanly",),
+            )
         return normalize_outcome(
             execution_result=execution_output,
-            outcome_state="complete",
+            outcome_state="failed",
             observed_completion_posture=f"execution {execution_output.execution_status}",
-            target_effect_posture="bounded objective advanced",
-            artifact_posture="artifact not required",
+            target_effect_posture="bounded repo-local validation reported failures",
+            artifact_posture="report unavailable",
             side_effect_posture="contained",
         )
 
     def evaluation_stage(outcome_output):
+        evidence_quality_posture = "strong"
+        if outcome_output.outcome_state == "inconclusive":
+            evidence_quality_posture = "moderate"
         return evaluate_outcome(
             objective_summary=objective,
             outcome=outcome_output,
-            evidence_quality_posture="moderate",
+            evidence_quality_posture=evidence_quality_posture,
         )
 
     return run_flow(
@@ -303,7 +378,11 @@ def scope_command(*, tokens: list[str], session: CliSession, context: InterfaceC
         return CommandResult(context=context, session=session, text=render_scope(payload), json_payload=payload)
     if tokens[1] == "clear":
         next_session = session.clear_scope()
-        return CommandResult(context=context, session=next_session, text="session scope cleared")
+        return CommandResult(
+            context=context,
+            session=next_session,
+            text="session scope cleared (process-local only)",
+        )
     raise ValueError("scope command must be 'scope show' or 'scope clear'")
 
 

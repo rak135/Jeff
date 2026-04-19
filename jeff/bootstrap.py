@@ -21,13 +21,15 @@ from jeff.infrastructure import (
     InfrastructureServices,
     JeffRuntimeConfig,
     ModelAdapterRuntimeConfig,
+    ResearchMemoryRuntimeConfig,
     build_model_adapter_runtime_config,
     build_infrastructure_services,
     load_runtime_config,
 )
+from jeff.interface.command_common import sync_run_truth_from_flow
 from jeff.interface.commands import InterfaceContext, SelectionReviewRecord
 from jeff.knowledge import KnowledgeStore
-from jeff.memory import InMemoryMemoryStore
+from jeff.memory import InMemoryMemoryStore, MemoryStoreProtocol, PostgresMemoryStore
 from jeff.orchestrator.lifecycle import FlowLifecycle
 from jeff.orchestrator.runner import FlowRunResult
 from jeff.orchestrator.trace import OrchestrationEvent
@@ -47,15 +49,21 @@ def build_demo_interface_context() -> InterfaceContext:
     state, scope = build_demo_state()
     selection_review = build_demo_selection_review(scope)
     flow_run = build_demo_flow_run(scope, selection_review=selection_review)
-    return InterfaceContext(
+    context = InterfaceContext(
         state=state,
         flow_runs={str(scope.run_id): flow_run},
         selection_reviews={str(scope.run_id): selection_review},
     )
+    context, _ = sync_run_truth_from_flow(
+        context=context,
+        run=context.state.projects[str(scope.project_id)].work_units[str(scope.work_unit_id)].runs[str(scope.run_id)],
+        flow_run=flow_run,
+    )
+    return context
 
 
 def _initialize_persisted_runtime_state(runtime_store: PersistedRuntimeStore) -> tuple[GlobalState, Scope]:
-    scope = Scope(project_id="project-1", work_unit_id="wu-1", run_id="run-1")
+    scope = Scope(project_id="project-1", work_unit_id="wu-1")
     state = bootstrap_global_state()
     for request in (
         TransitionRequest(
@@ -72,15 +80,8 @@ def _initialize_persisted_runtime_state(runtime_store: PersistedRuntimeStore) ->
             scope=Scope(project_id=str(scope.project_id)),
             payload={
                 "work_unit_id": str(scope.work_unit_id),
-                "objective": "Inspect the current Jeff v1 backbone through the CLI.",
+                "objective": "Current bounded Jeff work.",
             },
-        ),
-        TransitionRequest(
-            transition_id="transition-run",
-            transition_type="create_run",
-            basis_state_version=2,
-            scope=Scope(project_id=str(scope.project_id), work_unit_id=str(scope.work_unit_id)),
-            payload={"run_id": str(scope.run_id)},
         ),
     ):
         result = runtime_store.apply_transition(state, request)
@@ -99,14 +100,44 @@ def build_startup_interface_context(*, base_dir: str | Path | None = None) -> In
         selection_reviews = runtime_store.load_selection_reviews()
         startup_summary = f"Startup loaded persisted runtime state from {runtime_store.home.root_dir}."
     else:
-        state, scope = _initialize_persisted_runtime_state(runtime_store)
-        selection_review = build_demo_selection_review(scope)
-        flow_run = build_demo_flow_run(scope, selection_review=selection_review)
-        runtime_store.save_selection_review(str(scope.run_id), selection_review)
-        runtime_store.save_flow_run(str(scope.run_id), flow_run)
-        flow_runs = {str(scope.run_id): flow_run}
-        selection_reviews = {str(scope.run_id): selection_review}
-        startup_summary = f"Startup is initializing runtime state under {runtime_store.home.root_dir}."
+        with runtime_store.mutation_guard():
+            if runtime_store.canonical_state_exists():
+                state = runtime_store.load_canonical_state()
+                flow_runs = runtime_store.load_flow_runs(state=state)
+                selection_reviews = runtime_store.load_selection_reviews()
+                startup_summary = f"Startup loaded persisted runtime state from {runtime_store.home.root_dir}."
+                context = InterfaceContext(
+                    state=state,
+                    flow_runs=flow_runs,
+                    selection_reviews=selection_reviews,
+                    runtime_store=runtime_store,
+                    startup_summary=startup_summary,
+                )
+                runtime_config_entry = load_local_runtime_config(base_dir=base_dir)
+                if runtime_config_entry is None:
+                    return context
+                config_path, runtime_config = runtime_config_entry
+                configured_root = _resolve_configured_research_artifact_store_root(config_path, runtime_config)
+                return InterfaceContext(
+                    state=context.state,
+                    flow_runs=context.flow_runs,
+                    selection_reviews=context.selection_reviews,
+                    infrastructure_services=build_infrastructure_runtime(runtime_config),
+                    research_artifact_store=ResearchArtifactStore(
+                        runtime_store.home.research_artifacts_dir,
+                        legacy_root_dirs=runtime_store.research_artifact_legacy_dirs(configured_root),
+                    ),
+                    research_archive_store=ResearchArchiveStore(runtime_store.home.artifacts_dir),
+                    knowledge_store=KnowledgeStore(runtime_store.home.artifacts_dir),
+                    memory_store=_build_memory_store(runtime_config),
+                    research_memory_handoff_enabled=runtime_config.research.enable_memory_handoff,
+                    runtime_store=runtime_store,
+                    startup_summary=startup_summary,
+                )
+            state, _scope = _initialize_persisted_runtime_state(runtime_store)
+        flow_runs = {}
+        selection_reviews = {}
+        startup_summary = f"Startup is initializing empty runtime state under {runtime_store.home.root_dir}."
 
     context = InterfaceContext(
         state=state,
@@ -132,7 +163,7 @@ def build_startup_interface_context(*, base_dir: str | Path | None = None) -> In
         ),
         research_archive_store=ResearchArchiveStore(runtime_store.home.artifacts_dir),
         knowledge_store=KnowledgeStore(runtime_store.home.artifacts_dir),
-        memory_store=InMemoryMemoryStore() if runtime_config.research.enable_memory_handoff else None,
+        memory_store=_build_memory_store(runtime_config),
         research_memory_handoff_enabled=runtime_config.research.enable_memory_handoff,
         runtime_store=runtime_store,
         startup_summary=startup_summary,
@@ -370,22 +401,33 @@ def runtime_config_path(*, base_dir: str | Path | None = None) -> Path:
 def run_startup_preflight(*, base_dir: str | Path | None = None) -> tuple[str, ...]:
     context = build_startup_interface_context(base_dir=base_dir)
     config_path = runtime_config_path(base_dir=base_dir)
+    runtime_config_entry = load_local_runtime_config(base_dir=base_dir)
     checks = [
         "package imports resolved",
         "persisted runtime interface context bootstrapped",
         context.startup_summary or "persisted runtime startup summary unavailable",
         f"runtime project scope ready: {next(iter(context.state.projects.keys()))}",
+        (
+            "fresh runtime contains no seeded runs"
+            if not context.flow_runs
+            else f"runtime loaded {len(context.flow_runs)} persisted run support record(s)"
+        ),
         "CLI entry surface is available through jeff.interface.JeffCLI",
     ]
     if context.runtime_store is not None:
         checks.append(f"runtime home ready: {context.runtime_store.home.root_dir}")
     if context.infrastructure_services is None:
         checks.append(f"no local runtime config found at {config_path}; research CLI remains unavailable")
+        checks.append("bounded /run objective path unavailable because no local runtime config is loaded")
+        checks.append("research memory backend unavailable because no local runtime config is loaded")
     else:
         checks.append(f"local runtime config loaded: {config_path}")
         checks.append(
             f"research runtime configured with default adapter {context.infrastructure_services.default_model_adapter_id}"
         )
+        checks.append("bounded /run objective path enabled: repo-local validation")
+        if runtime_config_entry is not None:
+            checks.append(_research_memory_status_line(runtime_config_entry[1]))
         if context.research_artifact_store is not None:
             checks.append(f"research artifact store root ready: {context.research_artifact_store.root_dir}")
     return tuple(checks)
@@ -396,3 +438,47 @@ def _resolve_configured_research_artifact_store_root(config_path: Path, runtime_
     if configured_root.is_absolute():
         return configured_root
     return config_path.parent / configured_root
+
+
+def _build_memory_store(runtime_config: JeffRuntimeConfig) -> MemoryStoreProtocol | None:
+    if not runtime_config.research.enable_memory_handoff:
+        return None
+
+    memory_config = runtime_config.research.memory
+    if memory_config.backend == "in_memory":
+        return InMemoryMemoryStore()
+    return _build_postgres_memory_store(memory_config)
+
+
+def _build_postgres_memory_store(memory_config: ResearchMemoryRuntimeConfig) -> MemoryStoreProtocol:
+    try:
+        import psycopg2  # type: ignore[import]
+    except ImportError as exc:
+        raise ValueError(
+            "postgres memory backend requires psycopg2-binary to be installed in the current Python environment"
+        ) from exc
+
+    try:
+        connection = psycopg2.connect(memory_config.postgres_dsn)
+    except Exception as exc:
+        raise ValueError(f"postgres memory backend could not connect: {exc}") from exc
+
+    try:
+        store = PostgresMemoryStore(connection, embedding_dim=memory_config.postgres_embedding_dim)
+        store.initialize_schema()
+    except Exception as exc:
+        try:
+            connection.close()
+        except Exception:
+            pass
+        raise ValueError(f"postgres memory backend could not initialize schema: {exc}") from exc
+    return store
+
+
+def _research_memory_status_line(runtime_config: JeffRuntimeConfig) -> str:
+    if not runtime_config.research.enable_memory_handoff:
+        return "research memory handoff disabled by runtime config"
+    backend = runtime_config.research.memory.backend
+    if backend == "postgres":
+        return "research memory backend configured: postgres"
+    return "research memory backend configured: in_memory"

@@ -7,6 +7,7 @@ import re
 
 from jeff.action.execution import ExecutionResult
 from jeff.cognitive import ContextPackage, SelectionResult, assemble_context_package
+from jeff.cognitive.run_memory_handoff import build_run_memory_handoff_input, summarize_memory_write_decision
 from jeff.cognitive.post_selection.action_formation import (
     ActionFormationRequest,
     form_action_from_materialized_proposal,
@@ -34,7 +35,7 @@ from jeff.core.transition import TransitionRequest, apply_transition
 from jeff.governance import Approval, CurrentTruthSnapshot, Policy
 from jeff.infrastructure import InfrastructureServices
 from jeff.knowledge import KnowledgeStore
-from jeff.memory import InMemoryMemoryStore
+from jeff.memory import MemoryStoreProtocol, handoff_run_summary_to_memory
 from jeff.orchestrator import FlowRunResult
 
 from .command_models import InterfaceContext, SelectionReviewRecord
@@ -108,6 +109,35 @@ def ensure_selection_review_for_run(
     run: Run,
     flow_run: FlowRunResult | None,
 ) -> tuple[InterfaceContext, SelectionReviewRecord | None]:
+    return _selection_review_for_run_with_context_update(
+        context=context,
+        run=run,
+        flow_run=flow_run,
+        persist=True,
+    )
+
+
+def materialize_selection_review_for_run(
+    *,
+    context: InterfaceContext,
+    run: Run,
+    flow_run: FlowRunResult | None,
+) -> tuple[InterfaceContext, SelectionReviewRecord | None]:
+    return _selection_review_for_run_with_context_update(
+        context=context,
+        run=run,
+        flow_run=flow_run,
+        persist=False,
+    )
+
+
+def _selection_review_for_run_with_context_update(
+    *,
+    context: InterfaceContext,
+    run: Run,
+    flow_run: FlowRunResult | None,
+    persist: bool,
+) -> tuple[InterfaceContext, SelectionReviewRecord | None]:
     run_id = str(run.run_id)
     existing_review = context.selection_reviews.get(run_id)
     selection_review = materialize_selection_review_from_available_data(
@@ -118,7 +148,12 @@ def ensure_selection_review_for_run(
         return context, None
     if existing_review == selection_review:
         return context, selection_review
-    return replace_selection_review(context=context, run_id=run_id, selection_review=selection_review), selection_review
+    return _store_selection_review_in_context(
+        context=context,
+        run_id=run_id,
+        selection_review=selection_review,
+        persist=persist,
+    ), selection_review
 
 
 def materialize_selection_review_from_available_data(
@@ -340,7 +375,22 @@ def replace_selection_review(
     run_id: str,
     selection_review: SelectionReviewRecord,
 ) -> InterfaceContext:
-    if context.runtime_store is not None:
+    return _store_selection_review_in_context(
+        context=context,
+        run_id=run_id,
+        selection_review=selection_review,
+        persist=True,
+    )
+
+
+def _store_selection_review_in_context(
+    *,
+    context: InterfaceContext,
+    run_id: str,
+    selection_review: SelectionReviewRecord,
+    persist: bool,
+) -> InterfaceContext:
+    if persist and context.runtime_store is not None:
         context.runtime_store.save_selection_review(run_id, selection_review)
     next_reviews = dict(context.selection_reviews)
     next_reviews[run_id] = selection_review
@@ -364,11 +414,18 @@ def replace_flow_run(
     context: InterfaceContext,
     run_id: str,
     flow_run: FlowRunResult,
+    objective_summary: str | None = None,
 ) -> InterfaceContext:
+    prepared_flow_run = _prepare_flow_run_for_storage(
+        context=context,
+        run_id=run_id,
+        flow_run=flow_run,
+        objective_summary=objective_summary,
+    )
     if context.runtime_store is not None:
-        context.runtime_store.save_flow_run(run_id, flow_run)
+        context.runtime_store.save_flow_run(run_id, prepared_flow_run)
     next_flow_runs = dict(context.flow_runs)
-    next_flow_runs[run_id] = flow_run
+    next_flow_runs[run_id] = prepared_flow_run
     return InterfaceContext(
         state=context.state,
         flow_runs=next_flow_runs,
@@ -382,6 +439,162 @@ def replace_flow_run(
         runtime_store=context.runtime_store,
         startup_summary=context.startup_summary,
     )
+
+
+def _prepare_flow_run_for_storage(
+    *,
+    context: InterfaceContext,
+    run_id: str,
+    flow_run: FlowRunResult,
+    objective_summary: str | None,
+) -> FlowRunResult:
+    prior_flow_run = context.flow_runs.get(run_id)
+    resolved_objective = _resolve_flow_objective_summary(
+        flow_run=flow_run,
+        prior_flow_run=prior_flow_run,
+        objective_summary=objective_summary,
+    )
+    handoff_attempted = False
+    handoff_result = flow_run.memory_handoff_result
+    handoff_note = flow_run.memory_handoff_note
+
+    if context.memory_store is None:
+        handoff_note = "automatic run memory handoff unavailable: no configured memory store"
+    elif resolved_objective is None:
+        handoff_note = "automatic run memory handoff unavailable: no lawful bounded objective summary"
+    else:
+        handoff_attempted = True
+        handoff_input = build_run_memory_handoff_input(
+            scope=flow_run.lifecycle.scope,
+            flow_run=flow_run,
+            objective=resolved_objective,
+        )
+        handoff_decision = handoff_run_summary_to_memory(handoff_input, store=context.memory_store)
+        handoff_result = summarize_memory_write_decision(handoff_decision)
+        handoff_note = f"automatic run memory handoff completed with outcome {handoff_result.write_outcome}"
+
+    return FlowRunResult(
+        lifecycle=flow_run.lifecycle,
+        outputs=flow_run.outputs,
+        events=flow_run.events,
+        routing_decision=flow_run.routing_decision,
+        selection_failure=flow_run.selection_failure,
+        objective_summary=resolved_objective,
+        memory_handoff_attempted=handoff_attempted,
+        memory_handoff_result=handoff_result,
+        memory_handoff_note=handoff_note,
+    )
+
+
+def _resolve_flow_objective_summary(
+    *,
+    flow_run: FlowRunResult,
+    prior_flow_run: FlowRunResult | None,
+    objective_summary: str | None,
+) -> str | None:
+    if objective_summary is not None and objective_summary.strip():
+        return objective_summary.strip()
+    if flow_run.objective_summary is not None and flow_run.objective_summary.strip():
+        return flow_run.objective_summary.strip()
+    if prior_flow_run is not None and prior_flow_run.objective_summary is not None and prior_flow_run.objective_summary.strip():
+        return prior_flow_run.objective_summary.strip()
+    evaluation = flow_run.outputs.get("evaluation")
+    if evaluation is not None and getattr(evaluation, "objective_summary", None):
+        return evaluation.objective_summary
+    return None
+
+
+def sync_run_truth_from_flow(
+    *,
+    context: InterfaceContext,
+    run: Run,
+    flow_run: FlowRunResult,
+) -> tuple[InterfaceContext, Run]:
+    requested_lifecycle_state = _canonical_run_lifecycle_state(flow_run)
+    requested_execution_status = _execution_status_from_flow(flow_run)
+    requested_outcome_state = _outcome_state_from_flow(flow_run)
+    requested_evaluation_verdict = _evaluation_verdict_from_flow(flow_run)
+
+    if (
+        run.run_lifecycle_state == requested_lifecycle_state
+        and run.last_execution_status == requested_execution_status
+        and run.last_outcome_state == requested_outcome_state
+        and run.last_evaluation_verdict == requested_evaluation_verdict
+    ):
+        return context, run
+
+    result = apply_context_transition(
+        context=context,
+        request=TransitionRequest(
+            transition_id=(
+                f"transition-sync-run-{run.project_id}-{run.work_unit_id}-{run.run_id}-"
+                f"{context.state.state_meta.state_version + 1}"
+            ),
+            transition_type="update_run",
+            basis_state_version=context.state.state_meta.state_version,
+            scope=Scope(
+                project_id=str(run.project_id),
+                work_unit_id=str(run.work_unit_id),
+                run_id=str(run.run_id),
+            ),
+            payload={
+                "run_lifecycle_state": requested_lifecycle_state,
+                "last_execution_status": requested_execution_status,
+                "last_outcome_state": requested_outcome_state,
+                "last_evaluation_verdict": requested_evaluation_verdict,
+            },
+        ),
+    )
+    if result.transition_result != "committed":
+        issue = result.validation_errors[0].message if result.validation_errors else "unknown transition failure"
+        raise ValueError(f"run truth synchronization failed: {issue}")
+
+    next_context = replace_context_state(context, result.state)
+    synced_project = get_project(next_context, str(run.project_id))
+    synced_work_unit = get_work_unit(synced_project, str(run.work_unit_id))
+    return next_context, get_run(synced_work_unit, str(run.run_id))
+
+
+def _canonical_run_lifecycle_state(flow_run: FlowRunResult) -> str:
+    routing = flow_run.routing_decision
+    execution_status = _execution_status_from_flow(flow_run)
+    if routing is not None and routing.routed_outcome == "approval_required":
+        return "approval_required"
+    if execution_status is None and routing is not None:
+        if routing.routed_outcome in {"defer", "reject_all", "revalidate"}:
+            return "deferred"
+        if routing.routed_outcome == "blocked":
+            return "blocked"
+    if execution_status is None and flow_run.lifecycle.lifecycle_state in {"failed", "invalidated"}:
+        return "failed_before_execution"
+    mapping = {
+        "started": "active",
+        "active": "active",
+        "waiting": "blocked",
+        "blocked": "blocked",
+        "escalated": "escalated",
+        "completed": "completed",
+        "failed": "failed",
+        "invalidated": "failed",
+    }
+    return mapping.get(flow_run.lifecycle.lifecycle_state, flow_run.lifecycle.lifecycle_state)
+
+
+def _execution_status_from_flow(flow_run: FlowRunResult) -> str | None:
+    execution = flow_run.outputs.get("execution")
+    if isinstance(execution, ExecutionResult):
+        return execution.execution_status
+    return None
+
+
+def _outcome_state_from_flow(flow_run: FlowRunResult) -> str | None:
+    outcome = flow_run.outputs.get("outcome")
+    return None if outcome is None else outcome.outcome_state
+
+
+def _evaluation_verdict_from_flow(flow_run: FlowRunResult) -> str | None:
+    evaluation = flow_run.outputs.get("evaluation")
+    return None if evaluation is None else evaluation.evaluation_verdict
 
 
 def get_project(context: InterfaceContext, project_id: str) -> Project:
@@ -498,12 +711,18 @@ def resolve_historical_run(
         )
     project = get_project(context, session.scope.project_id)
     work_unit = get_work_unit(project, session.scope.work_unit_id)
-    run = select_existing_run(work_unit)
-    if run is None:
+    runs = existing_runs_in_work_unit(work_unit)
+    if not runs:
         raise ValueError(
             f"{command_name} found no existing run in work_unit {work_unit.work_unit_id}. "
             "Use /inspect to create and select a new run, or /run list to confirm history."
         )
+    if len(runs) > 1:
+        raise ValueError(
+            f"{command_name} found multiple runs in work_unit {work_unit.work_unit_id}. "
+            "Use /run list, then /run use <run_id> or pass an explicit <run_id>."
+        )
+    run = runs[0]
     next_session = session.with_scope(
         project_id=str(project.project_id),
         work_unit_id=str(work_unit.work_unit_id),
@@ -523,14 +742,20 @@ def resolve_or_create_active_run(
         run = get_run(work_unit, session.scope.run_id)
         return run, session, context, None
 
-    existing_run = select_existing_run(work_unit)
-    if existing_run is not None:
+    runs = existing_runs_in_work_unit(work_unit)
+    if len(runs) == 1:
+        existing_run = runs[0]
         next_session = session.with_scope(
             project_id=str(project.project_id),
             work_unit_id=str(work_unit.work_unit_id),
             run_id=str(existing_run.run_id),
         )
         return existing_run, next_session, context, f"auto-selected current run: {existing_run.run_id}"
+    if len(runs) > 1:
+        raise ValueError(
+            f"inspect found multiple runs in work_unit {work_unit.work_unit_id}. "
+            "Use /run list, then /run use <run_id> to choose the current run."
+        )
 
     created_run, next_context = create_run_for_work_unit(context=context, project=project, work_unit=work_unit)
     next_session = session.with_scope(
@@ -542,10 +767,14 @@ def resolve_or_create_active_run(
 
 
 def select_existing_run(work_unit: WorkUnit) -> Run | None:
-    runs = tuple(work_unit.runs.values())
+    runs = existing_runs_in_work_unit(work_unit)
     if not runs:
         return None
     return max(runs, key=run_sort_key)
+
+
+def existing_runs_in_work_unit(work_unit: WorkUnit) -> tuple[Run, ...]:
+    return tuple(sorted(work_unit.runs.values(), key=run_sort_key))
 
 
 def run_sort_key(run: Run) -> tuple[int, str]:
@@ -651,7 +880,7 @@ def require_research_store(context: InterfaceContext):
     return context.research_artifact_store
 
 
-def require_memory_store(context: InterfaceContext) -> InMemoryMemoryStore:
+def require_memory_store(context: InterfaceContext) -> MemoryStoreProtocol:
     if not context.research_memory_handoff_enabled:
         raise ValueError("research memory handoff is disabled by the current runtime config")
     if context.memory_store is None:

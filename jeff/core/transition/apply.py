@@ -61,6 +61,8 @@ def _build_candidate_state(
         return _build_work_unit_candidate(state, request)
     if request.transition_type == "create_run":
         return _build_run_candidate(state, request)
+    if request.transition_type == "update_run":
+        return _build_run_update_candidate(state, request)
 
     raise ValueError(f"unsupported transition_type: {request.transition_type}")
 
@@ -155,6 +157,57 @@ def _build_run_candidate(
         changed_paths=(
             "projects."
             f"{project.project_id}.work_units.{work_unit.work_unit_id}.runs.{run.run_id}",
+        ),
+    )
+
+
+def _build_run_update_candidate(
+    state: GlobalState,
+    request: TransitionRequest,
+) -> CandidateState:
+    project = state.projects[request.scope.project_id]
+    work_unit = project.work_units[request.scope.work_unit_id]
+    run = work_unit.runs[request.scope.run_id]
+
+    updated_run = replace(
+        run,
+        run_lifecycle_state=str(request.payload["run_lifecycle_state"]),
+        last_execution_status=(
+            None
+            if request.payload.get("last_execution_status") is None
+            else str(request.payload["last_execution_status"])
+        ),
+        last_outcome_state=(
+            None
+            if request.payload.get("last_outcome_state") is None
+            else str(request.payload["last_outcome_state"])
+        ),
+        last_evaluation_verdict=(
+            None
+            if request.payload.get("last_evaluation_verdict") is None
+            else str(request.payload["last_evaluation_verdict"])
+        ),
+    )
+
+    runs = dict(work_unit.runs)
+    runs[updated_run.run_id] = updated_run
+    work_unit_candidate = replace(work_unit, runs=runs)
+
+    work_units = dict(project.work_units)
+    work_units[work_unit_candidate.work_unit_id] = work_unit_candidate
+    project_candidate = replace(project, work_units=work_units)
+
+    projects = dict(state.projects)
+    projects[project_candidate.project_id] = project_candidate
+
+    base = f"projects.{project.project_id}.work_units.{work_unit.work_unit_id}.runs.{run.run_id}"
+    return CandidateState(
+        state=replace(state, projects=projects),
+        changed_paths=(
+            f"{base}.run_lifecycle_state",
+            f"{base}.last_execution_status",
+            f"{base}.last_outcome_state",
+            f"{base}.last_evaluation_verdict",
         ),
     )
 

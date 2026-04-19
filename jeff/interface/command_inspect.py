@@ -9,7 +9,7 @@ from jeff.core.containers.models import Project, Run, WorkUnit
 from jeff.core.schemas import Scope
 
 from .command_common import (
-    ensure_selection_review_for_run,
+    materialize_selection_review_for_run,
     require_flow_run,
     require_project_for_run,
     require_scoped_project,
@@ -41,7 +41,11 @@ def inspect_command(
         work_unit=work_unit,
     )
     flow_run = next_context.flow_runs.get(str(run.run_id))
-    next_context, selection_review = ensure_selection_review_for_run(context=next_context, run=run, flow_run=flow_run)
+    next_context, selection_review = materialize_selection_review_for_run(
+        context=next_context,
+        run=run,
+        flow_run=flow_run,
+    )
     live_context_package = _build_inspect_live_context_package(
         context=next_context,
         project=project,
@@ -73,7 +77,11 @@ def show_command(*, tokens: list[str], session: CliSession, context: InterfaceCo
     project = require_project_for_run(context, run.project_id)
     work_unit = project.work_units[run.work_unit_id]
     flow_run = context.flow_runs.get(str(run.run_id))
-    next_context, selection_review = ensure_selection_review_for_run(context=context, run=run, flow_run=flow_run)
+    next_context, selection_review = materialize_selection_review_for_run(
+        context=context,
+        run=run,
+        flow_run=flow_run,
+    )
     payload = run_show_json(
         project=project,
         work_unit=work_unit,

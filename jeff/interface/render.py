@@ -49,20 +49,23 @@ def _styled(text: str, *, style: str, use_color: bool) -> str:
 
 def render_scope(payload: dict[str, Any]) -> str:
     session = payload["session"]
+    support = payload.get("support") or {}
     lines = [
         "[session] scope",
+        f"[support] scope_model={support.get('scope_model', 'session-local/process-local only')}",
         f"project_id={session['project_id'] or '-'}",
         f"work_unit_id={session['work_unit_id'] or '-'}",
         f"run_id={session['run_id'] or '-'}",
         f"output_mode={session['output_mode']}",
         f"json_output={session['json_output']}",
+        "[hint] one-shot scope can be set with outer flags: --project <project_id> --work <work_unit_id> --run <run_id>",
     ]
     if session["project_id"] is None:
         lines.append("[hint] next=/project list then /project use <project_id>")
     elif session["work_unit_id"] is None:
         lines.append("[hint] next=/work list then /work use <work_unit_id>")
     elif session["run_id"] is None:
-        lines.append("[hint] next=/inspect (auto-selects or creates a run) or /run list for manual history/debug")
+        lines.append("[hint] next=/inspect (creates a run when none exists) or /run list then /run use <run_id>")
     return "\n".join(lines)
 
 
@@ -104,10 +107,19 @@ def render_run_show(payload: dict[str, Any]) -> str:
     support = payload["support"]
     telemetry = payload["telemetry"]
     live_context = support.get("live_context")
+    execution = support.get("execution_summary")
 
     lines = [
         f"RUN {truth['run_id']}",
-        f"[truth] project_id={truth['project_id']} work_unit_id={truth['work_unit_id']} run_lifecycle_state={truth['run_lifecycle_state']}",
+        (
+            f"[truth] project_id={truth['project_id']} work_unit_id={truth['work_unit_id']} "
+            f"run_lifecycle_state={truth['run_lifecycle_state']}"
+        ),
+        (
+            f"[truth] last_execution_status={truth['last_execution_status'] or '-'} "
+            f"last_outcome_state={truth['last_outcome_state'] or '-'} "
+            f"last_evaluation_verdict={truth['last_evaluation_verdict'] or '-'}"
+        ),
     ]
     if not derived["flow_visible"]:
         if live_context is not None:
@@ -124,14 +136,50 @@ def render_run_show(payload: dict[str, Any]) -> str:
             f"[telemetry] elapsed_seconds={telemetry['elapsed_seconds']} events_seen={telemetry['events_seen']} health_posture={telemetry['health_posture']}",
         ]
     )
+    if derived.get("memory_handoff_attempted"):
+        handoff_result = derived.get("memory_handoff_result")
+        if handoff_result is not None:
+            handoff_line = (
+                f"[support][memory_handoff] outcome={handoff_result['write_outcome']} "
+                f"candidate_id={handoff_result['candidate_id']}"
+            )
+            if handoff_result["memory_id"] is not None:
+                handoff_line += f" memory_id={handoff_result['memory_id']}"
+            lines.append(handoff_line)
+        if derived.get("memory_handoff_note"):
+            lines.append(f"[support][memory_handoff] note={derived['memory_handoff_note']}")
+    elif derived.get("memory_handoff_note"):
+        lines.append(f"[support][memory_handoff] note={derived['memory_handoff_note']}")
+    flow_reason_summary = support.get("flow_reason_summary")
+    if flow_reason_summary:
+        lines.append(f"[support] flow_reason={_compact_text(flow_reason_summary)}")
     routing = support["routing_decision"]
     if routing is not None:
         lines.append(
             f"[support] routing route_kind={routing['route_kind']} routed_outcome={routing['routed_outcome']} "
             f"source_stage={routing['source_stage']} reason={routing['reason_summary']}"
         )
+    request_entry_hint = support.get("request_entry_hint")
+    if request_entry_hint is not None:
+        conditional_commands = request_entry_hint.get("conditional_commands") or []
+        receipt_only_commands = request_entry_hint.get("receipt_only_commands") or []
+        if conditional_commands:
+            lines.append(f"[next] request_entry={' | '.join(conditional_commands)}")
+        if receipt_only_commands:
+            lines.append(f"[next] receipt_only_request_entry={' | '.join(receipt_only_commands)}")
     if live_context is not None:
         lines.extend(_render_live_context_lines(live_context, prefix="[support][live_context]"))
+    if execution is not None and execution["available"]:
+        lines.append(
+            f"[support][execution] family={execution['execution_family'] or '-'} "
+            f"command_id={execution['execution_command_id'] or '-'} exit_code={execution['exit_code']}"
+        )
+        if execution["output_summary"] is not None:
+            lines.append(f"[support][execution] summary={_compact_text(execution['output_summary'])}")
+        if execution["stdout_excerpt"] is not None:
+            lines.append(f"[support][execution] stdout={_compact_text(execution['stdout_excerpt'])}")
+        if execution["stderr_excerpt"] is not None:
+            lines.append(f"[support][execution] stderr={_compact_text(execution['stderr_excerpt'])}")
     proposal = support["proposal_summary"]
     if proposal["available"]:
         lines.append(
@@ -372,13 +420,16 @@ def render_trace(payload: dict[str, Any]) -> str:
 def render_request_receipt(payload: dict[str, Any]) -> str:
     derived = payload["derived"]
     support = payload["support"]
-    return "\n".join(
-        [
-            f"request_type={derived['request_type']} target={derived['target']}",
-            f"accepted={derived['accepted']} effect_state={derived['effect_state']}",
-            f"note={support['note']}",
-        ]
-    )
+    lines = [
+        f"request_type={derived['request_type']} target={derived['target']}",
+        f"accepted={derived['accepted']} effect_state={derived['effect_state']}",
+    ]
+    detail = support.get("detail") or {}
+    if detail:
+        rendered = " ".join(f"{key}={value}" for key, value in detail.items())
+        lines.append(f"detail={rendered}")
+    lines.append(f"note={support['note']}")
+    return "\n".join(lines)
 
 
 def render_research_result(payload: dict[str, Any]) -> str:
@@ -503,6 +554,7 @@ def render_help() -> str:
     return "\n".join(
         [
             "Jeff CLI is command-driven.",
+            "Session scope is session-local/process-local only. /project use, /work use, /run use, and /scope clear change this Jeff process only; use outer --project/--work/--run for one-shot scope.",
             "Use slash commands like /help or /project list.",
             "Plain text like 'hello' is not a supported command.",
             "Primary flow:",
@@ -510,7 +562,7 @@ def render_help() -> str:
             "- /project use <project_id>",
             "- /work list",
             "- /work use <work_unit_id>",
-            "- /run <objective>",
+            "- /run <repo-local-validation-objective>",
             "- /inspect",
             "- /show [run_id]",
             "- /selection show [run_id]",
@@ -524,16 +576,22 @@ def render_help() -> str:
             "- /scope clear",
             "- /mode <compact|debug>",
             "- /json <on|off>",
-            "Conditional requests:",
-            "- /approve [run_id]",
-            "- /reject [run_id]",
-            "- /retry [run_id]",
-            "- /revalidate [run_id]",
-            "- /recover [run_id]",
+            "Conditionally available request-entry:",
+            "- /approve [run_id] (only when routed_outcome=approval_required)",
+            "- /reject [run_id] (only when routed_outcome=approval_required or revalidate)",
+            "- /revalidate [run_id] (only when routed_outcome=revalidate and approval is already granted)",
+            "Bounded receipt-only request-entry:",
+            "- /retry [run_id] (only when routed_outcome=retry)",
+            "- /recover [run_id] (only when routed_outcome=recover)",
             "Research:",
             '- /research docs "<question>" <path1> [<path2> ...] [--handoff-memory]',
             '- /research web "<question>" <query1> [<query2> ...] [--handoff-memory]',
-            "Current startup uses explicit in-memory demo state and can load local runtime config for research.",
+            "Startup loads or initializes a persisted local runtime under .jeff_runtime and can load local runtime config for research.",
+            "A local jeff.runtime.toml enables /run <repo-local-validation-objective> and /research ...; without it, read/history commands remain available but those runtime-backed paths stay unavailable.",
+            "/run runs one bounded repo-local pytest validation plan under the current model configuration. It is not a general command runner.",
+            "approve/revalidate/reject only apply when the current run routed to the required request-entry state. retry/recover remain receipt-only when surfaced.",
+            "One-shot --json applies to one-shot output only. /json on affects the current interactive or repeated-command session only.",
+            "Research memory uses the runtime-selected backend when config enables handoff; there is no broad /memory command family.",
         ]
     )
 

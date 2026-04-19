@@ -20,6 +20,7 @@ from .retrieval import (
     canonical_memory_link_for_state,
     retrieve_memory,
 )
+from .run_handoff import handoff_run_summary_to_memory
 from .schemas import (
     MemoryLink,
     MemoryRetrievalEvent,
@@ -68,6 +69,7 @@ __all__ = [
     "build_truth_first_memory_view",
     "canonical_memory_link_for_state",
     "retrieve_memory",
+    "handoff_run_summary_to_memory",
     # Store
     "InMemoryMemoryStore",
     "MemoryStoreProtocol",

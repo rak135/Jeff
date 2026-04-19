@@ -1,6 +1,7 @@
 import pytest
+import sys
 
-from jeff.action.execution import ExecutionResult, GovernedExecutionRequest
+from jeff.action.execution import ExecutionResult, GovernedExecutionRequest, RepoLocalValidationPlan, execute_governed_action
 from jeff.action.types import SupportRef
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
@@ -85,3 +86,28 @@ def test_execution_rejects_mismatched_governed_action() -> None:
 
     with pytest.raises(ValueError, match="exact bounded action"):
         GovernedExecutionRequest(action=changed_action, governance_decision=decision)
+
+
+def test_execute_governed_action_runs_repo_local_validation_plan_and_captures_evidence(tmp_path) -> None:
+    action, decision = _allowed_decision()
+
+    plan = RepoLocalValidationPlan(
+        command_id="validation-smoke",
+        argv=(sys.executable, "-c", "print('validation ok')"),
+        working_directory=str(tmp_path),
+        description="Run a bounded validation probe.",
+        timeout_seconds=30,
+    )
+
+    result = execute_governed_action(
+        GovernedExecutionRequest(action=action, governance_decision=decision),
+        execution_plan=plan,
+    )
+
+    assert result.execution_status == "completed"
+    assert result.execution_family == "repo_local_validation"
+    assert result.execution_command_id == "validation-smoke"
+    assert result.exit_code == 0
+    assert result.working_directory == str(tmp_path)
+    assert "validation ok" in (result.stdout_excerpt or "")
+    assert "-c" in (result.executed_command or "")

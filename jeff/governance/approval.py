@@ -63,6 +63,15 @@ class Approval:
         )
 
     @classmethod
+    def denied_for(cls, *, action_id: str, action_binding_key: str, basis_state_version: int) -> "Approval":
+        return cls(
+            approval_verdict="denied",
+            action_id=action_id,
+            action_binding_key=action_binding_key,
+            basis_state_version=basis_state_version,
+        )
+
+    @classmethod
     def absent(cls) -> "Approval":
         return cls(approval_verdict="absent")
 

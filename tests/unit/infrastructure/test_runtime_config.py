@@ -42,9 +42,66 @@ evaluation = "ollama_default"
     assert config.defaults.default_adapter_id == "ollama_default"
     assert config.research.artifact_store_root == ".jeff_runtime"
     assert config.research.enable_memory_handoff is True
+    assert config.research.memory.backend == "in_memory"
     assert config.adapters[0].provider_kind == "ollama"
     assert config.adapters[0].provider_options.context_length == 8192
     assert config.purpose_overrides.formatter_bridge == "ollama_default"
+
+
+def test_research_memory_backend_parses_postgres_configuration(tmp_path: Path) -> None:
+    config_path = tmp_path / "jeff.runtime.toml"
+    config_path.write_text(
+        """
+[runtime]
+default_adapter_id = "fake-default"
+
+[research]
+artifact_store_root = ".jeff_runtime"
+enable_memory_handoff = true
+
+[research.memory]
+backend = "postgres"
+postgres_dsn = "postgresql://user:pass@localhost:5432/jeff_test"
+postgres_embedding_dim = 96
+
+[[adapters]]
+adapter_id = "fake-default"
+provider_kind = "fake"
+model_name = "fake-model"
+""".strip(),
+        encoding="utf-8",
+    )
+
+    config = load_runtime_config(config_path)
+
+    assert config.research.memory.backend == "postgres"
+    assert config.research.memory.postgres_dsn == "postgresql://user:pass@localhost:5432/jeff_test"
+    assert config.research.memory.postgres_embedding_dim == 96
+
+
+def test_postgres_memory_backend_requires_dsn(tmp_path: Path) -> None:
+    config_path = tmp_path / "jeff.runtime.toml"
+    config_path.write_text(
+        """
+[runtime]
+default_adapter_id = "fake-default"
+
+[research]
+artifact_store_root = ".jeff_runtime"
+
+[research.memory]
+backend = "postgres"
+
+[[adapters]]
+adapter_id = "fake-default"
+provider_kind = "fake"
+model_name = "fake-model"
+""".strip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="research.memory.postgres_dsn is required"):
+        load_runtime_config(config_path)
 
 
 def test_malformed_toml_fails_closed(tmp_path: Path) -> None:

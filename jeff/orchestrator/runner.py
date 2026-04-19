@@ -112,6 +112,10 @@ class FlowRunResult:
     events: tuple[OrchestrationEvent, ...]
     routing_decision: RoutingDecision | None = None
     selection_failure: SelectionRunFailure | None = None
+    objective_summary: str | None = None
+    memory_handoff_attempted: bool = False
+    memory_handoff_result: object | None = None
+    memory_handoff_note: str | None = None
 
 
 def run_flow(

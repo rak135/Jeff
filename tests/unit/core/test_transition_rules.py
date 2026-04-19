@@ -145,3 +145,98 @@ def test_illegal_scope_linkage_rejects_create_run() -> None:
     assert rejected.state == project_result.state
     assert rejected.changed_paths == ()
     assert rejected.validation_errors[0].code == "unknown_work_unit"
+
+
+def test_update_run_commits_canonical_progression_fields() -> None:
+    state = bootstrap_global_state()
+    project_result = apply_transition(
+        state,
+        TransitionRequest(
+            transition_id="transition-1",
+            transition_type="create_project",
+            basis_state_version=0,
+            scope=Scope(project_id="project-1"),
+            payload={"name": "Alpha"},
+        ),
+    )
+    work_unit_result = apply_transition(
+        project_result.state,
+        TransitionRequest(
+            transition_id="transition-2",
+            transition_type="create_work_unit",
+            basis_state_version=1,
+            scope=Scope(project_id="project-1"),
+            payload={"work_unit_id": "wu-1", "objective": "Ship the backbone"},
+        ),
+    )
+    run_result = apply_transition(
+        work_unit_result.state,
+        TransitionRequest(
+            transition_id="transition-3",
+            transition_type="create_run",
+            basis_state_version=2,
+            scope=Scope(project_id="project-1", work_unit_id="wu-1"),
+            payload={"run_id": "run-1"},
+        ),
+    )
+
+    updated = apply_transition(
+        run_result.state,
+        TransitionRequest(
+            transition_id="transition-4",
+            transition_type="update_run",
+            basis_state_version=3,
+            scope=Scope(project_id="project-1", work_unit_id="wu-1", run_id="run-1"),
+            payload={
+                "run_lifecycle_state": "completed",
+                "last_execution_status": "completed",
+                "last_outcome_state": "complete",
+                "last_evaluation_verdict": "acceptable",
+            },
+        ),
+    )
+
+    run = updated.state.projects["project-1"].work_units["wu-1"].runs["run-1"]
+    assert updated.transition_result == "committed"
+    assert run.run_lifecycle_state == "completed"
+    assert run.last_execution_status == "completed"
+    assert run.last_outcome_state == "complete"
+    assert run.last_evaluation_verdict == "acceptable"
+
+
+def test_update_run_rejects_without_run_scope() -> None:
+    state = bootstrap_global_state()
+    project_result = apply_transition(
+        state,
+        TransitionRequest(
+            transition_id="transition-1",
+            transition_type="create_project",
+            basis_state_version=0,
+            scope=Scope(project_id="project-1"),
+            payload={"name": "Alpha"},
+        ),
+    )
+    work_unit_result = apply_transition(
+        project_result.state,
+        TransitionRequest(
+            transition_id="transition-2",
+            transition_type="create_work_unit",
+            basis_state_version=1,
+            scope=Scope(project_id="project-1"),
+            payload={"work_unit_id": "wu-1", "objective": "Ship the backbone"},
+        ),
+    )
+
+    rejected = apply_transition(
+        work_unit_result.state,
+        TransitionRequest(
+            transition_id="transition-3",
+            transition_type="update_run",
+            basis_state_version=2,
+            scope=Scope(project_id="project-1", work_unit_id="wu-1"),
+            payload={"run_lifecycle_state": "blocked"},
+        ),
+    )
+
+    assert rejected.transition_result == "rejected"
+    assert rejected.validation_errors[0].code == "missing_run_scope"

@@ -1,0 +1,37 @@
+## 2026-04-19 16:16 - Priority 6 operator contract alignment
+
+- Scope: verification-first Priority 6 pass for startup/help/status alignment after the stabilized P1-P5 runtime slices
+- Done:
+  - verified the current repo really has persisted runtime locking, explicit `--reset-runtime`, deterministic run binding, transition-backed run truth, bounded `/run`, approval continuation, and runtime-selected research memory wiring
+  - aligned `README.md`, `python -m jeff --help`, `/help`, and bootstrap-preflight wording with the actual persisted-runtime startup path and current bounded `/run` contract
+  - refreshed stale repo and module handoffs that still described Jeff as in-memory-only or contradicted runtime-selected memory and approval continuation reality
+  - updated smoke, integration, and acceptance coverage so operator wording now has anti-drift protection
+- Validation:
+  - `python -m pytest -q tests\integration\test_bootstrap_runtime_config.py tests\smoke\test_bootstrap_smoke.py tests\smoke\test_cli_entry_smoke.py tests\smoke\test_quickstart_paths.py tests\acceptance\test_acceptance_cli_orchestrator_alignment.py` passed (`27 passed`)
+  - `python -m pytest -q tests\integration\test_runtime_workspace_persistence.py tests\unit\interface\test_cli_scope_and_modes.py tests\unit\interface\test_cli_run_resolution.py tests\integration\test_cli_run_live_context_execution.py tests\integration\test_inspect_live_context.py tests\integration\test_bootstrap_runtime_config.py tests\integration\test_cli_research_runtime_config.py tests\unit\interface\test_cli_truthfulness.py tests\unit\interface\test_cli_json_views.py tests\smoke\test_bootstrap_smoke.py tests\smoke\test_cli_entry_smoke.py tests\smoke\test_quickstart_paths.py tests\acceptance\test_acceptance_cli_orchestrator_alignment.py` passed (`84 passed`)
+  - `python -m pytest -q` passed (`984 passed, 28 skipped`)
+- Current state:
+  - operator-facing startup/help/status surfaces now describe persisted runtime truthfully instead of the older in-memory demo story
+  - `/run` is described as one bounded repo-local validation slice, not as a broad execution surface
+  - approval, revalidation, rejection, session-local scope, one-shot JSON, and runtime-selected memory are all described with bounded wording that matches the current repo
+- Explicitly still deferred:
+  - GUI
+  - broad API bridge
+  - broader `/run` action families
+  - broad memory CLI or UX
+  - autonomous continuation
+- Files:
+  - README.md
+  - jeff/main.py
+  - jeff/bootstrap.py
+  - jeff/interface/render.py
+  - handoffs/system/WORK_STATUS_UPDATE.md
+  - handoffs/system/REPO_HANDOFF.md
+  - handoffs/system/WORK_STATUS_UPDATE_2026-04-19_1616.md
+  - jeff/memory/HANDOFF.md
+  - jeff/infrastructure/HANDOFF.md
+  - tests/integration/test_bootstrap_runtime_config.py
+  - tests/smoke/test_bootstrap_smoke.py
+  - tests/smoke/test_cli_entry_smoke.py
+  - tests/smoke/test_quickstart_paths.py
+  - tests/acceptance/test_acceptance_cli_orchestrator_alignment.py

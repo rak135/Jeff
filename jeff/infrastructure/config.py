@@ -33,6 +33,15 @@ def _optional_positive_int(value: Any, *, field_name: str) -> int | None:
     return value
 
 
+def _positive_int_with_default(value: Any, *, field_name: str, default: int) -> int:
+    if value is None:
+        return default
+    parsed = _optional_positive_int(value, field_name=field_name)
+    if parsed is None:
+        return default
+    return parsed
+
+
 def _optional_bool(value: Any, *, field_name: str, default: bool) -> bool:
     if value is None:
         return default
@@ -127,9 +136,40 @@ class PurposeOverrides:
 
 
 @dataclass(frozen=True, slots=True)
+class ResearchMemoryRuntimeConfig:
+    backend: str = "in_memory"
+    postgres_dsn: str | None = None
+    postgres_embedding_dim: int = 64
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "backend",
+            _normalize_memory_backend(self.backend),
+        )
+        object.__setattr__(
+            self,
+            "postgres_dsn",
+            _optional_text(self.postgres_dsn, field_name="research.memory.postgres_dsn"),
+        )
+        object.__setattr__(
+            self,
+            "postgres_embedding_dim",
+            _positive_int_with_default(
+                self.postgres_embedding_dim,
+                field_name="research.memory.postgres_embedding_dim",
+                default=64,
+            ),
+        )
+        if self.backend == "postgres" and self.postgres_dsn is None:
+            raise ValueError("research.memory.postgres_dsn is required when research.memory.backend is postgres")
+
+
+@dataclass(frozen=True, slots=True)
 class ResearchRuntimeConfig:
     artifact_store_root: str
     enable_memory_handoff: bool = True
+    memory: ResearchMemoryRuntimeConfig = field(default_factory=ResearchMemoryRuntimeConfig)
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -179,6 +219,9 @@ def load_runtime_config(path: str | Path) -> JeffRuntimeConfig:
     purpose_overrides_table = payload.get("purpose_overrides", {})
     if not isinstance(purpose_overrides_table, dict):
         raise ValueError("purpose_overrides must be a TOML table when provided")
+    memory_table = research_table.get("memory", {})
+    if not isinstance(memory_table, dict):
+        raise ValueError("research.memory must be a TOML table when provided")
 
     # Validate that purpose_overrides contains only known keys
     known_purpose_keys = {"research", "formatter_bridge", "proposal", "selection", "planning", "evaluation"}
@@ -208,6 +251,11 @@ def load_runtime_config(path: str | Path) -> JeffRuntimeConfig:
         research=ResearchRuntimeConfig(
             artifact_store_root=research_table.get("artifact_store_root"),
             enable_memory_handoff=research_table.get("enable_memory_handoff", True),
+            memory=ResearchMemoryRuntimeConfig(
+                backend=memory_table.get("backend", "in_memory"),
+                postgres_dsn=memory_table.get("postgres_dsn"),
+                postgres_embedding_dim=memory_table.get("postgres_embedding_dim", 64),
+            ),
         ),
     )
 
@@ -235,4 +283,11 @@ def _normalize_provider_kind(value: Any) -> str:
     normalized = _require_text(value, field_name="adapters.provider_kind").lower()
     if normalized not in {"fake", "ollama"}:
         raise ValueError(f"unsupported provider_kind in runtime config: {normalized}")
+    return normalized
+
+
+def _normalize_memory_backend(value: Any) -> str:
+    normalized = _require_text(value, field_name="research.memory.backend").lower()
+    if normalized not in {"in_memory", "postgres"}:
+        raise ValueError(f"unsupported research.memory.backend in runtime config: {normalized}")
     return normalized
