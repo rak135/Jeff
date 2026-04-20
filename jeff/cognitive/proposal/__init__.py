@@ -5,6 +5,7 @@ from .api import (
     ProposalPipelineFailureStage,
     ProposalPipelineResult,
     ProposalPipelineSuccess,
+    run_proposal_repair_attempt,
     run_proposal_generation_pipeline,
 )
 from .contracts import ProposalResult, ProposalResultOption, ProposalType
@@ -36,6 +37,15 @@ from .parsing import (
     ProposalGenerationParseError,
     parse_proposal_generation_result,
 )
+from .operator_records import (
+    ProposalAttemptKind,
+    ProposalOperatorRecord,
+    ProposalPersistedAttempt,
+    ProposalRecordStatus,
+    ProposalValidationOutcome,
+    build_operator_record_from_pipeline_result,
+    proposal_attempt_from_pipeline_result,
+)
 from .validation import (
     ProposalGenerationValidationError,
     ProposalValidationIssue,
@@ -45,6 +55,7 @@ from .validation import (
 __all__ = [
     "ParsedProposalGenerationResult",
     "ParsedProposalOption",
+    "ProposalAttemptKind",
     "ProposalGenerationPromptBundle",
     "ProposalGenerationParseError",
     "ProposalGenerationRawResult",
@@ -55,11 +66,14 @@ __all__ = [
     "ProposalGenerationBridgeRequest",
     "ProposalGenerationBridgeResult",
     "ProposalInputPackage",
+    "ProposalOperatorRecord",
     "ProposalGenerationValidationError",
     "ProposalPipelineFailure",
     "ProposalPipelineFailureStage",
     "ProposalPipelineResult",
     "ProposalPipelineSuccess",
+    "ProposalPersistedAttempt",
+    "ProposalRecordStatus",
     "ProposalResult",
     "ProposalResultOption",
     "ProposalSupportConsumerError",
@@ -67,11 +81,15 @@ __all__ = [
     "ProposalSupportConsumerRequest",
     "ProposalType",
     "ProposalValidationIssue",
+    "ProposalValidationOutcome",
     "build_and_run_proposal_generation",
+    "build_operator_record_from_pipeline_result",
     "build_proposal_generation_prompt_bundle",
     "consume_proposal_support_package",
     "invoke_proposal_generation_with_runtime",
     "parse_proposal_generation_result",
+    "proposal_attempt_from_pipeline_result",
     "run_proposal_generation_pipeline",
+    "run_proposal_repair_attempt",
     "validate_proposal_generation_result",
 ]

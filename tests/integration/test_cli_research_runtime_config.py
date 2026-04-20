@@ -134,7 +134,7 @@ def test_runtime_configured_handoff_memory_still_delegates_to_current_memory_lay
     assert "duplicate committed memory already exists" in second
 
     interface_sources = [
-        Path("jeff/interface/commands.py"),
+        Path("jeff/interface/commands/registry.py"),
         Path("jeff/interface/json_views.py"),
         Path("jeff/interface/render.py"),
         Path("jeff/interface/cli.py"),

@@ -8,6 +8,7 @@ from typing import Any
 
 from jeff.cognitive import (
     ContextPackage,
+    ProposalOperatorRecord,
     ProposalGenerationBridgeResult,
     ResearchArtifactRecord,
     ResearchOperatorSurfaceError,
@@ -693,6 +694,220 @@ def _proposal_summary_json(*, selection_review: object | None, flow_run: FlowRun
             for option in proposal_result.options[:3]
         ],
         "missing_reason": None,
+    }
+
+
+def proposal_record_json(
+    *,
+    record: ProposalOperatorRecord,
+    view: str = "proposal_show",
+) -> dict[str, Any]:
+    summary = _proposal_record_summary(record)
+    return {
+        "view": view,
+        "truth": {
+            "proposal_id": record.proposal_id,
+            "source_proposal_id": record.source_proposal_id,
+            "objective": record.objective,
+            "scope": {
+                "project_id": str(record.scope.project_id),
+                "work_unit_id": None if record.scope.work_unit_id is None else str(record.scope.work_unit_id),
+                "run_id": None if record.scope.run_id is None else str(record.scope.run_id),
+            },
+            "created_at": record.created_at,
+        },
+        "derived": {
+            "proposal_status": record.status,
+            "repair_attempted": record.repair_attempted,
+            "repair_used": record.repair_attempted,
+            "final_validation_outcome": record.final_validation_outcome,
+            "final_failure_stage": record.final_failure_stage,
+            "final_error_message": record.final_error_message,
+            "terminal_attempt_kind": record.final_attempt.attempt_kind,
+        },
+        "proposal": {
+            "proposal_count": summary["proposal_count"],
+            "scarcity_reason": summary["scarcity_reason"],
+            "retained_options": summary["retained_options"],
+            "summary_source": summary["summary_source"],
+            "final_result_available": record.final_proposal_result is not None,
+            "parsed_intermediate_available": summary["parsed_intermediate_available"],
+        },
+        "attempts": {
+            "initial": _proposal_attempt_json(record.initial_attempt),
+            "repair": None if record.repair_attempt is None else _proposal_attempt_json(record.repair_attempt),
+        },
+        "artifacts": {
+            "record_ref": record.record_ref,
+            "initial_raw_ref": record.initial_attempt.raw_artifact_ref,
+            "initial_parsed_ref": record.initial_attempt.parsed_artifact_ref,
+            "repair_raw_ref": None if record.repair_attempt is None else record.repair_attempt.raw_artifact_ref,
+            "repair_parsed_ref": None if record.repair_attempt is None else record.repair_attempt.parsed_artifact_ref,
+        },
+    }
+
+
+def proposal_raw_json(record: ProposalOperatorRecord) -> dict[str, Any]:
+    return {
+        "view": "proposal_raw",
+        "truth": {
+            "proposal_id": record.proposal_id,
+            "source_proposal_id": record.source_proposal_id,
+            "run_id": None if record.scope.run_id is None else str(record.scope.run_id),
+            "objective": record.objective,
+        },
+        "attempts": [
+            _proposal_raw_attempt_json(record.initial_attempt),
+            *(
+                [] if record.repair_attempt is None else [_proposal_raw_attempt_json(record.repair_attempt)]
+            ),
+        ],
+    }
+
+
+def proposal_validation_json(
+    *,
+    record: ProposalOperatorRecord,
+    attempt_kind: str,
+    parse_error: str | None,
+    validation_issues: tuple[object, ...],
+    proposal_result: object | None,
+) -> dict[str, Any]:
+    attempt = record.final_attempt if record.final_attempt.attempt_kind == attempt_kind else record.initial_attempt
+    summary = _proposal_summary_from_result(proposal_result)
+    return {
+        "view": "proposal_validate",
+        "truth": {
+            "proposal_id": record.proposal_id,
+            "source_proposal_id": record.source_proposal_id,
+            "run_id": None if record.scope.run_id is None else str(record.scope.run_id),
+        },
+        "derived": {
+            "attempt_kind": attempt_kind,
+            "parse_success": parse_error is None,
+            "validation_success": parse_error is None and not validation_issues,
+        },
+        "support": {
+            "parse_error": parse_error,
+            "validation_issues": [
+                {
+                    "code": issue.code,
+                    "message": issue.message,
+                    "option_index": issue.option_index,
+                }
+                for issue in validation_issues
+            ],
+            "proposal_count": summary["proposal_count"],
+            "scarcity_reason": summary["scarcity_reason"],
+            "retained_options": summary["retained_options"],
+        },
+        "artifacts": {
+            "raw_ref": attempt.raw_artifact_ref,
+            "parsed_ref": attempt.parsed_artifact_ref,
+            "validation_ref": attempt.validation_artifact_ref,
+        },
+    }
+
+
+def _proposal_attempt_json(attempt: object) -> dict[str, Any]:
+    return {
+        "attempt_kind": attempt.attempt_kind,
+        "prompt_file": None if attempt.prompt_bundle is None else attempt.prompt_bundle.prompt_file,
+        "request_id": None if attempt.prompt_bundle is None else attempt.prompt_bundle.request_id,
+        "raw_available": attempt.raw_result is not None,
+        "parsed_available": attempt.parsed_result is not None,
+        "proposal_result_available": attempt.proposal_result is not None,
+        "failure_stage": attempt.failure_stage,
+        "error_message": attempt.error_message,
+        "parse_error": attempt.parse_error,
+        "validation_issue_count": len(attempt.validation_issues),
+        "raw_artifact_ref": attempt.raw_artifact_ref,
+        "parsed_artifact_ref": attempt.parsed_artifact_ref,
+        "validation_artifact_ref": attempt.validation_artifact_ref,
+    }
+
+
+def _proposal_raw_attempt_json(attempt: object) -> dict[str, Any]:
+    return {
+        "attempt_kind": attempt.attempt_kind,
+        "prompt_file": None if attempt.prompt_bundle is None else attempt.prompt_bundle.prompt_file,
+        "request_id": None if attempt.prompt_bundle is None else attempt.prompt_bundle.request_id,
+        "raw_available": attempt.raw_result is not None,
+        "raw_artifact_ref": attempt.raw_artifact_ref,
+        "raw_output_text": None if attempt.raw_result is None else attempt.raw_result.raw_output_text,
+        "missing_reason": None if attempt.raw_result is not None else attempt.error_message or "no raw output preserved",
+    }
+
+
+def _proposal_record_summary(record: ProposalOperatorRecord) -> dict[str, Any]:
+    if record.final_proposal_result is not None:
+        summary = _proposal_summary_from_result(record.final_proposal_result)
+        summary["summary_source"] = "final_proposal_result"
+        summary["parsed_intermediate_available"] = record.final_attempt.parsed_result is not None
+        return summary
+    if record.final_attempt.parsed_result is not None:
+        summary = _proposal_summary_from_parsed(record.final_attempt.parsed_result)
+        summary["summary_source"] = "parsed_intermediate"
+        summary["parsed_intermediate_available"] = True
+        return summary
+    return {
+        "proposal_count": None,
+        "scarcity_reason": None,
+        "retained_options": [],
+        "summary_source": "none",
+        "parsed_intermediate_available": False,
+    }
+
+
+def _proposal_summary_from_result(proposal_result: object | None) -> dict[str, Any]:
+    if proposal_result is None:
+        return {
+            "proposal_count": None,
+            "scarcity_reason": None,
+            "retained_options": [],
+        }
+    return {
+        "proposal_count": proposal_result.proposal_count,
+        "scarcity_reason": proposal_result.scarcity_reason,
+        "retained_options": [
+            {
+                "proposal_id": str(option.proposal_id),
+                "proposal_type": option.proposal_type,
+                "title": option.title,
+                "summary": option.summary,
+                "why_now": option.why_now,
+                "assumptions": list(option.assumptions),
+                "main_risks": list(option.main_risks),
+                "constraints": list(option.constraints),
+                "blockers": list(option.blockers),
+                "support_refs": list(option.support_refs),
+                "planning_needed": option.planning_needed,
+            }
+            for option in proposal_result.options
+        ],
+    }
+
+
+def _proposal_summary_from_parsed(parsed_result: object) -> dict[str, Any]:
+    return {
+        "proposal_count": parsed_result.proposal_count,
+        "scarcity_reason": parsed_result.scarcity_reason,
+        "retained_options": [
+            {
+                "proposal_id": f"proposal-{option.option_index}",
+                "proposal_type": option.proposal_type,
+                "title": option.title,
+                "summary": option.summary,
+                "why_now": option.why_now,
+                "assumptions": list(option.assumptions),
+                "main_risks": list(option.risks),
+                "constraints": list(option.constraints),
+                "blockers": list(option.blockers),
+                "support_refs": list(option.support_refs),
+                "planning_needed": option.planning_needed,
+            }
+            for option in parsed_result.options
+        ],
     }
 
 

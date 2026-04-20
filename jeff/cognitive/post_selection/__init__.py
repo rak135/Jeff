@@ -46,6 +46,7 @@ from .plan_action_bridge import (
     PlannedActionBridgeResult,
     bridge_plan_to_action,
 )
+from .selection_review_record import SelectionReviewRecord
 from .research_output_sufficiency_bridge import (
     ResearchOutputSufficiencyError,
     ResearchOutputSufficiencyIssue,
@@ -104,6 +105,7 @@ __all__ = [
     "ResearchOutputSufficiencyRequest",
     "ResearchOutputSufficiencyResult",
     "ResolvedSelectionActionBasis",
+    "SelectionReviewRecord",
     "SelectionActionResolutionError",
     "SelectionActionResolutionIssue",
     "SelectionActionResolutionRequest",

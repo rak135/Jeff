@@ -13,11 +13,22 @@ _FORBIDDEN_AUTHORITY_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("approval", re.compile(r"\bapproval\b|\bapprove(?:d|s|ing)?\b")),
     ("permission", re.compile(r"\bpermission\b|\bpermit(?:ted|s|ting)?\b")),
     ("authorization", re.compile(r"\bauthoriz(?:e|ed|es|ing|ation)\b")),
-    ("readiness", re.compile(r"\breadiness\b|\bready\b")),
-    ("execution", re.compile(r"\bexecution\b|\bexecute(?:d|s|ing)?\b")),
-    ("governance", re.compile(r"\bgovernance\b|\bgovern(?:ed|s|ing)?\b")),
-    ("selection", re.compile(r"\bselection\b|\bselect(?:ed|s|ing)?\b|\bchoose(?:n|s)?\b")),
-    ("allowed", re.compile(r"\ballow(?:ed|s|ing)?\b")),
+    (
+        "winner_language",
+        re.compile(r"\bwinner\b|\bwinning\b|\bbest option\b|\bpreferred option\b|\btop choice\b"),
+    ),
+    (
+        "selection_outcome",
+        re.compile(r"\bselected\b|\bchoose this\b|\bshould be chosen\b|\brecommended as the\b"),
+    ),
+    (
+        "readiness_to_start",
+        re.compile(r"\bready to (?:start|proceed|execute|ship|deploy)\b|\bready for (?:execution|deployment|release|implementation)\b"),
+    ),
+    (
+        "start_authority",
+        re.compile(r"\bstart now\b|\bbegin now\b|\bproceed now\b|\bgo ahead\b|\bmove forward now\b|\bexecute now\b|\bshould execute\b|\bshould proceed\b"),
+    ),
 )
 
 
@@ -116,33 +127,6 @@ def validate_proposal_generation_result(
 def _collect_option_issues(parsed_option: ParsedProposalOption) -> tuple[ProposalValidationIssue, ...]:
     issues: list[ProposalValidationIssue] = []
     option_index = parsed_option.option_index
-
-    if not parsed_option.assumptions:
-        issues.append(
-            ProposalValidationIssue(
-                code="missing_assumptions",
-                message="must include at least one explicit assumption",
-                option_index=option_index,
-            )
-        )
-
-    if not parsed_option.risks:
-        issues.append(
-            ProposalValidationIssue(
-                code="missing_risks",
-                message="must include at least one explicit risk",
-                option_index=option_index,
-            )
-        )
-
-    if not parsed_option.constraints and not parsed_option.blockers:
-        issues.append(
-            ProposalValidationIssue(
-                code="missing_constraints_or_blockers",
-                message="must include at least one explicit constraint or blocker",
-                option_index=option_index,
-            )
-        )
 
     for field_name, value in _iter_text_fields(parsed_option):
         normalized_value = normalized_identity(value)

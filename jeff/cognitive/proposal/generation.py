@@ -125,6 +125,39 @@ def build_proposal_generation_prompt_bundle(
     )
 
 
+def build_proposal_generation_repair_prompt_bundle(
+    request: ProposalGenerationRequest,
+    *,
+    failure_stage: str,
+    failure_reason: str,
+    validation_issues_text: str,
+    prior_output: str,
+) -> ProposalGenerationPromptBundle:
+    system_instructions, template = load_prompt_file("STEP1_REPAIR.md")
+    prompt = render_prompt(
+        template,
+        FAILURE_STAGE=failure_stage,
+        FAILURE_REASON=failure_reason,
+        VALIDATION_ISSUES=validation_issues_text,
+        PRIOR_OUTPUT=prior_output,
+        OBJECTIVE=_format_objective_block(request),
+        SCOPE=_format_scope(request.scope),
+        TRUTH_SNAPSHOT=_format_truth_snapshot(request.context_package),
+        CURRENT_CONSTRAINTS=_format_constraints(request.visible_constraints),
+        RESEARCH_SUPPORT=_format_research_support(request),
+        OTHER_SUPPORT=_format_other_support(request.context_package),
+        UNCERTAINTIES=_format_uncertainties(request.research_artifacts),
+    )
+    return ProposalGenerationPromptBundle(
+        request_id=f"{_build_request_id(request)}:repair-1",
+        scope=request.scope,
+        objective=request.objective,
+        system_instructions=system_instructions,
+        prompt=prompt,
+        prompt_file="STEP1_REPAIR.md",
+    )
+
+
 def invoke_proposal_generation_with_runtime(
     prompt_bundle: ProposalGenerationPromptBundle,
     *,
@@ -249,8 +282,10 @@ def _build_runtime_call(
     *,
     adapter_id: str | None,
 ) -> ContractCallRequest:
+    stage = "proposal_step1_repair" if prompt_bundle.prompt_file == "STEP1_REPAIR.md" else "proposal_step1_generation"
+    purpose = "proposal_generation_step1_repair" if prompt_bundle.prompt_file == "STEP1_REPAIR.md" else "proposal_generation_step1"
     return ContractCallRequest(
-        purpose="proposal_generation_step1",
+        purpose=purpose,
         routing_purpose=Purpose.PROPOSAL,
         output_strategy=OutputStrategy.BOUNDED_TEXT_THEN_PARSE,
         prompt=prompt_bundle.prompt,
@@ -267,7 +302,7 @@ def _build_runtime_call(
         metadata={
             "prompt_file": prompt_bundle.prompt_file,
             "expected_output_shape": "proposal_step1_generation_text_v1",
-            "stage": "proposal_step1_generation",
+            "stage": stage,
         },
     )
 

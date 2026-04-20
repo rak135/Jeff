@@ -1,7 +1,7 @@
 import pytest
 
 import jeff.interface.commands as commands_module
-from jeff.interface.command_common import _canonical_run_lifecycle_state
+from jeff.interface.commands.support.flow_runs import _canonical_run_lifecycle_state
 
 from jeff.interface import InterfaceContext, JeffCLI
 

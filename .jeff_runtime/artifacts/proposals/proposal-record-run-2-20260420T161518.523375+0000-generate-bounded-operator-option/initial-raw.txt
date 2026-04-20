@@ -1,0 +1,2 @@
+PROPOSAL_COUNT: 0
+SCARCITY_REASON: No support records or research data were provided to define a specific method, tool, or process for validating the proposal inspection surface.

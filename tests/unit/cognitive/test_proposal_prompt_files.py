@@ -19,9 +19,12 @@ def test_load_step1_generation_file_returns_both_sections() -> None:
 def test_step1_generation_system_instructions_forbid_authority_leakage_and_padding() -> None:
     system_instructions, _ = load_prompt_file("STEP1_GENERATION.md")
 
-    assert "Proposal generates possibilities, not authority." in system_instructions
+    assert "Proposal generates candidate paths, not authority." in system_instructions
     assert "Do not invent options to satisfy a quota." in system_instructions
-    assert "Do not emit permission, approval, readiness, execution-start, or governance language." in system_instructions
+    assert (
+        "Do not emit permission, approval, authorization, winner, readiness, start-now, or execution-clearance language."
+        in system_instructions
+    )
     assert "Research may inform proposal but does not replace it." in system_instructions
     assert "Never return more than 3 serious options." in system_instructions
 
@@ -30,7 +33,7 @@ def test_step1_generation_prompt_template_contains_required_output_contract() ->
     _, template = load_prompt_file("STEP1_GENERATION.md")
 
     assert "PROPOSAL_COUNT: <0|1|2|3>" in template
-    assert "SCARCITY_REASON: <text or NONE>" in template
+    assert "SCARCITY_REASON: <explicit text or No additional scarcity explanation identified from the provided support.>" in template
     assert "OPTION_n_TYPE:" in template
     assert "OPTION_n_TITLE:" in template
     assert "OPTION_n_SUMMARY:" in template
@@ -44,7 +47,8 @@ def test_step1_generation_prompt_template_contains_required_output_contract() ->
     assert "OPTION_n_REVERSIBILITY:" in template
     assert "OPTION_n_SUPPORT_REFS:" in template
     assert "Do not invent a second or third option just for variety." in template
-    assert "Do not emit selection outcomes, winner language, or ranking verdicts." in template
+    assert "Do not emit approval, permission, authorization, selection, winner, ranking, readiness-to-start, proceed-now, or execution-clearance language." in template
+    assert "Use the exact fallback values above instead of NONE." in template
 
 
 def test_render_prompt_substitutes_step1_generation_placeholders() -> None:

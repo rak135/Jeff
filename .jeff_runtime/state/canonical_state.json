@@ -1,6 +1,6 @@
 {
   "record_class": "canonical_state_snapshot",
-  "recorded_at": "2026-04-19T16:29:25+00:00",
+  "recorded_at": "2026-04-19T20:28:52+00:00",
   "schema_version": "1.0",
   "state": {
     "projects": {
@@ -36,7 +36,26 @@
           "wu-1": {
             "objective": "Current bounded Jeff work.",
             "project_id": "project-1",
-            "runs": {},
+            "runs": {
+              "run-1": {
+                "last_evaluation_verdict": null,
+                "last_execution_status": null,
+                "last_outcome_state": null,
+                "project_id": "project-1",
+                "run_id": "run-1",
+                "run_lifecycle_state": "failed_before_execution",
+                "work_unit_id": "wu-1"
+              },
+              "run-2": {
+                "last_evaluation_verdict": "acceptable",
+                "last_execution_status": "completed",
+                "last_outcome_state": "complete",
+                "project_id": "project-1",
+                "run_id": "run-2",
+                "run_lifecycle_state": "completed",
+                "work_unit_id": "wu-1"
+              }
+            },
             "work_unit_id": "wu-1",
             "work_unit_lifecycle_state": "open"
           }
@@ -44,8 +63,8 @@
       }
     },
     "state_meta": {
-      "last_transition_id": "transition-auto-create-run-general_research-research-docs-summary-d1f80a8e-run-1",
-      "state_version": 5
+      "last_transition_id": "transition-sync-run-project-1-wu-1-run-2-9",
+      "state_version": 9
     },
     "system": {
       "system_lifecycle_state": "ready"

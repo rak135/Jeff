@@ -12,9 +12,9 @@ def test_one_shot_help_reaches_cli_surface(tmp_path) -> None:
     assert "Primary flow:" in result.stdout
     assert "/run list" in result.stdout
     assert "/show [run_id]" in result.stdout
-    assert "/proposal show" not in result.stdout
+    assert "/proposal show [run_id or proposal_id]" in result.stdout
     assert "/evaluation show" not in result.stdout
-    assert "A local jeff.runtime.toml enables /run <repo-local-validation-objective> and /research ..." in result.stdout
+    assert "A local jeff.runtime.toml enables /proposal, /run <repo-local-validation-objective>, and /research ..." in result.stdout
     assert "/run runs one bounded repo-local pytest validation plan under the current model configuration." in result.stdout
     assert "Session scope is session-local/process-local only." in result.stdout
 

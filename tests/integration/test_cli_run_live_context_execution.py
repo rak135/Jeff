@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-import jeff.interface.command_scope as command_scope
+import jeff.interface.commands.scope as command_scope
 
 from jeff.cognitive.research import ResearchArtifactRecord, ResearchFinding
 from jeff.cognitive.proposal import (
@@ -612,7 +612,7 @@ def _proposal_generation_text() -> str:
         "OPTION_1_ASSUMPTIONS: Current support remains stable\n"
         "OPTION_1_RISKS: Small rollback cost\n"
         "OPTION_1_CONSTRAINTS: Stay inside the current project scope\n"
-        "OPTION_1_BLOCKERS: NONE\n"
+        "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
         "OPTION_1_PLANNING_NEEDED: no\n"
         "OPTION_1_FEASIBILITY: High under the current bounded support\n"
         "OPTION_1_REVERSIBILITY: Straightforward rollback\n"

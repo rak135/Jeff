@@ -15,11 +15,24 @@ from typing import Any, TYPE_CHECKING
 
 from jeff.action.execution import ExecutionResult, GovernedExecutionRequest
 from jeff.action.outcome import Outcome
+from jeff.cognitive.context import ContextPackage
 from jeff.cognitive.evaluation import EvaluationResult
+from jeff.cognitive.post_selection.selection_review_record import SelectionReviewRecord
 from jeff.cognitive.post_selection.override import OperatorSelectionOverride
-from jeff.cognitive.proposal import ProposalResult, ProposalResultOption
+from jeff.cognitive.proposal import (
+    ParsedProposalGenerationResult,
+    ParsedProposalOption,
+    ProposalGenerationPromptBundle,
+    ProposalGenerationRawResult,
+    ProposalOperatorRecord,
+    ProposalPersistedAttempt,
+    ProposalResult,
+    ProposalResultOption,
+    ProposalValidationIssue,
+)
 from jeff.cognitive.run_memory_handoff import RunMemoryHandoffResultSummary
 from jeff.cognitive.selection import SelectionResult
+from jeff.cognitive.types import SupportInput, TriggerInput, TruthRecord
 from jeff.contracts import Action
 from jeff.core.containers.models import Project, Run, WorkUnit
 from jeff.core.schemas import Scope
@@ -27,14 +40,11 @@ from jeff.core.state import GlobalState, SystemState
 from jeff.core.state.models import StateMeta
 from jeff.core.transition import TransitionRequest, TransitionResult, apply_transition
 from jeff.governance import ActionEntryDecision, Approval, CurrentTruthSnapshot, Policy, Readiness
+from jeff.infrastructure import ModelUsage
 from jeff.orchestrator.lifecycle import FlowLifecycle
 from jeff.orchestrator.routing import RoutingDecision
 from jeff.orchestrator.runner import FlowRunResult
 from jeff.orchestrator.trace import OrchestrationEvent
-
-if TYPE_CHECKING:
-    from jeff.interface.commands import SelectionReviewRecord
-
 
 _SCHEMA_VERSION = "1.0"
 _LAYOUT_VERSION = "runtime-home-v1"
@@ -425,6 +435,354 @@ def _proposal_result_from_payload(payload: dict[str, Any]) -> ProposalResult:
         scope=_scope_from_payload(payload["scope"]),
         options=tuple(_proposal_option_from_payload(option_payload) for option_payload in payload["options"]),
         scarcity_reason=payload.get("scarcity_reason"),
+    )
+
+
+def _model_usage_to_payload(usage: ModelUsage) -> dict[str, Any]:
+    return {
+        "input_tokens": usage.input_tokens,
+        "output_tokens": usage.output_tokens,
+        "total_tokens": usage.total_tokens,
+        "estimated_cost": usage.estimated_cost,
+        "latency_ms": usage.latency_ms,
+    }
+
+
+def _model_usage_from_payload(payload: dict[str, Any]) -> ModelUsage:
+    return ModelUsage(
+        input_tokens=payload.get("input_tokens"),
+        output_tokens=payload.get("output_tokens"),
+        total_tokens=payload.get("total_tokens"),
+        estimated_cost=payload.get("estimated_cost"),
+        latency_ms=payload.get("latency_ms"),
+    )
+
+
+def _trigger_input_to_payload(trigger: TriggerInput) -> dict[str, Any]:
+    return {
+        "trigger_summary": trigger.trigger_summary,
+        "trigger_family": trigger.trigger_family,
+    }
+
+
+def _trigger_input_from_payload(payload: dict[str, Any]) -> TriggerInput:
+    return TriggerInput(
+        trigger_summary=payload["trigger_summary"],
+        trigger_family=payload.get("trigger_family", "operator_input"),
+    )
+
+
+def _truth_record_to_payload(record: TruthRecord) -> dict[str, Any]:
+    return {
+        "truth_family": record.truth_family,
+        "scope": _scope_to_payload(record.scope),
+        "summary": record.summary,
+    }
+
+
+def _truth_record_from_payload(payload: dict[str, Any]) -> TruthRecord:
+    return TruthRecord(
+        truth_family=payload["truth_family"],
+        scope=_scope_from_payload(payload["scope"]),
+        summary=payload["summary"],
+    )
+
+
+def _support_input_to_payload(support: SupportInput) -> dict[str, Any]:
+    return {
+        "source_family": support.source_family,
+        "scope": _scope_to_payload(support.scope),
+        "summary": support.summary,
+        "source_id": support.source_id,
+        "include_full_body": support.include_full_body,
+    }
+
+
+def _support_input_from_payload(payload: dict[str, Any]) -> SupportInput:
+    return SupportInput(
+        source_family=payload["source_family"],
+        scope=_scope_from_payload(payload["scope"]),
+        summary=payload["summary"],
+        source_id=payload.get("source_id"),
+        include_full_body=payload.get("include_full_body", False),
+    )
+
+
+def _context_package_to_payload(context_package: ContextPackage) -> dict[str, Any]:
+    return {
+        "purpose": context_package.purpose,
+        "trigger": _trigger_input_to_payload(context_package.trigger),
+        "scope": _scope_to_payload(context_package.scope),
+        "truth_records": [_truth_record_to_payload(record) for record in context_package.truth_records],
+        "support_inputs": [_support_input_to_payload(support) for support in context_package.support_inputs],
+        "governance_truth_records": [
+            _truth_record_to_payload(record) for record in context_package.governance_truth_records
+        ],
+        "memory_support_inputs": [
+            _support_input_to_payload(support) for support in context_package.memory_support_inputs
+        ],
+        "compiled_knowledge_support_inputs": [
+            _support_input_to_payload(support) for support in context_package.compiled_knowledge_support_inputs
+        ],
+        "archive_support_inputs": [
+            _support_input_to_payload(support) for support in context_package.archive_support_inputs
+        ],
+    }
+
+
+def _context_package_from_payload(payload: dict[str, Any]) -> ContextPackage:
+    return ContextPackage(
+        purpose=payload["purpose"],
+        trigger=_trigger_input_from_payload(payload["trigger"]),
+        scope=_scope_from_payload(payload["scope"]),
+        truth_records=tuple(_truth_record_from_payload(record) for record in payload.get("truth_records", ())),
+        support_inputs=tuple(_support_input_from_payload(support) for support in payload.get("support_inputs", ())),
+        governance_truth_records=tuple(
+            _truth_record_from_payload(record) for record in payload.get("governance_truth_records", ())
+        ),
+        memory_support_inputs=tuple(
+            _support_input_from_payload(support) for support in payload.get("memory_support_inputs", ())
+        ),
+        compiled_knowledge_support_inputs=tuple(
+            _support_input_from_payload(support)
+            for support in payload.get("compiled_knowledge_support_inputs", ())
+        ),
+        archive_support_inputs=tuple(
+            _support_input_from_payload(support) for support in payload.get("archive_support_inputs", ())
+        ),
+    )
+
+
+def _proposal_prompt_bundle_to_payload(prompt_bundle: ProposalGenerationPromptBundle) -> dict[str, Any]:
+    return {
+        "request_id": prompt_bundle.request_id,
+        "scope": _scope_to_payload(prompt_bundle.scope),
+        "objective": prompt_bundle.objective,
+        "system_instructions": prompt_bundle.system_instructions,
+        "prompt": prompt_bundle.prompt,
+        "prompt_file": prompt_bundle.prompt_file,
+    }
+
+
+def _proposal_prompt_bundle_from_payload(payload: dict[str, Any]) -> ProposalGenerationPromptBundle:
+    return ProposalGenerationPromptBundle(
+        request_id=payload["request_id"],
+        scope=_scope_from_payload(payload["scope"]),
+        objective=payload["objective"],
+        system_instructions=payload["system_instructions"],
+        prompt=payload["prompt"],
+        prompt_file=payload.get("prompt_file", "STEP1_GENERATION.md"),
+    )
+
+
+def _proposal_raw_result_to_payload(raw_result: ProposalGenerationRawResult) -> dict[str, Any]:
+    return {
+        "prompt_bundle": _proposal_prompt_bundle_to_payload(raw_result.prompt_bundle),
+        "request_id": raw_result.request_id,
+        "scope": _scope_to_payload(raw_result.scope),
+        "raw_output_text": raw_result.raw_output_text,
+        "adapter_id": raw_result.adapter_id,
+        "provider_name": raw_result.provider_name,
+        "model_name": raw_result.model_name,
+        "usage": _model_usage_to_payload(raw_result.usage),
+        "warnings": list(raw_result.warnings),
+        "raw_response_ref": raw_result.raw_response_ref,
+    }
+
+
+def _proposal_raw_result_from_payload(payload: dict[str, Any]) -> ProposalGenerationRawResult:
+    prompt_bundle = _proposal_prompt_bundle_from_payload(payload["prompt_bundle"])
+    return ProposalGenerationRawResult(
+        prompt_bundle=prompt_bundle,
+        request_id=payload["request_id"],
+        scope=_scope_from_payload(payload["scope"]),
+        raw_output_text=payload["raw_output_text"],
+        adapter_id=payload["adapter_id"],
+        provider_name=payload["provider_name"],
+        model_name=payload["model_name"],
+        usage=_model_usage_from_payload(payload["usage"]),
+        warnings=tuple(payload.get("warnings", ())),
+        raw_response_ref=payload.get("raw_response_ref"),
+    )
+
+
+def _parsed_proposal_option_to_payload(option: ParsedProposalOption) -> dict[str, Any]:
+    return {
+        "option_index": option.option_index,
+        "proposal_type": option.proposal_type,
+        "title": option.title,
+        "summary": option.summary,
+        "why_now": option.why_now,
+        "assumptions": list(option.assumptions),
+        "risks": list(option.risks),
+        "constraints": list(option.constraints),
+        "blockers": list(option.blockers),
+        "planning_needed": option.planning_needed,
+        "feasibility": option.feasibility,
+        "reversibility": option.reversibility,
+        "support_refs": list(option.support_refs),
+    }
+
+
+def _parsed_proposal_option_from_payload(payload: dict[str, Any]) -> ParsedProposalOption:
+    return ParsedProposalOption(
+        option_index=payload["option_index"],
+        proposal_type=payload["proposal_type"],
+        title=payload["title"],
+        summary=payload["summary"],
+        why_now=payload["why_now"],
+        assumptions=tuple(payload.get("assumptions", ())),
+        risks=tuple(payload.get("risks", ())),
+        constraints=tuple(payload.get("constraints", ())),
+        blockers=tuple(payload.get("blockers", ())),
+        planning_needed=payload.get("planning_needed", False),
+        feasibility=payload.get("feasibility"),
+        reversibility=payload.get("reversibility"),
+        support_refs=tuple(payload.get("support_refs", ())),
+    )
+
+
+def _parsed_proposal_generation_result_to_payload(parsed_result: ParsedProposalGenerationResult) -> dict[str, Any]:
+    return {
+        "raw_result": _proposal_raw_result_to_payload(parsed_result.raw_result),
+        "proposal_count": parsed_result.proposal_count,
+        "scarcity_reason": parsed_result.scarcity_reason,
+        "options": [_parsed_proposal_option_to_payload(option) for option in parsed_result.options],
+    }
+
+
+def _parsed_proposal_generation_result_from_payload(payload: dict[str, Any]) -> ParsedProposalGenerationResult:
+    raw_result = _proposal_raw_result_from_payload(payload["raw_result"])
+    return ParsedProposalGenerationResult(
+        raw_result=raw_result,
+        proposal_count=payload["proposal_count"],
+        scarcity_reason=payload.get("scarcity_reason"),
+        options=tuple(_parsed_proposal_option_from_payload(option) for option in payload.get("options", ())),
+    )
+
+
+def _proposal_validation_issue_to_payload(issue: ProposalValidationIssue) -> dict[str, Any]:
+    return {
+        "code": issue.code,
+        "message": issue.message,
+        "option_index": issue.option_index,
+    }
+
+
+def _proposal_validation_issue_from_payload(payload: dict[str, Any]) -> ProposalValidationIssue:
+    return ProposalValidationIssue(
+        code=payload["code"],
+        message=payload["message"],
+        option_index=payload.get("option_index"),
+    )
+
+
+def _proposal_persisted_attempt_to_payload(attempt: ProposalPersistedAttempt) -> dict[str, Any]:
+    return {
+        "attempt_kind": attempt.attempt_kind,
+        "prompt_bundle": (
+            None if attempt.prompt_bundle is None else _proposal_prompt_bundle_to_payload(attempt.prompt_bundle)
+        ),
+        "raw_result": None if attempt.raw_result is None else _proposal_raw_result_to_payload(attempt.raw_result),
+        "parsed_result": (
+            None
+            if attempt.parsed_result is None
+            else _parsed_proposal_generation_result_to_payload(attempt.parsed_result)
+        ),
+        "parse_error": attempt.parse_error,
+        "validation_issues": [_proposal_validation_issue_to_payload(issue) for issue in attempt.validation_issues],
+        "proposal_result": (
+            None if attempt.proposal_result is None else _proposal_result_to_payload(attempt.proposal_result)
+        ),
+        "failure_stage": attempt.failure_stage,
+        "error_message": attempt.error_message,
+        "raw_artifact_ref": attempt.raw_artifact_ref,
+        "parsed_artifact_ref": attempt.parsed_artifact_ref,
+        "validation_artifact_ref": attempt.validation_artifact_ref,
+    }
+
+
+def _proposal_persisted_attempt_from_payload(payload: dict[str, Any]) -> ProposalPersistedAttempt:
+    return ProposalPersistedAttempt(
+        attempt_kind=payload["attempt_kind"],
+        prompt_bundle=(
+            None if payload.get("prompt_bundle") is None else _proposal_prompt_bundle_from_payload(payload["prompt_bundle"])
+        ),
+        raw_result=(
+            None if payload.get("raw_result") is None else _proposal_raw_result_from_payload(payload["raw_result"])
+        ),
+        parsed_result=(
+            None
+            if payload.get("parsed_result") is None
+            else _parsed_proposal_generation_result_from_payload(payload["parsed_result"])
+        ),
+        parse_error=payload.get("parse_error"),
+        validation_issues=tuple(
+            _proposal_validation_issue_from_payload(issue) for issue in payload.get("validation_issues", ())
+        ),
+        proposal_result=(
+            None if payload.get("proposal_result") is None else _proposal_result_from_payload(payload["proposal_result"])
+        ),
+        failure_stage=payload.get("failure_stage"),
+        error_message=payload.get("error_message"),
+        raw_artifact_ref=payload.get("raw_artifact_ref"),
+        parsed_artifact_ref=payload.get("parsed_artifact_ref"),
+        validation_artifact_ref=payload.get("validation_artifact_ref"),
+    )
+
+
+def _proposal_operator_record_to_payload(record: ProposalOperatorRecord) -> dict[str, Any]:
+    return {
+        "schema_version": _SCHEMA_VERSION,
+        "record_class": "proposal_operator_record",
+        "recorded_at": _utc_timestamp(),
+        "proposal_id": record.proposal_id,
+        "source_proposal_id": record.source_proposal_id,
+        "created_at": record.created_at,
+        "objective": record.objective,
+        "scope": _scope_to_payload(record.scope),
+        "context_package": _context_package_to_payload(record.context_package),
+        "visible_constraints": list(record.visible_constraints),
+        "initial_attempt": _proposal_persisted_attempt_to_payload(record.initial_attempt),
+        "repair_attempt": (
+            None if record.repair_attempt is None else _proposal_persisted_attempt_to_payload(record.repair_attempt)
+        ),
+        "status": record.status,
+        "final_validation_outcome": record.final_validation_outcome,
+        "final_failure_stage": record.final_failure_stage,
+        "final_error_message": record.final_error_message,
+        "final_proposal_result": (
+            None if record.final_proposal_result is None else _proposal_result_to_payload(record.final_proposal_result)
+        ),
+        "record_ref": record.record_ref,
+    }
+
+
+def _proposal_operator_record_from_payload(payload: dict[str, Any]) -> ProposalOperatorRecord:
+    return ProposalOperatorRecord(
+        proposal_id=payload["proposal_id"],
+        source_proposal_id=payload.get("source_proposal_id"),
+        created_at=payload["created_at"],
+        objective=payload["objective"],
+        scope=_scope_from_payload(payload["scope"]),
+        context_package=_context_package_from_payload(payload["context_package"]),
+        visible_constraints=tuple(payload.get("visible_constraints", ())),
+        initial_attempt=_proposal_persisted_attempt_from_payload(payload["initial_attempt"]),
+        repair_attempt=(
+            None
+            if payload.get("repair_attempt") is None
+            else _proposal_persisted_attempt_from_payload(payload["repair_attempt"])
+        ),
+        status=payload["status"],
+        final_validation_outcome=payload.get("final_validation_outcome", "not_reached"),
+        final_failure_stage=payload.get("final_failure_stage"),
+        final_error_message=payload.get("final_error_message"),
+        final_proposal_result=(
+            None
+            if payload.get("final_proposal_result") is None
+            else _proposal_result_from_payload(payload["final_proposal_result"])
+        ),
+        record_ref=payload.get("record_ref"),
     )
 
 
@@ -868,8 +1226,6 @@ def _selection_review_to_payload(run_id: str, selection_review: SelectionReviewR
 
 
 def _selection_review_from_payload(payload: dict[str, Any]) -> tuple[str, SelectionReviewRecord]:
-    from jeff.interface.commands import SelectionReviewRecord
-
     selection_review = SelectionReviewRecord(
         selection_result=(
             None
@@ -955,8 +1311,16 @@ class JeffRuntimeHome:
         return self.reviews_dir / "selection_reviews"
 
     @property
+    def proposal_records_dir(self) -> Path:
+        return self.reviews_dir / "proposals"
+
+    @property
     def cache_dir(self) -> Path:
         return self.root_dir / "cache"
+
+    @property
+    def proposal_artifacts_dir(self) -> Path:
+        return self.artifacts_dir / "proposals"
 
     @property
     def logs_dir(self) -> Path:
@@ -984,8 +1348,10 @@ class JeffRuntimeHome:
             self.state_dir,
             self.transitions_dir,
             self.research_artifacts_dir,
+            self.proposal_artifacts_dir,
             self.flow_runs_dir,
             self.selection_reviews_dir,
+            self.proposal_records_dir,
             self.cache_dir,
             self.logs_dir,
         ):
@@ -1175,6 +1541,111 @@ class PersistedRuntimeStore:
         with self.mutation_guard():
             _write_json(path, _selection_review_to_payload(run_id, selection_review))
         return path
+
+    def save_proposal_record(self, record: ProposalOperatorRecord) -> ProposalOperatorRecord:
+        with self.mutation_guard():
+            stored_record = self._record_with_artifact_refs(record)
+            record_path = self.home.proposal_records_dir / f"{stored_record.proposal_id}.json"
+            record_ref = str(record_path.resolve())
+            stored_record = ProposalOperatorRecord(
+                proposal_id=stored_record.proposal_id,
+                source_proposal_id=stored_record.source_proposal_id,
+                created_at=stored_record.created_at,
+                objective=stored_record.objective,
+                scope=stored_record.scope,
+                context_package=stored_record.context_package,
+                visible_constraints=stored_record.visible_constraints,
+                initial_attempt=stored_record.initial_attempt,
+                repair_attempt=stored_record.repair_attempt,
+                status=stored_record.status,
+                final_validation_outcome=stored_record.final_validation_outcome,
+                final_failure_stage=stored_record.final_failure_stage,
+                final_error_message=stored_record.final_error_message,
+                final_proposal_result=stored_record.final_proposal_result,
+                record_ref=record_ref,
+            )
+            _write_json(record_path, _proposal_operator_record_to_payload(stored_record))
+        return stored_record
+
+    def load_proposal_records(self) -> dict[str, ProposalOperatorRecord]:
+        records: dict[str, ProposalOperatorRecord] = {}
+        for path in sorted(self.home.proposal_records_dir.glob("*.json")):
+            record = _proposal_operator_record_from_payload(_read_json(path))
+            records[record.proposal_id] = record
+        return records
+
+    def _record_with_artifact_refs(self, record: ProposalOperatorRecord) -> ProposalOperatorRecord:
+        artifact_dir = self.home.proposal_artifacts_dir / record.proposal_id
+        artifact_dir.mkdir(parents=True, exist_ok=True)
+        initial_attempt = self._attempt_with_artifact_refs(artifact_dir=artifact_dir, attempt=record.initial_attempt)
+        repair_attempt = (
+            None
+            if record.repair_attempt is None
+            else self._attempt_with_artifact_refs(artifact_dir=artifact_dir, attempt=record.repair_attempt)
+        )
+        return ProposalOperatorRecord(
+            proposal_id=record.proposal_id,
+            source_proposal_id=record.source_proposal_id,
+            created_at=record.created_at,
+            objective=record.objective,
+            scope=record.scope,
+            context_package=record.context_package,
+            visible_constraints=record.visible_constraints,
+            initial_attempt=initial_attempt,
+            repair_attempt=repair_attempt,
+            status=record.status,
+            final_validation_outcome=record.final_validation_outcome,
+            final_failure_stage=record.final_failure_stage,
+            final_error_message=record.final_error_message,
+            final_proposal_result=record.final_proposal_result,
+            record_ref=record.record_ref,
+        )
+
+    def _attempt_with_artifact_refs(
+        self,
+        *,
+        artifact_dir: Path,
+        attempt: ProposalPersistedAttempt,
+    ) -> ProposalPersistedAttempt:
+        raw_ref = attempt.raw_artifact_ref
+        if attempt.raw_result is not None:
+            raw_path = artifact_dir / f"{attempt.attempt_kind}-raw.txt"
+            raw_path.write_text(attempt.raw_result.raw_output_text, encoding="utf-8")
+            raw_ref = str(raw_path.resolve())
+
+        parsed_ref = attempt.parsed_artifact_ref
+        if attempt.parsed_result is not None:
+            parsed_path = artifact_dir / f"{attempt.attempt_kind}-parsed.json"
+            _write_json(parsed_path, _parsed_proposal_generation_result_to_payload(attempt.parsed_result))
+            parsed_ref = str(parsed_path.resolve())
+
+        validation_ref = attempt.validation_artifact_ref
+        if attempt.validation_issues:
+            validation_path = artifact_dir / f"{attempt.attempt_kind}-validation.json"
+            _write_json(
+                validation_path,
+                {
+                    "issues": [
+                        _proposal_validation_issue_to_payload(issue) for issue in attempt.validation_issues
+                    ]
+                },
+            )
+            validation_ref = str(validation_path.resolve())
+
+        return ProposalPersistedAttempt(
+            attempt_kind=attempt.attempt_kind,
+            prompt_bundle=attempt.prompt_bundle,
+            raw_result=attempt.raw_result,
+            parsed_result=attempt.parsed_result,
+            parse_error=attempt.parse_error,
+            validation_issues=attempt.validation_issues,
+            proposal_result=attempt.proposal_result,
+            failure_stage=attempt.failure_stage,
+            error_message=attempt.error_message,
+            raw_artifact_ref=raw_ref,
+            parsed_artifact_ref=parsed_ref,
+            validation_artifact_ref=validation_ref,
+        )
 
     def load_selection_reviews(self) -> dict[str, SelectionReviewRecord]:
         records: dict[str, SelectionReviewRecord] = {}

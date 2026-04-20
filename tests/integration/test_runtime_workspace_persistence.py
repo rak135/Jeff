@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import sys
 
-import jeff.interface.command_scope as command_scope
+import jeff.interface.commands.scope as command_scope
 import pytest
 from jeff.action.execution import RepoLocalValidationPlan
 from jeff.bootstrap import build_startup_interface_context
@@ -650,7 +650,7 @@ def _proposal_generation_text() -> str:
         "OPTION_1_ASSUMPTIONS: Current support remains stable\n"
         "OPTION_1_RISKS: Validation may reveal bounded regressions\n"
         "OPTION_1_CONSTRAINTS: Stay inside the current project scope\n"
-        "OPTION_1_BLOCKERS: NONE\n"
+        "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
         "OPTION_1_PLANNING_NEEDED: no\n"
         "OPTION_1_FEASIBILITY: High under the current bounded support\n"
         "OPTION_1_REVERSIBILITY: Straightforward rerun\n"

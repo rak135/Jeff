@@ -70,7 +70,7 @@ def test_validate_two_option_result() -> None:
     validated = validate_proposal_generation_result(
         _parsed_result(
             "PROPOSAL_COUNT: 2\n"
-            "SCARCITY_REASON: NONE\n"
+            "SCARCITY_REASON: No additional scarcity explanation identified from the provided support.\n"
             "OPTION_1_TYPE: direct_action\n"
             "OPTION_1_TITLE: Apply the bounded patch\n"
             "OPTION_1_SUMMARY: Apply the smallest safe patch now.\n"
@@ -78,7 +78,7 @@ def test_validate_two_option_result() -> None:
             "OPTION_1_ASSUMPTIONS: The failing edge is already reproduced\n"
             "OPTION_1_RISKS: Small regression risk remains\n"
             "OPTION_1_CONSTRAINTS: Stay inside the current project scope\n"
-            "OPTION_1_BLOCKERS: NONE\n"
+            "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
             "OPTION_1_PLANNING_NEEDED: no\n"
             "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
             "OPTION_1_REVERSIBILITY: Straightforward rollback\n"
@@ -90,7 +90,7 @@ def test_validate_two_option_result() -> None:
             "OPTION_2_ASSUMPTIONS: The signal can be collected quickly\n"
             "OPTION_2_RISKS: Progress slows while evidence is gathered\n"
             "OPTION_2_CONSTRAINTS: Keep the investigation inside current scope\n"
-            "OPTION_2_BLOCKERS: NONE\n"
+            "OPTION_2_BLOCKERS: No explicit blockers identified from the provided support.\n"
             "OPTION_2_PLANNING_NEEDED: no\n"
             "OPTION_2_FEASIBILITY: Feasible with current tools\n"
             "OPTION_2_REVERSIBILITY: Investigation only\n"
@@ -106,7 +106,7 @@ def test_validate_three_option_result() -> None:
     validated = validate_proposal_generation_result(
         _parsed_result(
             "PROPOSAL_COUNT: 3\n"
-            "SCARCITY_REASON: NONE\n"
+            "SCARCITY_REASON: No additional scarcity explanation identified from the provided support.\n"
             "OPTION_1_TYPE: direct_action\n"
             "OPTION_1_TITLE: Apply the bounded patch\n"
             "OPTION_1_SUMMARY: Apply the smallest safe patch now.\n"
@@ -114,7 +114,7 @@ def test_validate_three_option_result() -> None:
             "OPTION_1_ASSUMPTIONS: The failing edge is already reproduced\n"
             "OPTION_1_RISKS: Small regression risk remains\n"
             "OPTION_1_CONSTRAINTS: Stay inside the current project scope\n"
-            "OPTION_1_BLOCKERS: NONE\n"
+            "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
             "OPTION_1_PLANNING_NEEDED: no\n"
             "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
             "OPTION_1_REVERSIBILITY: Straightforward rollback\n"
@@ -126,7 +126,7 @@ def test_validate_three_option_result() -> None:
             "OPTION_2_ASSUMPTIONS: Coordination cost is justified by the risk profile\n"
             "OPTION_2_RISKS: Planning overhead may slow immediate progress\n"
             "OPTION_2_CONSTRAINTS: Keep the plan limited to the current task frame\n"
-            "OPTION_2_BLOCKERS: NONE\n"
+            "OPTION_2_BLOCKERS: No explicit blockers identified from the provided support.\n"
             "OPTION_2_PLANNING_NEEDED: yes\n"
             "OPTION_2_FEASIBILITY: Feasible with current support\n"
             "OPTION_2_REVERSIBILITY: High before later downstream stages\n"
@@ -175,42 +175,42 @@ def test_missing_scarcity_reason_for_zero_or_one_option_is_rejected(
 ) -> None:
     with pytest.raises(ProposalGenerationValidationError, match="scarcity_reason") as exc_info:
         validate_proposal_generation_result(
-            _parsed_result(
-                f"PROPOSAL_COUNT: {proposal_count}\n"
-                "SCARCITY_REASON: NONE\n"
-                f"{option_block}",
+            _unsafe_parsed_result(
+                proposal_count=int(proposal_count),
+                scarcity_reason=None,
+                options=(() if proposal_count == "0" else (_option(1, title="Option 1", summary="Summary 1", why_now="Why 1"),)),
             )
         )
 
     assert _issue_codes(exc_info.value) == ("missing_scarcity_reason",)
 
 
-def test_missing_required_semantic_fields_are_rejected() -> None:
-    with pytest.raises(ProposalGenerationValidationError) as exc_info:
-        validate_proposal_generation_result(
-            _parsed_result(
-                "PROPOSAL_COUNT: 1\n"
-                "SCARCITY_REASON: Only one path remains.\n"
-                "OPTION_1_TYPE: clarify\n"
-                "OPTION_1_TITLE: Clarify the scope edge\n"
-                "OPTION_1_SUMMARY: Ask one bounded clarifying question.\n"
-                "OPTION_1_WHY_NOW: Scope ambiguity still blocks stronger framing.\n"
-                "OPTION_1_ASSUMPTIONS: NONE\n"
-                "OPTION_1_RISKS: NONE\n"
-                "OPTION_1_CONSTRAINTS: NONE\n"
-                "OPTION_1_BLOCKERS: NONE\n"
-                "OPTION_1_PLANNING_NEEDED: no\n"
-                "OPTION_1_FEASIBILITY: Feasible once clarified\n"
-                "OPTION_1_REVERSIBILITY: Fully reversible\n"
-                "OPTION_1_SUPPORT_REFS: ctx-1\n",
-            )
+def test_canonical_absence_markers_are_accepted_without_self_contradiction() -> None:
+    validated = validate_proposal_generation_result(
+        _parsed_result(
+            "PROPOSAL_COUNT: 1\n"
+            "SCARCITY_REASON: Only one path remains.\n"
+            "OPTION_1_TYPE: clarify\n"
+            "OPTION_1_TITLE: Clarify the scope edge\n"
+            "OPTION_1_SUMMARY: Ask one bounded clarifying question.\n"
+            "OPTION_1_WHY_NOW: Scope ambiguity still blocks stronger framing.\n"
+            "OPTION_1_ASSUMPTIONS: No explicit assumptions identified from the provided support.\n"
+            "OPTION_1_RISKS: No explicit risks identified from the provided support.\n"
+            "OPTION_1_CONSTRAINTS: No explicit constraints identified from the provided support.\n"
+            "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
+            "OPTION_1_PLANNING_NEEDED: no\n"
+            "OPTION_1_FEASIBILITY: No explicit feasibility statement identified from the provided support.\n"
+            "OPTION_1_REVERSIBILITY: No explicit reversibility statement identified from the provided support.\n"
+            "OPTION_1_SUPPORT_REFS: none\n",
         )
-
-    assert _issue_codes(exc_info.value) == (
-        "missing_assumptions",
-        "missing_risks",
-        "missing_constraints_or_blockers",
     )
+
+    assert validated.options[0].assumptions == ()
+    assert validated.options[0].main_risks == ()
+    assert validated.options[0].constraints == ()
+    assert validated.options[0].blockers == ()
+    assert validated.options[0].feasibility is None
+    assert validated.options[0].reversibility is None
 
 
 def test_duplicate_padding_style_options_are_rejected() -> None:
@@ -218,7 +218,7 @@ def test_duplicate_padding_style_options_are_rejected() -> None:
         validate_proposal_generation_result(
             _parsed_result(
                 "PROPOSAL_COUNT: 2\n"
-                "SCARCITY_REASON: NONE\n"
+                "SCARCITY_REASON: No additional scarcity explanation identified from the provided support.\n"
                 "OPTION_1_TYPE: direct_action\n"
                 "OPTION_1_TITLE: Apply the safe patch\n"
                 "OPTION_1_SUMMARY: Apply the safe patch now.\n"
@@ -226,7 +226,7 @@ def test_duplicate_padding_style_options_are_rejected() -> None:
                 "OPTION_1_ASSUMPTIONS: The failing edge is already reproduced\n"
                 "OPTION_1_RISKS: Small regression risk remains\n"
                 "OPTION_1_CONSTRAINTS: Stay inside current project scope\n"
-                "OPTION_1_BLOCKERS: NONE\n"
+                "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
                 "OPTION_1_PLANNING_NEEDED: no\n"
                 "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
                 "OPTION_1_REVERSIBILITY: Straightforward rollback\n"
@@ -238,7 +238,7 @@ def test_duplicate_padding_style_options_are_rejected() -> None:
                 "OPTION_2_ASSUMPTIONS: The failing edge is already reproduced\n"
                 "OPTION_2_RISKS: Small regression risk remains\n"
                 "OPTION_2_CONSTRAINTS: Stay inside current project scope\n"
-                "OPTION_2_BLOCKERS: NONE\n"
+                "OPTION_2_BLOCKERS: No explicit blockers identified from the provided support.\n"
                 "OPTION_2_PLANNING_NEEDED: no\n"
                 "OPTION_2_FEASIBILITY: Feasible with current evidence\n"
                 "OPTION_2_REVERSIBILITY: Straightforward rollback\n"
@@ -262,9 +262,9 @@ def test_authority_leakage_is_rejected() -> None:
                 "OPTION_1_ASSUMPTIONS: The failing edge is already reproduced\n"
                 "OPTION_1_RISKS: Small regression risk remains\n"
                 "OPTION_1_CONSTRAINTS: Stay inside current project scope\n"
-                "OPTION_1_BLOCKERS: NONE\n"
+                "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
                 "OPTION_1_PLANNING_NEEDED: no\n"
-                "OPTION_1_FEASIBILITY: Ready for execution now\n"
+                "OPTION_1_FEASIBILITY: Ready to start now\n"
                 "OPTION_1_REVERSIBILITY: Straightforward rollback\n"
                 "OPTION_1_SUPPORT_REFS: ctx-1\n",
             )
@@ -285,7 +285,7 @@ def test_planning_needed_does_not_imply_plan_authority() -> None:
             "OPTION_1_ASSUMPTIONS: Coordination cost is justified by the risk profile\n"
             "OPTION_1_RISKS: Planning overhead may slow immediate progress\n"
             "OPTION_1_CONSTRAINTS: Keep the plan limited to the current task frame\n"
-            "OPTION_1_BLOCKERS: NONE\n"
+            "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
             "OPTION_1_PLANNING_NEEDED: yes\n"
             "OPTION_1_FEASIBILITY: Feasible with current support\n"
             "OPTION_1_REVERSIBILITY: High before later downstream stages\n"
@@ -309,7 +309,7 @@ def test_feasibility_wording_does_not_become_readiness() -> None:
             "OPTION_1_ASSUMPTIONS: The failing edge is already reproduced\n"
             "OPTION_1_RISKS: Small regression risk remains\n"
             "OPTION_1_CONSTRAINTS: Stay inside the current project scope\n"
-            "OPTION_1_BLOCKERS: NONE\n"
+            "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
             "OPTION_1_PLANNING_NEEDED: no\n"
             "OPTION_1_FEASIBILITY: Feasible with current evidence and tooling\n"
             "OPTION_1_REVERSIBILITY: Straightforward rollback\n"

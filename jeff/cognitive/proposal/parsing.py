@@ -12,6 +12,17 @@ from ..types import normalize_text_list, require_text
 _KEY_VALUE_PATTERN = re.compile(r"^(?P<key>[A-Z0-9_]+): (?P<value>.+)$")
 _OPTION_KEY_PATTERN = re.compile(r"^OPTION_(?P<index>[1-3])_(?P<field>[A-Z_]+)$")
 
+NO_ADDITIONAL_SCARCITY_REASON = "No additional scarcity explanation identified from the provided support."
+NO_EXPLICIT_ASSUMPTIONS = "No explicit assumptions identified from the provided support."
+NO_EXPLICIT_RISKS = "No explicit risks identified from the provided support."
+NO_EXPLICIT_CONSTRAINTS = "No explicit constraints identified from the provided support."
+NO_EXPLICIT_BLOCKERS = "No explicit blockers identified from the provided support."
+NO_EXPLICIT_FEASIBILITY = "No explicit feasibility statement identified from the provided support."
+NO_EXPLICIT_REVERSIBILITY = "No explicit reversibility statement identified from the provided support."
+NO_SUPPORT_REFS = "none"
+
+_REQUIRED_TOP_LEVEL_FIELDS = ("PROPOSAL_COUNT", "SCARCITY_REASON")
+
 _REQUIRED_OPTION_FIELDS = (
     "TYPE",
     "TITLE",
@@ -104,49 +115,32 @@ def parse_proposal_generation_result(
     if not lines:
         raise ProposalGenerationParseError("proposal generation output is empty")
 
-    top_level_values: dict[str, str] = {}
-    option_values: dict[int, dict[str, str]] = {}
-
-    for line in lines:
-        match = _KEY_VALUE_PATTERN.fullmatch(line)
-        if match is None:
-            raise ProposalGenerationParseError(f"malformed proposal output line: {line!r}")
-
-        key = match.group("key")
-        value = require_text(match.group("value"), field_name=key.lower())
-
-        option_match = _OPTION_KEY_PATTERN.fullmatch(key)
-        if option_match is not None:
-            option_index = int(option_match.group("index"))
-            field_name = option_match.group("field")
-            option_fields = option_values.setdefault(option_index, {})
-            if field_name in option_fields:
-                raise ProposalGenerationParseError(f"duplicate proposal option field: {key}")
-            option_fields[field_name] = value
-            continue
-
-        if key in top_level_values:
-            raise ProposalGenerationParseError(f"duplicate proposal top-level field: {key}")
-        top_level_values[key] = value
-
-    proposal_count = _parse_proposal_count(top_level_values)
-    scarcity_reason = _parse_optional_text(
-        top_level_values,
-        field_name="SCARCITY_REASON",
-        required=True,
-    )
-    if proposal_count == 0 and option_values:
-        raise ProposalGenerationParseError("0-option proposal output must not include OPTION_n fields")
-
-    expected_option_indexes = tuple(range(1, proposal_count + 1))
-    if tuple(sorted(option_values.keys())) != expected_option_indexes:
+    key_value_lines = tuple(_parse_key_value_line(line) for line in lines)
+    proposal_count = _parse_proposal_count_from_line(key_value_lines)
+    if len(key_value_lines) < len(_REQUIRED_TOP_LEVEL_FIELDS):
+        raise ProposalGenerationParseError("proposal output is missing SCARCITY_REASON")
+    expected_keys = _expected_keys_for_proposal_count(proposal_count)
+    if len(key_value_lines) != len(expected_keys):
         raise ProposalGenerationParseError(
-            f"proposal option indexes must be exactly {expected_option_indexes or ()}",
+            f"proposal output must contain exactly {len(expected_keys)} non-empty lines for PROPOSAL_COUNT {proposal_count}",
         )
 
+    for line_index, ((key, _value), expected_key) in enumerate(zip(key_value_lines, expected_keys, strict=True), start=1):
+        if key != expected_key:
+            option_match = _OPTION_KEY_PATTERN.fullmatch(key)
+            expected_option_match = _OPTION_KEY_PATTERN.fullmatch(expected_key)
+            if option_match is not None and expected_option_match is not None and option_match.group("index") == expected_option_match.group("index"):
+                raise ProposalGenerationParseError(
+                    f"option {option_match.group('index')} field order drifted: expected {expected_option_match.group('field')} but got {option_match.group('field')}",
+                )
+            raise ProposalGenerationParseError(
+                f"proposal output line {line_index} must be '{expected_key}: ...' but got '{key}: ...'",
+            )
+
+    scarcity_reason = _parse_scarcity_reason(key_value_lines[1][1], proposal_count=proposal_count)
     parsed_options = tuple(
-        _parse_option(option_index=index, fields=option_values[index])
-        for index in expected_option_indexes
+        _parse_option_from_lines(option_index=index, lines=key_value_lines[2 + ((index - 1) * len(_REQUIRED_OPTION_FIELDS)):2 + (index * len(_REQUIRED_OPTION_FIELDS))])
+        for index in range(1, proposal_count + 1)
     )
     return ParsedProposalGenerationResult(
         raw_result=raw_result,
@@ -160,26 +154,65 @@ def _normalized_lines(raw_output_text: str) -> tuple[str, ...]:
     return tuple(line.strip() for line in raw_output_text.splitlines() if line.strip())
 
 
-def _parse_proposal_count(top_level_values: dict[str, str]) -> int:
-    raw_count = top_level_values.get("PROPOSAL_COUNT")
-    if raw_count is None:
+def _parse_key_value_line(line: str) -> tuple[str, str]:
+    match = _KEY_VALUE_PATTERN.fullmatch(line)
+    if match is None:
+        raise ProposalGenerationParseError(f"malformed proposal output line: {line!r}")
+    key = match.group("key")
+    value = require_text(match.group("value"), field_name=key.lower())
+    if value == "NONE":
+        raise ProposalGenerationParseError(
+            f"{key} uses legacy NONE; proposal output must use the canonical fallback text or token",
+        )
+    return key, value
+
+
+def _parse_proposal_count_from_line(key_value_lines: tuple[tuple[str, str], ...]) -> int:
+    if not key_value_lines:
+        raise ProposalGenerationParseError("proposal generation output is empty")
+    first_key, raw_count = key_value_lines[0]
+    if first_key != "PROPOSAL_COUNT":
         raise ProposalGenerationParseError("proposal output is missing PROPOSAL_COUNT")
     if raw_count not in {"0", "1", "2", "3"}:
         raise ProposalGenerationParseError("PROPOSAL_COUNT must be one of 0, 1, 2, or 3")
     return int(raw_count)
 
 
-def _parse_option(*, option_index: int, fields: dict[str, str]) -> ParsedProposalOption:
-    missing_fields = [field_name for field_name in _REQUIRED_OPTION_FIELDS if field_name not in fields]
-    if missing_fields:
+def _expected_keys_for_proposal_count(proposal_count: int) -> tuple[str, ...]:
+    keys = list(_REQUIRED_TOP_LEVEL_FIELDS)
+    for option_index in range(1, proposal_count + 1):
+        keys.extend(f"OPTION_{option_index}_{field_name}" for field_name in _REQUIRED_OPTION_FIELDS)
+    return tuple(keys)
+
+
+def _parse_scarcity_reason(value: str, *, proposal_count: int) -> str | None:
+    if value == NO_ADDITIONAL_SCARCITY_REASON:
+        if proposal_count < 2:
+            raise ProposalGenerationParseError(
+                "SCARCITY_REASON fallback is not allowed when PROPOSAL_COUNT is 0 or 1",
+            )
+        return None
+    return require_text(value, field_name="scarcity_reason")
+
+
+def _parse_option_from_lines(*, option_index: int, lines: tuple[tuple[str, str], ...]) -> ParsedProposalOption:
+    if len(lines) != len(_REQUIRED_OPTION_FIELDS):
         raise ProposalGenerationParseError(
-            f"option {option_index} is missing required fields: {missing_fields}",
+            f"option {option_index} must contain exactly {len(_REQUIRED_OPTION_FIELDS)} lines",
         )
-    unexpected_fields = [field_name for field_name in fields if field_name not in _REQUIRED_OPTION_FIELDS]
-    if unexpected_fields:
-        raise ProposalGenerationParseError(
-            f"option {option_index} has unexpected fields: {unexpected_fields}",
-        )
+
+    fields: dict[str, str] = {}
+    for key, value in lines:
+        option_match = _OPTION_KEY_PATTERN.fullmatch(key)
+        if option_match is None or int(option_match.group("index")) != option_index:
+            raise ProposalGenerationParseError(f"option {option_index} has malformed field key: {key}")
+        field_name = option_match.group("field")
+        expected_field_name = _REQUIRED_OPTION_FIELDS[len(fields)]
+        if field_name != expected_field_name:
+            raise ProposalGenerationParseError(
+                f"option {option_index} field order drifted: expected {expected_field_name} but got {field_name}",
+            )
+        fields[field_name] = value
 
     proposal_type = fields["TYPE"]
     if proposal_type not in _ALLOWED_PROPOSAL_TYPES:
@@ -197,44 +230,30 @@ def _parse_option(*, option_index: int, fields: dict[str, str]) -> ParsedProposa
         title=fields["TITLE"],
         summary=fields["SUMMARY"],
         why_now=fields["WHY_NOW"],
-        assumptions=_parse_semicolon_list(fields["ASSUMPTIONS"]),
-        risks=_parse_semicolon_list(fields["RISKS"]),
-        constraints=_parse_semicolon_list(fields["CONSTRAINTS"]),
-        blockers=_parse_semicolon_list(fields["BLOCKERS"]),
+        assumptions=_parse_semicolon_list(fields["ASSUMPTIONS"], empty_marker=NO_EXPLICIT_ASSUMPTIONS),
+        risks=_parse_semicolon_list(fields["RISKS"], empty_marker=NO_EXPLICIT_RISKS),
+        constraints=_parse_semicolon_list(fields["CONSTRAINTS"], empty_marker=NO_EXPLICIT_CONSTRAINTS),
+        blockers=_parse_semicolon_list(fields["BLOCKERS"], empty_marker=NO_EXPLICIT_BLOCKERS),
         planning_needed=planning_needed_raw == "yes",
-        feasibility=_parse_none_or_text(fields["FEASIBILITY"]),
-        reversibility=_parse_none_or_text(fields["REVERSIBILITY"]),
-        support_refs=_parse_comma_list(fields["SUPPORT_REFS"]),
+        feasibility=_parse_optional_text_value(fields["FEASIBILITY"], empty_marker=NO_EXPLICIT_FEASIBILITY),
+        reversibility=_parse_optional_text_value(fields["REVERSIBILITY"], empty_marker=NO_EXPLICIT_REVERSIBILITY),
+        support_refs=_parse_comma_list(fields["SUPPORT_REFS"], empty_marker=NO_SUPPORT_REFS),
     )
 
 
-def _parse_optional_text(
-    values: dict[str, str],
-    *,
-    field_name: str,
-    required: bool,
-) -> str | None:
-    raw_value = values.get(field_name)
-    if raw_value is None:
-        if required:
-            raise ProposalGenerationParseError(f"proposal output is missing {field_name}")
-        return None
-    return _parse_none_or_text(raw_value)
-
-
-def _parse_none_or_text(value: str) -> str | None:
-    if value == "NONE":
+def _parse_optional_text_value(value: str, *, empty_marker: str) -> str | None:
+    if value == empty_marker:
         return None
     return require_text(value, field_name="value")
 
 
-def _parse_semicolon_list(value: str) -> tuple[str, ...]:
-    if value == "NONE":
+def _parse_semicolon_list(value: str, *, empty_marker: str) -> tuple[str, ...]:
+    if value == empty_marker:
         return ()
     return tuple(require_text(item.strip(), field_name="value") for item in value.split(";"))
 
 
-def _parse_comma_list(value: str) -> tuple[str, ...]:
-    if value == "NONE":
+def _parse_comma_list(value: str, *, empty_marker: str) -> tuple[str, ...]:
+    if value == empty_marker:
         return ()
     return tuple(require_text(item.strip(), field_name="value") for item in value.split(","))

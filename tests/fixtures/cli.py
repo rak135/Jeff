@@ -7,7 +7,7 @@ from jeff.core.schemas import Scope
 from jeff.core.state import bootstrap_global_state
 from jeff.core.transition import TransitionRequest, TransitionResult, apply_transition
 from jeff.governance import Approval, CurrentTruthSnapshot, Policy, evaluate_action_entry
-from jeff.interface.command_common import sync_run_truth_from_flow
+from jeff.interface.commands.support.flow_runs import sync_run_truth_from_flow
 from jeff.interface.commands import InterfaceContext
 from jeff.orchestrator.lifecycle import FlowLifecycle
 from jeff.orchestrator.routing import RoutingDecision

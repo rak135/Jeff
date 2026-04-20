@@ -19,6 +19,7 @@ from jeff.cognitive.post_selection.governance_handoff import (
     ActionGovernanceHandoffRequest,
     handoff_action_to_governance,
 )
+from jeff.cognitive.post_selection.selection_review_record import SelectionReviewRecord
 from jeff.cognitive.proposal import ProposalResult, ProposalResultOption
 from jeff.cognitive.selection import SelectionRequest, SelectionResult
 from jeff.cognitive.selection.api import SelectionRunSuccess, run_selection_hybrid
@@ -27,7 +28,7 @@ from jeff.governance import CurrentTruthSnapshot, Policy
 from jeff.infrastructure import ModelInvocationStatus, ModelResponse, ModelUsage
 from jeff.infrastructure.contract_runtime import ContractCallRequest
 from jeff.interface import JeffCLI
-from jeff.interface.commands import InterfaceContext, SelectionReviewRecord
+from jeff.interface.commands import InterfaceContext
 
 from tests.fixtures.cli import build_state_with_run
 

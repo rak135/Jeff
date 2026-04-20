@@ -58,6 +58,7 @@
 - Selection is now a real submodule package rather than a flat file.
 - Selection now also has a deterministic package-local choice entry built on its local contracts.
 - Post-selection downstream bridge is now a real submodule package rather than five flat top-level modules.
+- Pure selection-review reconstruction and recomputation now also live under `jeff/cognitive/post_selection/selection_review.py`; Interface should only persist and render those records, not own their recompute semantics.
 
 # Important Invariants
 
@@ -97,7 +98,7 @@
 - `research/`: bounded research package for contracts, synthesis, documents, web, persistence, and memory handoff; has its own handoff at `jeff/cognitive/research/HANDOFF.md`.
 - `proposal/`: bounded proposal package for option-generation contracts; has its own handoff at `jeff/cognitive/proposal/HANDOFF.md`.
 - `selection/`: bounded choice package with local contracts and deterministic choice behavior; has its own handoff at `jeff/cognitive/selection/HANDOFF.md`.
-- `post_selection/`: bounded downstream bridge package for override, basis resolution, effective proposal materialization, Action formation, and governance handoff; has its own handoff at `jeff/cognitive/post_selection/HANDOFF.md`.
+- `post_selection/`: bounded downstream bridge package for override, basis resolution, effective proposal materialization, selection-review reconstruction/recompute, Action formation, and governance handoff; has its own handoff at `jeff/cognitive/post_selection/HANDOFF.md`.
 - `planning.py`: conditional planning only; no separate handoff.
 - `evaluation.py`: outcome judgment contracts; no separate handoff.
 - `types.py`: shared cognitive helper types; no separate handoff.

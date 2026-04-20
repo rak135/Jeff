@@ -7,6 +7,7 @@ from pathlib import Path
 from jeff.action import GovernedExecutionRequest, normalize_outcome
 from jeff.action.execution import ExecutionResult
 from jeff.cognitive import ResearchArtifactStore, SelectionResult, evaluate_outcome
+from jeff.cognitive.post_selection.selection_review_record import SelectionReviewRecord
 from jeff.cognitive.research.archive import ResearchArchiveStore
 from jeff.cognitive.post_selection.action_formation import ActionFormationRequest, form_action_from_materialized_proposal
 from jeff.cognitive.post_selection.action_resolution import SelectionActionResolutionRequest, resolve_selection_action_basis
@@ -26,8 +27,8 @@ from jeff.infrastructure import (
     build_infrastructure_services,
     load_runtime_config,
 )
-from jeff.interface.command_common import sync_run_truth_from_flow
-from jeff.interface.commands import InterfaceContext, SelectionReviewRecord
+from jeff.interface.commands import InterfaceContext
+from jeff.interface.commands.support.flow_runs import sync_run_truth_from_flow
 from jeff.knowledge import KnowledgeStore
 from jeff.memory import InMemoryMemoryStore, MemoryStoreProtocol, PostgresMemoryStore
 from jeff.orchestrator.lifecycle import FlowLifecycle

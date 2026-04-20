@@ -1,0 +1,2 @@
+PROPOSAL_COUNT: 0
+SCARCITY_REASON: The provided support contains only structural identifiers (project, work unit, run) and no substantive context or evidence to generate a serious candidate path.

@@ -79,17 +79,16 @@ def test_help_text_explains_normal_cli_flow() -> None:
     cli = JeffCLI(context=context)
 
     text = cli.run_one_shot("/help")
-    lines = text.splitlines()
 
     assert "Jeff CLI is command-driven." in text
-    assert lines[1].startswith("Session scope is session-local/process-local only.")
+    assert "Session scope is session-local/process-local only." in text
     assert "Plain text like 'hello' is not a supported command." in text
     assert "Primary flow:" in text
     assert "History/debug:" in text
     assert "Conditionally available request-entry:" in text
     assert "Bounded receipt-only request-entry:" in text
     assert "Startup loads or initializes a persisted local runtime under .jeff_runtime and can load local runtime config for research." in text
-    assert "/proposal show" not in text
+    assert "/proposal show [run_id or proposal_id]" in text
     assert "/evaluation show" not in text
 
 

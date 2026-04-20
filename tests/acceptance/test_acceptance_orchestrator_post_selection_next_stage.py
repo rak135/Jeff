@@ -976,7 +976,7 @@ def _proposal_risks(proposal_type: str) -> str:
 
 def _proposal_blockers(proposal_type: str) -> str:
     if proposal_type in {"direct_action", "planning_insertion"}:
-        return "NONE"
+        return "No explicit blockers identified from the provided support."
     return "Further downstream review remains outside this proposal slice"
 
 

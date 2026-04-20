@@ -15,8 +15,12 @@ def test_build_proposal_generation_prompt_bundle_renders_canonical_step1_contrac
     assert isinstance(bundle, ProposalGenerationPromptBundle)
     assert bundle.prompt_file == "STEP1_GENERATION.md"
     assert "TASK: bounded proposal generation" in bundle.prompt
-    assert "Proposal generates possibilities, not authority." in bundle.system_instructions
-    assert "Do not emit permission, approval, readiness, execution-start, or governance language." in bundle.system_instructions
+    assert "Proposal generates candidate paths, not authority." in bundle.system_instructions
+    assert "Direct_action is still only a candidate path under current support." in bundle.system_instructions
+    assert "No additional scarcity explanation identified from the provided support." in bundle.prompt
+    assert "CANONICAL EXAMPLE 0-OPTION:" in bundle.prompt
+    assert "CANONICAL EXAMPLE 1-OPTION:" in bundle.prompt
+    assert "Do not output NONE anywhere." in bundle.prompt
     assert "{{OBJECTIVE}}" not in bundle.prompt
 
 

@@ -387,6 +387,110 @@ def render_selection_override_receipt(payload: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def render_proposal_record(payload: dict[str, Any]) -> str:
+    truth = payload["truth"]
+    derived = payload["derived"]
+    proposal = payload["proposal"]
+    attempts = payload["attempts"]
+    artifacts = payload["artifacts"]
+
+    lines = [
+        f"PROPOSAL {truth['proposal_id']}",
+        (
+            f"[truth] project_id={truth['scope']['project_id']} "
+            f"work_unit_id={truth['scope']['work_unit_id'] or '-'} "
+            f"run_id={truth['scope']['run_id'] or '-'}"
+        ),
+        f"[truth] objective={truth['objective']}",
+        (
+            f"[derived] status={derived['proposal_status']} repair_used={derived['repair_used']} "
+            f"final_validation_outcome={derived['final_validation_outcome']}"
+        ),
+    ]
+    if truth["source_proposal_id"] is not None:
+        lines.append(f"[derived] source_proposal_id={truth['source_proposal_id']}")
+    if derived["final_failure_stage"] is not None:
+        lines.append(
+            f"[derived] final_failure_stage={derived['final_failure_stage']} error={derived['final_error_message']}"
+        )
+    lines.append(
+        f"[proposal] proposal_count={proposal['proposal_count']} scarcity_reason={proposal['scarcity_reason'] or '-'} summary_source={proposal['summary_source']}"
+    )
+    if proposal["retained_options"]:
+        for option in proposal["retained_options"]:
+            lines.append(
+                f"- option {option['proposal_id']} type={option['proposal_type']} title={option['title']} summary={_compact_text(option['summary'])}"
+            )
+    else:
+        lines.append("- no retained options available")
+    lines.append(
+        f"[attempt][initial] raw={attempts['initial']['raw_available']} parsed={attempts['initial']['parsed_available']} proposal_result={attempts['initial']['proposal_result_available']} failure_stage={attempts['initial']['failure_stage'] or '-'}"
+    )
+    if attempts["repair"] is not None:
+        lines.append(
+            f"[attempt][repair] raw={attempts['repair']['raw_available']} parsed={attempts['repair']['parsed_available']} proposal_result={attempts['repair']['proposal_result_available']} failure_stage={attempts['repair']['failure_stage'] or '-'}"
+        )
+    if artifacts["record_ref"] is not None:
+        lines.append(f"[artifacts] record={artifacts['record_ref']}")
+    if artifacts["initial_raw_ref"] is not None or artifacts["initial_parsed_ref"] is not None:
+        lines.append(
+            f"[artifacts] initial_raw={artifacts['initial_raw_ref'] or '-'} initial_parsed={artifacts['initial_parsed_ref'] or '-'}"
+        )
+    if artifacts["repair_raw_ref"] is not None or artifacts["repair_parsed_ref"] is not None:
+        lines.append(
+            f"[artifacts] repair_raw={artifacts['repair_raw_ref'] or '-'} repair_parsed={artifacts['repair_parsed_ref'] or '-'}"
+        )
+    return "\n".join(lines)
+
+
+def render_proposal_raw(payload: dict[str, Any]) -> str:
+    lines = [
+        f"PROPOSAL RAW {payload['truth']['proposal_id']}",
+        f"[truth] run_id={payload['truth']['run_id'] or '-'} objective={payload['truth']['objective']}",
+    ]
+    if payload["truth"]["source_proposal_id"] is not None:
+        lines.append(f"[truth] source_proposal_id={payload['truth']['source_proposal_id']}")
+    for attempt in payload["attempts"]:
+        lines.append(
+            f"[attempt] kind={attempt['attempt_kind']} prompt_file={attempt['prompt_file'] or '-'} request_id={attempt['request_id'] or '-'} raw_ref={attempt['raw_artifact_ref'] or '-'}"
+        )
+        if attempt["raw_output_text"] is None:
+            lines.append(f"raw_unavailable={attempt['missing_reason']}")
+        else:
+            lines.append(attempt["raw_output_text"])
+    return "\n".join(lines)
+
+
+def render_proposal_validation(payload: dict[str, Any]) -> str:
+    support = payload["support"]
+    lines = [
+        f"PROPOSAL VALIDATE {payload['truth']['proposal_id']}",
+        (
+            f"[derived] attempt_kind={payload['derived']['attempt_kind']} "
+            f"parse_success={payload['derived']['parse_success']} validation_success={payload['derived']['validation_success']}"
+        ),
+    ]
+    if support["parse_error"] is not None:
+        lines.append(f"[support] parse_error={support['parse_error']}")
+    if support["validation_issues"]:
+        lines.append("[support] validation_issues")
+        for issue in support["validation_issues"]:
+            lines.append(
+                f"- code={issue['code']} option_index={issue['option_index'] or '-'} message={issue['message']}"
+            )
+    lines.append(
+        f"[proposal] proposal_count={support['proposal_count']} scarcity_reason={support['scarcity_reason'] or '-'}"
+    )
+    for option in support["retained_options"]:
+        lines.append(
+            f"- option {option['proposal_id']} type={option['proposal_type']} title={option['title']} summary={_compact_text(option['summary'])}"
+        )
+    lines.append(
+        f"[artifacts] raw={payload['artifacts']['raw_ref'] or '-'} parsed={payload['artifacts']['parsed_ref'] or '-'} validation={payload['artifacts']['validation_ref'] or '-'}"
+    )
+    return "\n".join(lines)
+
+
 def render_lifecycle(payload: dict[str, Any]) -> str:
     derived = payload["derived"]
     telemetry = payload["telemetry"]
@@ -562,9 +666,14 @@ def render_help() -> str:
             "- /project use <project_id>",
             "- /work list",
             "- /work use <work_unit_id>",
+            "- /proposal \"<objective>\"",
             "- /run <repo-local-validation-objective>",
             "- /inspect",
             "- /show [run_id]",
+            "- /proposal show [run_id or proposal_id]",
+            "- /proposal raw [run_id or proposal_id]",
+            "- /proposal validate [run_id or proposal_id]",
+            "- /proposal repair [run_id or proposal_id]",
             "- /selection show [run_id]",
             '- /selection override <proposal_id> --why "<operator rationale>" [run_id]',
             "History/debug:",
@@ -587,8 +696,9 @@ def render_help() -> str:
             '- /research docs "<question>" <path1> [<path2> ...] [--handoff-memory]',
             '- /research web "<question>" <query1> [<query2> ...] [--handoff-memory]',
             "Startup loads or initializes a persisted local runtime under .jeff_runtime and can load local runtime config for research.",
-            "A local jeff.runtime.toml enables /run <repo-local-validation-objective> and /research ...; without it, read/history commands remain available but those runtime-backed paths stay unavailable.",
+            "A local jeff.runtime.toml enables /proposal, /run <repo-local-validation-objective>, and /research ...; without it, read/history commands remain available but those runtime-backed paths stay unavailable.",
             "/run runs one bounded repo-local pytest validation plan under the current model configuration. It is not a general command runner.",
+            "/proposal is a bounded inspect/debug surface only. It does not select, approve, execute, or mutate truth.",
             "approve/revalidate/reject only apply when the current run routed to the required request-entry state. retry/recover remain receipt-only when surfaced.",
             "One-shot --json applies to one-shot output only. /json on affects the current interactive or repeated-command session only.",
             "Research memory uses the runtime-selected backend when config enables handoff; there is no broad /memory command family.",

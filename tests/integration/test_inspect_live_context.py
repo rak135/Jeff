@@ -5,13 +5,13 @@ from jeff.cognitive.post_selection.action_formation import ActionFormationReques
 from jeff.cognitive.post_selection.action_resolution import SelectionActionResolutionRequest, resolve_selection_action_basis
 from jeff.cognitive.post_selection.effective_proposal import SelectionEffectiveProposalRequest, materialize_effective_proposal
 from jeff.cognitive.post_selection.governance_handoff import ActionGovernanceHandoffRequest, handoff_action_to_governance
+from jeff.cognitive.post_selection.selection_review_record import SelectionReviewRecord
 from jeff.cognitive.proposal import ProposalResult, ProposalResultOption
 from jeff.cognitive.selection import SelectionResult
 from jeff.core.schemas import Scope
 from jeff.governance import Approval, CurrentTruthSnapshot, Policy
 from jeff.interface import InterfaceContext, JeffCLI
-from jeff.interface.command_common import sync_run_truth_from_flow
-from jeff.interface.commands import SelectionReviewRecord
+from jeff.interface.commands.support.flow_runs import sync_run_truth_from_flow
 from jeff.knowledge import KnowledgeStore, create_source_digest_from_research_record, create_topic_note, save_knowledge_artifact
 from jeff.memory import InMemoryMemoryStore, MemorySupportRef, create_memory_candidate, write_memory_candidate
 from jeff.cognitive.research import ResearchArtifactRecord, ResearchFinding

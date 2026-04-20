@@ -19,7 +19,7 @@
 # Owned Files / Areas
 
 - `jeff/interface/cli.py`
-- `jeff/interface/commands.py`
+- `jeff/interface/commands/`
 - `jeff/interface/render.py`
 - `jeff/interface/json_views.py`
 - `jeff/interface/session.py`
@@ -75,7 +75,7 @@
 # Submodule Map
 
 - `cli.py`: CLI facade for one-shot and interactive command execution; no separate handoff.
-- `commands.py`: command parsing and operator actions over backend contracts; no separate handoff.
+- `commands/`: command registry and command-family modules plus interface-only support helpers; no separate handoff.
 - `render.py`: human-readable output surfaces; no separate handoff.
 - `json_views.py`: machine-readable truthful projections; no separate handoff.
 - `session.py`: local session scope only; no separate handoff.

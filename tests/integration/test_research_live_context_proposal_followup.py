@@ -9,13 +9,13 @@ from jeff.cognitive.post_selection.action_formation import ActionFormationReques
 from jeff.cognitive.post_selection.action_resolution import SelectionActionResolutionRequest, resolve_selection_action_basis
 from jeff.cognitive.post_selection.effective_proposal import SelectionEffectiveProposalRequest, materialize_effective_proposal
 from jeff.cognitive.post_selection.governance_handoff import ActionGovernanceHandoffRequest, handoff_action_to_governance
+from jeff.cognitive.post_selection.selection_review_record import SelectionReviewRecord
 from jeff.cognitive.research.archive import ResearchArchiveStore, create_research_brief, save_archive_artifact
 from jeff.cognitive.proposal import ProposalResult, ProposalResultOption
 from jeff.cognitive.selection import SelectionResult
 from jeff.core.schemas import Scope
 from jeff.governance import Approval, CurrentTruthSnapshot, Policy
 from jeff.interface import InterfaceContext, JeffCLI
-from jeff.interface.commands import SelectionReviewRecord
 from jeff.knowledge import (
     KnowledgeStore,
     create_source_digest_from_research_record,

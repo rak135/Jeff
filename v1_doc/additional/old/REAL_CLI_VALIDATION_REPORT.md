@@ -1,279 +1,281 @@
 # Real CLI Validation Report
 
 ## Audit method
-- Date of audit: 2026-04-19.
-- I started as a normal operator, not a repo author: README first, then `python -m jeff --help`, then actual CLI commands.
-- I did not start by reading deep implementation code. The first pass was black-box and command-driven.
-- After the operator pass, I inspected startup, interface, routing, persistence, research, selection override, request-entry, orchestrator, and relevant tests to explain what I had already observed.
-- I did not delete or reset `.jeff_runtime`. That means the report reflects Jeff as an operator would actually encounter it in this repo, including persisted state and state drift from prior use.
-- Limitation: I could not validate the real interactive shell loop in a true TTY because this environment is non-interactive. I did validate startup behavior for `python -m jeff` in non-TTY mode and then exercised the supported one-shot surface heavily.
+- I treated Jeff as a normal operator-facing CLI first and started from the documented entrypoint in `README.md`: `python -m jeff`.
+- I used only visible surfaces for the first pass: `README.md`, `python -m jeff --help`, `python -m jeff --bootstrap-check`, `/help`, and actual one-shot CLI commands.
+- I did not start by reading deep source code. I used code and tests only after the operator-first pass to explain observed behavior.
+- I used the repo root runtime exactly as Jeff loaded it, including persisted `.jeff_runtime` state already present in the workspace. Because Jeff is explicitly persisted-runtime software, that existing state counts as part of operator reality.
+- I then inspected startup, interface, command routing, session scope, render/json projection, research flow, selection review/override, request-entry handling, runtime persistence, orchestrator seams, and relevant smoke/integration tests.
+- I also ran the documented smoke suite and targeted integration files after the diagnosis pass.
+
+Operator-first limitations:
+- The automation harness does not provide a real TTY, so `python -m jeff` refused to enter the interactive shell and printed `No interactive terminal detected. Use --command for one-shot mode.` I count that observed behavior, but I could not fully drive the live prompt loop.
+- A few research commands needed careful PowerShell escaping. That is itself an operator usability finding.
 
 ## Commands and scenarios tested
 - `python -m jeff --help`
-  Outcome: worked. Startup help is clear about `python -m jeff`, `--command`, `--bootstrap-check`, scope flags, and `--json`.
+  Outcome: worked; clear startup/options surface.
 - `python -m jeff --bootstrap-check`
-  Outcome: worked. Reported persisted runtime, local runtime config, research adapter, and artifact root.
-- `python -m jeff`
-  Outcome: did not enter shell here. Printed help plus `No interactive terminal detected. Use --command for one-shot mode.`
+  Outcome: worked; confirmed runtime, config, research, and memory status.
+- `jeff --help`
+  Outcome: failed with command-not-found; the console script is declared in packaging but not installed in this repo checkout.
+- `@('/help','/exit') | python -m jeff`
+  Outcome: did not open the shell; printed top-level help and `No interactive terminal detected. Use --command for one-shot mode.`
 - `python -m jeff --command "/help"`
-  Outcome: worked, but help text is stale and says startup uses an explicit in-memory demo state.
+  Outcome: worked; useful command map, but it advertises more surface than a normal user can reliably complete.
 - `python -m jeff --command "/project list"`
-  Outcome: worked. Projects were discoverable.
-- `python -m jeff --command "/inspect"`
-  Outcome: failed clearly because no project scope was set.
-- `python -m jeff --command "/trace"`
-  Outcome: failed clearly because no run or work scope was set.
-- `python -m jeff --command "/project use project-1"`
-  Outcome: reported success, but that scope did not persist into a new process.
-- `python -m jeff --command "/scope show"`
-  Outcome: showed empty scope in a fresh one-shot process. This makes `use` look more persistent than it is.
-- `python -m jeff --command "/project use project-1" --command "/work use wu-1" --command "/scope show"`
-  Outcome: worked inside one process. Repeated `--command` calls share temporary scope.
-- `python -m jeff --project project-1 --work wu-1 --command "/inspect"`
-  Outcome: worked. Auto-selected `run-1` initially and showed a convincing bounded demo flow with truth, derived, support, and telemetry sections.
-- `python -m jeff --project project-1 --work wu-1 --command "/trace"`
-  Outcome: worked. Trace surface is readable and useful.
-- `python -m jeff --project project-1 --work wu-1 --command "/run list"`
-  Outcome: worked. Listed runs in the selected work unit.
-- `python -m jeff --project project-1 --work wu-1 --command "/show run-1"`
-  Outcome: worked. Good operator summary for the demo run.
-- `python -m jeff --project project-1 --work wu-1 --command "/lifecycle run-1"`
-  Outcome: worked. Lifecycle projection is compact and understandable.
-- `python -m jeff --project project-1 --work wu-1 --command "/show run-1" --json`
-  Outcome: worked. JSON shape is strong and actually useful.
-- `@('/help','/scope show','/exit') | python -m jeff`
-  Outcome: did not behave as an interactive shell. Non-TTY refusal message only.
-- `python -m jeff --project project-1 --work wu-1 --command "/run Check operator-created run"`
-  Outcome: created a new run. Later inspection showed the run had a failed bounded proposal flow rather than a successful execution path.
-- `python -m jeff --project project-1 --work wu-1 --command "/show run-2"`
-  Outcome: showed a created run with no useful completed flow attached in compact mode.
-- `python -m jeff --project project-1 --work wu-1 --command "/show run-2" --json`
-  Outcome: revealed much more truthfully that the flow actually failed in proposal stage. JSON was more informative than compact text here.
-- `python -m jeff --project project-1 --work wu-1 --command "/selection show run-3"`
-  Outcome: worked. Truthful missing-chain output for a failed run.
-- `python -m jeff --project project-1 --work wu-1 --command "/approve run-3"`
-  Outcome: failed truthfully. Not currently available because routed outcome was `none`.
-- `python -m jeff --project project-1 --work wu-1 --command "/reject run-3"`
-  Outcome: same pattern as `/approve`.
-- `python -m jeff --project project-1 --work wu-1 --command "/retry run-3"`
-  Outcome: same pattern as `/approve`.
-- `python -m jeff --project project-1 --work wu-1 --command "/revalidate run-3"`
-  Outcome: same pattern as `/approve`.
-- `python -m jeff --project project-1 --work wu-1 --command "/recover run-3"`
-  Outcome: same pattern as `/approve`.
-- `python -m jeff --project project-1 --work wu-1 --command "/run use run-1" --command "/json on" --command "/show"`
-  Outcome: confusing. `/json on` reported success but `/show` still rendered human text in one-shot mode.
-- `python -m jeff --command "/bogus"`
-  Outcome: good failure message.
-- `python -m jeff --command "hello"`
-  Outcome: good failure message; plain text is rejected.
-- `python -m jeff --project project-1 --work wu-1 --command "/selection show run-1"`
-  Outcome: worked. Review surface is one of the most convincing parts of the CLI.
-- `python -m jeff --project project-1 --work wu-1 --command '/selection override proposal-1 --why ""operator rationale"" run-1'`
-  Outcome: worked, but PowerShell quoting is awkward and easy to get wrong.
-- `python -m jeff --command '/research docs ""What is Jeff right now?"" README.md'`
-  Outcome: worked. Created `general_research`, created a research work unit, created a run, persisted an artifact, and produced a reasonable answer.
-- `python -m jeff --command '/research web ""What is Jeff right now?"" ""Jeff CLI backbone""'`
-  Outcome: worked mechanically, but answered about unrelated people named Jeff. This is real output, not a stub, but it is weak as an operator tool without stronger grounding.
-- `python -m jeff --command '/research docs ""What is the primary startup path?"" README.md --handoff-memory'`
-  Outcome: worked. Research ran, artifact persisted, and memory handoff truthfully deferred rather than pretending success.
-- `python -m jeff --project general_research --command "/work list"`
-  Outcome: worked. Ad-hoc research state is inspectable afterward.
-- `python -m jeff --project use`
-  Outcome: failed clearly with correct usage guidance.
-- `python -m jeff --project project-1 --command "/work use missing-wu"`
-  Outcome: failed clearly with discovery guidance.
-- `python -m jeff --project project-1 --work wu-1 --command "/run use missing-run"`
-  Outcome: failed clearly with discovery guidance.
-- `python -m jeff --project project-1 --work wu-1 --command "/scope clear" --command "/scope show"`
-  Outcome: worked. Scope clear is local and coherent.
-- `python -m jeff --version`
   Outcome: worked.
-- `python -m pytest -q tests/smoke/test_cli_entry_smoke.py tests/integration/test_runtime_workspace_persistence.py tests/unit/interface/test_cli_scope_and_modes.py tests/unit/interface/test_cli_run_resolution.py`
-  Outcome: 24 passed, 4 failed. Failures were operator-relevant: persisted state made `/show run-1` ambiguous and made `/show` and `/inspect` auto-bind the newest failed run (`run-3`) instead of the original demo run.
+- `python -m jeff --command "/work list"`
+  Outcome: failed clearly because no project scope was selected.
+- `python -m jeff --command "/run list"`
+  Outcome: failed clearly because no project scope was selected.
+- `python -m jeff --command "/project use project-1" --command "/work list" --command "/work use wu-1" --command "/run list" --command "/run use run-1" --command "/show"`
+  Outcome: worked; repeated one-shot commands share session scope inside one process.
+- `python -m jeff --project project-1 --work wu-1 --run run-1 --command "/inspect"`
+  Outcome: worked.
+- `python -m jeff --project project-1 --work wu-1 --run run-1 --command "/trace"`
+  Outcome: worked.
+- `python -m jeff --project project-1 --work wu-1 --run run-1 --command "/lifecycle"`
+  Outcome: worked.
+- `python -m jeff --project project-1 --work wu-1 --run run-1 --command "/show" --json`
+  Outcome: worked; JSON payload was valid and useful.
+- `python -m jeff --command "/project list" --json`
+  Outcome: stayed in text mode; `--json` did not apply to this list command.
+- `python -m jeff --project project-1 --command "/work list" --json`
+  Outcome: stayed in text mode.
+- `python -m jeff --project project-1 --work wu-1 --command "/run list" --json`
+  Outcome: stayed in text mode.
+- `python -m jeff --project project-1 --work wu-1 --run run-1 --command "/json on" --command "/show" --command "/json off" --command "/show"`
+  Outcome: `/json on` acknowledged the toggle, but the next `/show` still rendered text, not JSON.
+- `python -m jeff --command "hello"`
+  Outcome: failed clearly and truthfully.
+- `python -m jeff --command "/bogus"`
+  Outcome: failed clearly and truthfully.
+- `python -m jeff --project project-1 --work wu-1 --run run-1 --command "/selection show"`
+  Outcome: worked, but surfaced a persisted operator override that `/show` did not surface the same way.
+- `python -m jeff --command "/project use project-1" --command "/work use wu-1" --command "/run use run-2" --command "/scope show" --command "/scope clear" --command "/scope show"`
+  Outcome: worked.
+- `python -m jeff --command "/project use general_research" --command "/work list"`
+  Outcome: worked; visible ad-hoc research work units existed.
+- `python -m jeff --command '/research docs ""What is the primary startup path?"" README.md'`
+  Outcome: worked after PowerShell quote-escaping guesswork; produced a persisted research artifact.
+- `python -m jeff --command '/research web ""What is Jeff right now?"" ""Jeff CLI runtime""'`
+  Outcome: technically worked, but returned off-target internet results about unrelated "Jeff" entities.
+- `python -m jeff --command "/project use project-1" --command "/work use wu-1" --command "/run validate README smoke path"`
+  Outcome: created `run-4`, then stopped at a non-execution defer path.
+- `python -m jeff --project project-1 --work wu-1 --run run-4 --command "/selection show" --command '/selection override proposal-1 --why ""Need to investigate first""' --command "/selection show"`
+  Outcome: worked; override was recorded, but no action or governance continuation started.
+- `python -m jeff --project project-1 --work wu-1 --run run-4 --command "/approve"`
+  Outcome: unavailable for that run.
+- `python -m jeff --project project-1 --work wu-1 --run run-4 --command "/revalidate"`
+  Outcome: unavailable for that run.
+- `python -m jeff --project project-1 --work wu-1 --run run-4 --command "/reject"`
+  Outcome: unavailable for that run.
+- `python -m jeff --project project-1 --work wu-1 --run run-4 --command "/retry"`
+  Outcome: unavailable for that run.
+- `python -m jeff --project project-1 --work wu-1 --run run-4 --command "/recover"`
+  Outcome: unavailable for that run.
+- `python -m jeff --command "/project use project-1" --command "/work use wu-1" --command "/run repo-local validation"`
+  Outcome: created `run-5`, then failed in proposal generation/validation before action or execution.
+- `python -m jeff --project project-1 --work wu-1 --run run-5 --command "/show"`
+  Outcome: worked; surfaced the proposal validation failure truthfully.
+- `python -m jeff --command '/research docs ""What is the primary startup path?"" README.md --handoff-memory'`
+  Outcome: failed with a memory-candidate validation error.
+
+Observed concurrency issue:
+- Running multiple one-shot inspection commands in parallel against the same runtime produced a raw Windows lock-file error on `.jeff_runtime\config\runtime.mutation.lock` rather than a clean operator-facing conflict message.
 
 ## Operator-first findings
 
 ### What a normal user can actually do today
-- Start Jeff from the documented entrypoint.
-- Get useful startup help and bootstrap diagnostics.
-- Navigate projects, work units, and runs inside one process.
-- Inspect an already-materialized run through `/inspect`, `/show`, `/trace`, `/lifecycle`, and `/selection show`.
-- Use `--json` to get solid machine-readable output for several read surfaces.
-- Run docs or web research if runtime config is present, and get persisted research artifacts back through the CLI.
-- Record a selection override as a downstream support object.
+- Start Jeff reliably with `python -m jeff`.
+- Discover the top-level CLI surface through `--help`, `--bootstrap-check`, and `/help`.
+- Navigate project/work/run scope when they already understand the session model.
+- Inspect persisted runs with `/show`, `/inspect`, `/trace`, and `/lifecycle`.
+- Run document research with explicit paths and get a persisted artifact.
+- Run web research and get a persisted artifact, though result relevance is inconsistent.
+- Review a selection chain and record a manual override.
 
-### What feels real through the CLI
-- The read surfaces are the strongest part of Jeff: `/show`, `/trace`, `/lifecycle`, and `/selection show` feel like real operator tools.
-- The JSON views are substantial, not decorative.
-- Docs research is a real flow: it creates scope, runs backend logic, persists artifacts, and returns grounded findings.
-- Failure messages are usually specific and honest.
+### What is strong through the CLI
+- Read-oriented inspection is the most convincing surface. `/show`, `/trace`, and `/lifecycle` feel real and expose meaningful support/evidence rather than empty placeholders.
+- Runtime persistence is real in operator terms. Jeff loads history, seeded runs, past research work units, and prior support records on startup.
+- The CLI is usually truthful about unsupported or unavailable operations. It mostly fails honestly instead of pretending work happened.
+- Docs research is a real workflow, not just a receipt. It read `README.md`, generated findings, persisted an artifact, and surfaced source paths.
 
-### What is confusing or misleading
-- README and `/help` still talk like startup is an explicit in-memory demo, while `--help` and bootstrap output say startup uses a persisted `.jeff_runtime` workspace.
-- `/project use` and `/work use` sound like durable operator actions, but they only affect the current process. A fresh one-shot invocation loses that scope.
-- `/run <objective>` sounds like end-to-end execution. In practice it can create a run and then fail during proposal validation, leaving a dead-looking run behind.
-- `/approve`, `/reject`, `/retry`, `/revalidate`, and `/recover` read like control verbs, but for most observed runs they were unavailable, and even when accepted they are only request receipts.
-- `/json on` looks like a session feature, but in one-shot CLI usage it did not make later commands emit JSON.
-- Web research is exposed as if it is operator-meaningful, but with a broad question it happily researched the wrong Jeff.
+### What is confusing or awkward
+- Scope is strictly session-local and process-local. That is documented, but a normal user will still trip over it immediately unless they happen to chain commands in one process.
+- The research command syntax is shell-fragile in PowerShell. The help text tells you the logical syntax, not the actual escaping pain.
+- `--json` and `/json on` do not behave consistently across surfaces.
+- The seeded/persisted demo data makes the tool feel more complete than a fresh operator-created flow really is.
+- `/show` and `/selection show` can disagree in a way that feels inconsistent to an operator, especially when an old override exists.
 
-### What required guesswork
-- How much state is process-local versus persisted.
-- Whether to rely on `--project/--work` flags or `/project use` and `/work use`.
-- How to quote commands with nested quotes in PowerShell, especially for `/selection override` and `/research ...`.
-- Whether `/show` means "show the canonical demo run" or "show the latest run in the current work unit".
+### What is misleading or thinner than it looks
+- `/run <objective>` looks like a general operator entry surface, but in practice it is one narrow repo-local validation path and it is fragile under the live model configuration.
+- Request-entry commands (`approve`, `reject`, `revalidate`, `retry`, `recover`) look like a meaningful control surface, but a normal operator may never naturally reach the states where they are usable.
+- A run can be marked `completed` even when it actually ended in a terminal non-execution defer path. That overstates practical success.
+- Existing seeded run data is useful for inspection, but it can be mistaken for proof that live end-to-end execution is already robust.
 
-### Normal-user judgment before diagnosis
-- Jeff is already a real inspection CLI for a bounded runtime slice.
-- Jeff is not yet a convincing general operator CLI for running work through governance and action to completion.
-- The tool looks broader than it really is because the command surface is larger than the reliably useful surface.
-- A normal user will get frustrated quickly by stale help text, one-shot scope surprise, quoting friction, dirty persisted state, and control commands that mostly do not lead to completed workflows.
+### Normal-user judgment before code diagnosis
+- A normal user can inspect Jeff far better than they can operate Jeff.
+- Jeff feels real as an inspection shell with persistence, traces, and research support.
+- Jeff feels thin at the point where the user expects a fresh `/run` objective to turn into a dependable end-to-end action.
+- The CLI feels bigger than it really is around `/run`, approval controls, and machine-readable surfaces.
+- The fastest path to frustration is: try `/run` with a natural objective, then try to understand why it deferred, failed, or still shows `completed` without actually doing the thing.
 
 ## Layer grades (1-5)
 
 ### Core / state / transitions
 - Grade: 3
-- Why: There is real state, real persisted transitions, real project/work/run creation, and real scope navigation. The operator can benefit from this today.
-- What works: persisted `.jeff_runtime`, project/work/run discovery, auto-created research scope, transition-backed run creation, reloadable state.
-- What does not: no obvious reset/clean-slate path, latest-run auto-selection can become misleading, state drift quickly changes CLI behavior, concurrent mutation is fragile.
-- What holds it back: weak operator ergonomics and weak durability under repeated or concurrent use.
-- Main weakness type: weak durability and weak operator ergonomics.
+- Why: persisted runtime state, project/work/run creation, and reload behavior are real and operator-visible, but the truth surface is not consistently trustworthy in practice.
+- What works: startup seeds and reloads runtime state; scope navigation works; runs persist; new runs can be created; traces/history stay attached.
+- What does not: operator-facing truth can be confusing or contradictory, such as `run-1` showing `run_lifecycle_state=created` while derived flow state is completed, and `run-4` showing `completed` even though it deferred without execution.
+- What holds it back: weak operator ergonomics plus weak truth projection, not an absence of underlying state machinery.
+- Main weakness type: weak durability/truth surfacing, weak operator ergonomics.
 
 ### Governance
 - Grade: 2
-- Why: governance is inspectable, but normal-user control is thin.
-- What works: governance outcomes are visible in `/show`, `/selection show`, and JSON; approval-required states are modeled truthfully.
-- What does not: request-entry verbs were mostly unavailable in real use, and even accepted requests are explicitly only receipts.
-- What holds it back: the CLI exposes governance inspection better than governance action.
-- Main weakness type: insufficient real flow completion and missing real control exposure.
+- Why: governance metadata and routed outcomes exist, but a normal CLI user cannot benefit from them much without already knowing how to manufacture specific internal states.
+- What works: governance handoff is visible in selection review; unavailable request commands fail truthfully; tests show real approval and revalidation paths exist.
+- What does not: black-box operator usage did not naturally reach an approval-required run; request-entry commands were mostly unusable; the CLI does not make it obvious how to reach a governable continuation state.
+- What holds it back: governance is present more as inspectable internal structure than as a usable operator control path.
+- Main weakness type: missing CLI exposure, insufficient real flow completion.
 
 ### Cognitive
 - Grade: 3
-- Why: proposal/selection/evaluation visibility is real, docs research is real, and failure surfaces are not fake. But it remains bounded and fragile.
-- What works: demo proposal/selection/evaluation inspection, selection review chain, docs research artifact generation, some meaningful JSON projections.
-- What does not: `/run` failed on actual proposal generation; web research can be context-poor and misleading; a lot of the strongest cognitive behavior still depends on the canned demo run.
-- What holds it back: thin backend reliability for open-ended operator use.
-- Main weakness type: thin backend capability.
+- Why: docs research, selection review, and explanation surfaces are materially real, but live-model proposal generation and web research quality are not reliable enough for stronger operator trust.
+- What works: document research; persisted research artifacts; selection review; operator override recording; live context support packaging is visible.
+- What does not: `/run` proposal generation is fragile under the real provider; web research can be badly off-target; the CLI does not help the user know what objectives are likely to succeed.
+- What holds it back: a mix of live backend fragility and operator discoverability gaps.
+- Main weakness type: thin backend capability in live mode, weak operator ergonomics.
 
 ### Action / outcome / evaluation
 - Grade: 2
-- Why: demo action/outcome/evaluation is visible, but actual operator action completion is not strong.
-- What works: demo run shows a coherent action-to-evaluation story; selection override recomputes downstream action and governance surfaces.
-- What does not: selection override does not execute; `/run` did not reliably reach execution in actual use; request-entry verbs do not carry work forward.
-- What holds it back: the CLI mostly inspects completed or failed artifacts instead of driving end-to-end action.
+- Why: inspection of action/outcome/evaluation is decent, but fresh operator-triggered flow completion is not dependable.
+- What works: existing completed runs expose execution, outcome, and evaluation clearly; the repo-local validation execution plan is real; failure reporting is usually honest.
+- What does not: a normal user could not reliably create a successful new execution from `/run`; one natural objective deferred without execution, another failed before action formation.
+- What holds it back: the layer is more inspectable than usable.
 - Main weakness type: insufficient real flow completion.
 
 ### Memory
 - Grade: 1
-- Why: memory exists mostly as a side-effect of research handoff, not as a usable operator layer.
-- What works: `--handoff-memory` is exposed and truthful about defer/reject/write outcomes.
-- What does not: there is no meaningful operator memory workflow through the CLI beyond asking research to try a handoff.
-- What holds it back: almost all memory value is backend- or test-visible, not operator-usable.
-- Main weakness type: missing CLI exposure.
+- Why: operator-visible memory is almost nonexistent, and the one exposed handoff path failed in real CLI use.
+- What works: bootstrap reports that memory is configured; research can theoretically request handoff with `--handoff-memory`; tests show the pipeline exists internally.
+- What does not: there is no meaningful `/memory` operator surface; a real docs-research handoff failed with `summary must stay concise and below 200 characters`; the user cannot inspect, repair, or reason about memory from the CLI.
+- What holds it back: memory is mostly internal capability, not operator utility.
+- Main weakness type: missing CLI exposure, thin operator path.
 
 ### Orchestrator
 - Grade: 3
-- Why: trace, lifecycle, routing, and failed-stage visibility are real and valuable.
-- What works: `/trace`, `/lifecycle`, routed outcomes in JSON, persisted flow runs, failed proposal-stage runs that still surface useful history.
-- What does not: the main operator path to drive the orchestrator is thin, and failed runs pile up in a way that later hurts discoverability.
-- What holds it back: strong inspection, weak completion and weak operator recovery.
-- Main weakness type: insufficient real flow completion.
+- Why: the orchestrator is real enough to expose traces, lifecycle, routing decisions, and persisted flow support, but its operator semantics are sometimes misleading.
+- What works: `/trace`, `/lifecycle`, routed outcomes, event history, persisted flow records.
+- What does not: terminal non-execution defer can still surface as `completed`; orchestrator strength is visible mostly through inspection, not through reliable end-to-end control.
+- What holds it back: the operator sees routing and lifecycle output, but not always with semantics that match plain-language expectations.
+- Main weakness type: weak operator ergonomics, insufficient real flow completion.
 
 ### Interface / CLI
 - Grade: 3
-- Why: the CLI is real, command coverage is broad, and read surfaces are useful, but ergonomics are rough enough that a normal operator will hit friction quickly.
-- What works: documented startup path, one-shot mode, helpful discovery errors, JSON mode via `--json`, coherent read commands.
-- What does not: stale `/help`, shell quoting friction, non-durable `use` commands across processes, `/json on` not helping one-shot usage, no clean reset path, interactive shell unverified here because non-TTY.
-- What holds it back: the operator contract is not as clear as the command list suggests.
+- Why: the CLI is usable for bounded discovery and inspection, but not polished or coherent enough to deserve a stronger operator grade.
+- What works: startup, help, scope commands, list/show/trace/lifecycle, readable error messages, one-shot chaining.
+- What does not: `jeff` script was not available by default in this checkout; interactive mode is TTY-dependent; research quoting is awkward; `/json on` in repeated one-shot mode does not work as advertised; `--json` coverage is partial.
+- What holds it back: too many small operator traps for a tool that is claiming a CLI-first surface.
 - Main weakness type: weak operator ergonomics.
 
 ### Infrastructure / runtime / providers
 - Grade: 2
-- Why: runtime config and provider wiring are real, but day-to-day operator reliability is not yet strong.
-- What works: bootstrap reports runtime config; docs research and web research can run against configured infrastructure; artifacts persist.
-- What does not: proposal generation for `/run` failed under actual provider output; concurrent runtime writes collided on Windows; persisted runtime state bleeds into later behavior and test expectations.
-- What holds it back: provider-dependent behavior is too fragile for confident normal use.
-- Main weakness type: thin backend capability and weak durability.
+- Why: runtime loading and config detection are real, but live-provider behavior is not robust enough for confident operator use.
+- What works: startup loads config; bootstrap reports provider state; docs research worked with the configured local provider; runtime persistence itself is solid.
+- What does not: the live `/run` path failed on proposal validation under the real model setup; web research was technically live but low-relevance; concurrent CLI invocations exposed lock fragility.
+- What holds it back: too much depends on provider outputs staying inside narrow internal validation boundaries.
+- Main weakness type: thin backend reliability, weak durability under concurrent use.
 
 ### Overall operator usefulness
 - Grade: 2
-- Why: Jeff is already a real bounded inspection and research CLI, but it is not yet a strong end-to-end operator tool.
-- What works: inspection, traceability, JSON read views, bounded docs research, truthful failure.
-- What does not: robust run execution, meaningful governance control, usable memory, stable repeated-session behavior.
-- What holds it back: the tool presents more surface area than it can currently turn into reliable completed operator workflows.
-
-## Operator-observed behavior vs implementation diagnosis
-
-### Operator-observed behavior
-- Startup help and bootstrap check are usable.
-- The best operator experience is inspection of already-existing runs.
-- Docs research feels real. Web research feels real mechanically but weak semantically.
-- `/run` is the biggest mismatch between what a normal user would expect and what I could reliably accomplish.
-- Request-entry verbs look bigger than they are.
-- Dirty persisted state changes what `/show`, `/inspect`, and even smoke tests do.
-
-### Implementation diagnosis
-- `jeff/main.py` now clearly boots a persisted workspace under `.jeff_runtime`.
-- `jeff/interface/render.py` still renders `/help` text that says startup uses explicit in-memory demo state. That matches the operator-visible mismatch.
-- `jeff/interface/session.py` keeps scope local to the CLI session only. `tests/integration/test_runtime_workspace_persistence.py` explicitly locks that in, so one-shot non-persistence is intentional, not accidental.
-- `jeff/interface/command_scope.py` makes `/run <objective>` a real bounded backend flow when infrastructure is configured. It is not fake wiring. My failed runs were real failures, not absent implementation.
-- `jeff/interface/command_requests.py` confirms that approve/reject/retry/revalidate/recover are intentionally request-entry only. Even success is only a receipt, not a state-changing workflow.
-- `jeff/interface/command_research.py` explains why research without project scope creates `general_research`, derived work units, and runs. That behavior is intentional and tested.
-- `jeff/interface/command_common.py` auto-selects the highest run ID in a work unit. That explains why repeated usage drifted `/show` and `/inspect` toward failed `run-3`.
-- `jeff/runtime_persistence.py` writes JSON via `temp_path.replace(path)` but does not actually use the recorded `runtime.lock.json` as a live lock. That explains the Windows file-lock collision I hit by running two mutating Jeff processes in parallel.
-- `jeff/main.py` passes `json_output=args.json` into every one-shot command. Because that is always an explicit boolean, `/json on` inside one-shot mode does not influence later commands in the same outer process. That matches the confusing observed behavior exactly.
-
-### Inferred gaps before v1
-- Jeff is stronger internally than the CLI sometimes makes it look, especially in selection review, routing, and persisted projections.
-- Jeff is also weaker in operator reality than the surface area suggests, especially around actual control, action completion, memory, and repeated real-world use.
-- Some failures are truthful and intentional deferrals, but they still count against v1 operator usefulness.
+- Why: Jeff is already a real CLI for inspection and bounded research, but it is not yet a convincing real operator tool for dependable end-to-end run control.
+- What works: inspection, persistence, traceability, some research.
+- What does not: dependable fresh `/run` completion, coherent request-entry control, memory utility, consistent machine-readable behavior.
+- What holds it back: the tool currently feels stronger in internal architecture and tests than in black-box operator reality.
 
 ## What works well
-- Startup and bootstrap diagnostics.
-- Read-oriented run inspection.
-- Trace and lifecycle projections.
-- JSON read surfaces.
-- Docs research with artifact persistence.
-- Selection review as an inspection surface.
-- Clear invalid-command and invalid-scope guidance.
+- The documented startup path is clear and works.
+- `--bootstrap-check` is a good operator-facing truth surface.
+- `/help` is readable and mostly honest about what Jeff is and is not.
+- `/show`, `/trace`, and `/lifecycle` are the strongest CLI surfaces today.
+- Runtime persistence is genuinely load-bearing and visible.
+- Docs research is a real CLI workflow with artifact persistence and source transparency.
+- Error messages for missing scope and bad IDs are good.
 
 ## Where the gaps are
-- Startup/help messaging is inconsistent.
-- One-shot scope is easy to misunderstand.
-- `/run` is exposed as a primary flow but is not yet robust in real usage.
-- Request-entry verbs are too thin to count as strong operator capability.
-- Persisted state has no obvious clean reset path and degrades later usability.
-- Web research needs stronger grounding to the current project/tool context.
-- PowerShell quoting friction hurts actual usability for the most complex commands.
+- `/run` is not operator-trustworthy enough yet.
+- JSON mode is inconsistent across commands and modes.
+- Request-entry controls are exposed more broadly than they are practically reachable.
+- Web research needs better operator guidance or better repo-aware querying to avoid irrelevant results.
+- Persisted demo/support data can make the product look more complete than live operator flows really are.
+- Some "read" commands are not truly read-only because they materialize and persist support records, which contributes to lock contention.
 
 ## What does not really work yet
-- A convincing operator path from new request to completed governed execution through the CLI.
-- Meaningful governance control from the operator surface.
-- Memory as a user-usable CLI feature.
-- Stable repeated-session behavior without drift from prior runs.
-- Multi-process safety for a persisted shared runtime.
+- A dependable fresh `/run <objective>` flow for a normal operator.
+- A coherent, discoverable approval/revalidate control loop in live operator use.
+- Memory as an operator-visible feature.
+- Fully trustworthy machine-readable CLI output across the command set.
+- Clean concurrent CLI use against the same runtime workspace.
 
 ## What must be done before v1
-- Make the startup story truthful and consistent everywhere: README, `--help`, `/help`, bootstrap language, and operator expectations.
-- Decide and document the scope contract clearly: process-local scope versus persisted runtime state, and make the UX make that obvious.
-- Make `/run <objective>` reliably usable with configured providers, or stop presenting it as part of the normal primary flow.
-- Add a clean operator reset or clean-room mode for `.jeff_runtime`, or at minimum a documented way to start from a known state.
-- Fix one-shot mode semantics for `/json on`, or document that only outer `--json` matters in one-shot usage.
-- Reduce ambiguity caused by latest-run auto-selection and duplicated `run-1` IDs across projects/work units.
-- Turn at least one governance request-entry path into a real operator workflow, not just a receipt surface.
-- Add real runtime write locking or another concurrency-safe persistence strategy.
+- Make `/run` reliably succeed or fail for normal objectives under the real provider configuration, not only under fake adapters and test monkeypatches.
+- Narrow or reword the `/run` promise so the operator knows exactly what kind of objective is expected and what Jeff will actually do.
+- Fix JSON behavior so `--json` and `/json on` are consistent across one-shot and repeated-command sessions.
+- Decide whether terminal non-execution defer/reject paths should really look `completed` to operators. Right now that is too misleading.
+- Make the request-entry surface reachable and understandable from black-box usage, or de-emphasize it until it is.
+- Make memory handoff robust enough not to fail on ordinary research summaries, or stop advertising it as an operator path.
+- Reduce seeded-demo confusion. If Jeff boots with demo runs, it should make that explicit in the CLI so a user does not mistake seeded history for fresh live capability.
 
 ## What should not be done before v1
-- Do not add more command families that expand surface area without completing the real operator path.
-- Do not spend pre-v1 effort on GUI polish, broad API expansion, or richer demo language while the CLI contract is still this easy to misread.
-- Do not over-invest in more inspection views until the main action/governance path is materially more usable.
+- Do not add a broad `/memory` command family before the existing handoff path is reliable and understandable.
+- Do not expand into more action families before the current bounded repo-local validation path is dependable.
+- Do not spend v1 effort on GUI or broad API surface; the CLI still needs coherence first.
+- Do not inflate the request-entry surface with more verbs while `approve/revalidate/reject/retry/recover` are still mostly unreachable or receipt-only.
 
 ## Bottom line
 - Is Jeff already a real CLI operator tool?
-  No, not in the strong sense. It is a real bounded inspection and research CLI with honest surfaces, but it is not yet a strong end-to-end operator tool.
+  Not yet in the stronger sense. It is a real persisted inspection and research CLI, but it is not yet a convincing real operator tool for dependable end-to-end run execution.
 - What is it genuinely good at today?
-  Inspecting persisted state, showing traces and lifecycle, exposing truthful JSON projections, and running bounded docs research with artifact persistence.
+  Truthful inspection of persisted runs, trace/lifecycle visibility, and bounded docs research with saved artifacts.
 - What is still too thin?
-  Actual operator control, reliable run execution, memory as a usable feature, and repeated-session durability.
+  Fresh `/run` execution, approval/revalidation as a practical operator loop, memory, and machine-readable consistency.
 - What is the single most important thing to fix next?
-  Make the primary operator path honest and reliable: a clean, repeatable `/run` workflow from scope selection to a materially useful completed outcome, with state handling and help text that match what the CLI really does.
+  Make the primary `/run <objective>` path reliably complete a real bounded flow under the live provider setup, and make the operator-facing semantics match what actually happened.
+
+## Diagnosis pass summary
+
+### Why some operator behavior looked stronger than it really was
+- Startup seeds a demo run and persists its flow/support records. That is why `run-1` already looks rich on first inspection. This comes from the bootstrap path in `jeff/bootstrap.py`, not from a fresh operator-created run.
+- The tests are materially stronger than the live operator experience because many key `/run` and research integration tests use fake adapters or monkeypatched search/execution plans rather than the real configured provider path.
+
+### Why `/run` was fragile in live use
+- The live `/run` path is a single repo-local validation plan wired in `jeff/interface/command_scope.py`.
+- Successful `/run` depends on proposal generation producing a valid proposal that survives semantic validation in `jeff/cognitive/proposal/validation.py`.
+- That validation forbids authority-like words including `execution`, `ready`, `allow`, `approve`, and similar terms inside proposal fields.
+- In real CLI use, the configured live model produced text that violated those rules, so the flow failed before action formation or execution.
+- In contrast, passing tests often inject carefully crafted fake proposal text that already respects those validation rules.
+
+### Why `/show` and `/selection show` felt inconsistent
+- `/show` derives `selected_proposal_id` from the original flow selection output.
+- `/selection show` also includes resolved override state and effective downstream choice.
+- That means a persisted operator override can appear in `/selection show` while `/show` still looks like the original selection won. This is internally explainable, but operator-confusing.
+
+### Why JSON mode was inconsistent
+- Some command families produce JSON payloads but are never passed through the JSON projection helper in the main dispatcher, so `--json` does nothing for them.
+- Repeated-command one-shot mode also passes the top-level `args.json` boolean into every command. When `--json` is not set, that explicit `False` blocks session-level `/json on` from taking effect.
+
+### Why concurrent "read" commands collided
+- Several inspect/show paths materialize and persist selection-review support on demand.
+- That means commands that look read-only can still take the runtime mutation lock and write support files.
+- In practice this makes parallel CLI invocations against the same runtime more fragile than an operator would expect.
+
+### Test execution after diagnosis
+- Documented smoke suite run:
+  `python -m pytest -q tests/smoke/test_bootstrap_smoke.py tests/smoke/test_cli_entry_smoke.py tests/smoke/test_quickstart_paths.py`
+  Result: `18 passed`
+- Targeted integration run:
+  `python -m pytest -q tests/integration/test_cli_run_live_context_execution.py tests/integration/test_cli_research_flow.py tests/integration/test_runtime_workspace_persistence.py`
+  Result: `31 passed`
+- Interpretation: the internals are materially more capable than the black-box live-provider operator pass suggests, but much of that strength currently depends on controlled fake/monkeypatched test conditions or on seeded persisted demo state.

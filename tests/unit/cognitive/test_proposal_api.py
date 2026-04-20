@@ -48,6 +48,7 @@ def test_successful_composed_pipeline_runs_end_to_end_without_retry_or_orchestra
     assert result.status == "validated_success"
     assert runtime.invoke_with_request_calls == []
     assert len(runtime.invoke_calls) == 1
+    assert result.repair_attempted is False
     assert result.proposal_result.request_id == result.raw_result.request_id
     assert len(result.proposal_result.options) == len(result.proposal_result.options)
     assert all(
@@ -99,25 +100,46 @@ def test_parse_failure_surface_is_preserved_explicitly() -> None:
 def test_validation_failure_surface_is_preserved_explicitly() -> None:
     request = _generation_request()
     runtime = _TrackingContractRuntime(
-        response=_response(
-            request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state",
-            output_text=(
-                "PROPOSAL_COUNT: 1\n"
-                "SCARCITY_REASON: Only one serious path is currently grounded.\n"
-                "OPTION_1_TYPE: clarify\n"
-                "OPTION_1_TITLE: Clarify the scope edge\n"
-                "OPTION_1_SUMMARY: Ask one bounded clarifying question.\n"
-                "OPTION_1_WHY_NOW: Scope ambiguity still blocks stronger framing.\n"
-                "OPTION_1_ASSUMPTIONS: NONE\n"
-                "OPTION_1_RISKS: NONE\n"
-                "OPTION_1_CONSTRAINTS: NONE\n"
-                "OPTION_1_BLOCKERS: NONE\n"
-                "OPTION_1_PLANNING_NEEDED: no\n"
-                "OPTION_1_FEASIBILITY: Feasible once clarified\n"
-                "OPTION_1_REVERSIBILITY: Fully reversible\n"
-                "OPTION_1_SUPPORT_REFS: ctx-1\n"
+        responses=[
+            _response(
+                request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state",
+                output_text=(
+                    "PROPOSAL_COUNT: 1\n"
+                    "SCARCITY_REASON: Only one serious path is currently grounded.\n"
+                    "OPTION_1_TYPE: direct_action\n"
+                    "OPTION_1_TITLE: Apply the bounded patch\n"
+                    "OPTION_1_SUMMARY: Apply the change now because approval is implied.\n"
+                    "OPTION_1_WHY_NOW: Current support already bounds the change.\n"
+                    "OPTION_1_ASSUMPTIONS: The failing edge is already reproduced\n"
+                    "OPTION_1_RISKS: Small regression risk remains\n"
+                    "OPTION_1_CONSTRAINTS: Stay inside the current project scope\n"
+                    "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
+                    "OPTION_1_PLANNING_NEEDED: no\n"
+                    "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
+                    "OPTION_1_REVERSIBILITY: Straightforward rollback\n"
+                    "OPTION_1_SUPPORT_REFS: ctx-1\n"
+                ),
             ),
-        )
+            _response(
+                request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state:repair-1",
+                output_text=(
+                    "PROPOSAL_COUNT: 1\n"
+                    "SCARCITY_REASON: Only one serious path is currently grounded.\n"
+                    "OPTION_1_TYPE: direct_action\n"
+                    "OPTION_1_TITLE: Apply the bounded patch\n"
+                    "OPTION_1_SUMMARY: Apply the change now because approval is implied.\n"
+                    "OPTION_1_WHY_NOW: Current support already bounds the change.\n"
+                    "OPTION_1_ASSUMPTIONS: The failing edge is already reproduced\n"
+                    "OPTION_1_RISKS: Small regression risk remains\n"
+                    "OPTION_1_CONSTRAINTS: Stay inside the current project scope\n"
+                    "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
+                    "OPTION_1_PLANNING_NEEDED: no\n"
+                    "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
+                    "OPTION_1_REVERSIBILITY: Straightforward rollback\n"
+                    "OPTION_1_SUPPORT_REFS: ctx-1\n"
+                ),
+            ),
+        ]
     )
 
     result = run_proposal_generation_pipeline(
@@ -129,11 +151,137 @@ def test_validation_failure_surface_is_preserved_explicitly() -> None:
     assert result.failure_stage == "validation"
     assert result.status == "validation_failure"
     assert result.parsed_result is not None
-    assert tuple(issue.code for issue in result.validation_issues) == (
-        "missing_assumptions",
-        "missing_risks",
-        "missing_constraints_or_blockers",
+    assert result.repair_attempted is True
+    assert result.initial_failure_stage == "validation"
+    assert tuple(issue.code for issue in result.validation_issues) == ("authority_leakage",)
+
+
+def test_parse_failure_gets_one_successful_repair_pass() -> None:
+    request = _generation_request()
+    runtime = _TrackingContractRuntime(
+        responses=[
+            _response(
+                request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state",
+                output_text="NOT_A_VALID_PROPOSAL_LINE",
+            ),
+            _response(
+                request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state:repair-1",
+                output_text=(
+                    "PROPOSAL_COUNT: 1\n"
+                    "SCARCITY_REASON: Only one serious path is currently grounded.\n"
+                    "OPTION_1_TYPE: investigate\n"
+                    "OPTION_1_TITLE: Confirm the blocker directly\n"
+                    "OPTION_1_SUMMARY: Run one bounded investigation against the blocker.\n"
+                    "OPTION_1_WHY_NOW: The blocker still prevents a stronger proposal set.\n"
+                    "OPTION_1_ASSUMPTIONS: The blocker can be inspected quickly\n"
+                    "OPTION_1_RISKS: Investigation may confirm no viable path\n"
+                    "OPTION_1_CONSTRAINTS: Stay inside the current work unit\n"
+                    "OPTION_1_BLOCKERS: Direct change remains blocked\n"
+                    "OPTION_1_PLANNING_NEEDED: no\n"
+                    "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
+                    "OPTION_1_REVERSIBILITY: Fully reversible\n"
+                    "OPTION_1_SUPPORT_REFS: ctx-1,research-2\n"
+                ),
+            ),
+        ]
     )
+
+    result = run_proposal_generation_pipeline(
+        request,
+        infrastructure_services=_FakeServices(runtime),
+    )
+
+    assert isinstance(result, ProposalPipelineSuccess)
+    assert result.repair_attempted is True
+    assert result.initial_failure_stage == "parse"
+    assert result.initial_raw_result is not None
+    assert len(runtime.invoke_calls) == 2
+    assert runtime.invoke_calls[1].purpose == "proposal_generation_step1_repair"
+
+
+def test_validation_failure_gets_one_successful_repair_pass() -> None:
+    request = _generation_request()
+    runtime = _TrackingContractRuntime(
+        responses=[
+            _response(
+                request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state",
+                output_text=(
+                    "PROPOSAL_COUNT: 1\n"
+                    "SCARCITY_REASON: Only one serious path is currently grounded.\n"
+                    "OPTION_1_TYPE: direct_action\n"
+                    "OPTION_1_TITLE: Apply the bounded patch\n"
+                    "OPTION_1_SUMMARY: Apply the change now because approval is implied.\n"
+                    "OPTION_1_WHY_NOW: Current support already bounds the change.\n"
+                    "OPTION_1_ASSUMPTIONS: The failing edge is already reproduced\n"
+                    "OPTION_1_RISKS: Small regression risk remains\n"
+                    "OPTION_1_CONSTRAINTS: Stay inside the current project scope\n"
+                    "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
+                    "OPTION_1_PLANNING_NEEDED: no\n"
+                    "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
+                    "OPTION_1_REVERSIBILITY: Straightforward rollback\n"
+                    "OPTION_1_SUPPORT_REFS: ctx-1\n"
+                ),
+            ),
+            _response(
+                request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state:repair-1",
+                output_text=(
+                    "PROPOSAL_COUNT: 1\n"
+                    "SCARCITY_REASON: Only one serious path is currently grounded.\n"
+                    "OPTION_1_TYPE: direct_action\n"
+                    "OPTION_1_TITLE: Apply the bounded patch\n"
+                    "OPTION_1_SUMMARY: Apply the smallest safe patch under current support.\n"
+                    "OPTION_1_WHY_NOW: Current support already bounds the change.\n"
+                    "OPTION_1_ASSUMPTIONS: The failing edge is already reproduced\n"
+                    "OPTION_1_RISKS: Small regression risk remains\n"
+                    "OPTION_1_CONSTRAINTS: Stay inside the current project scope\n"
+                    "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
+                    "OPTION_1_PLANNING_NEEDED: no\n"
+                    "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
+                    "OPTION_1_REVERSIBILITY: Straightforward rollback\n"
+                    "OPTION_1_SUPPORT_REFS: ctx-1\n"
+                ),
+            ),
+        ]
+    )
+
+    result = run_proposal_generation_pipeline(
+        request,
+        infrastructure_services=_FakeServices(runtime),
+    )
+
+    assert isinstance(result, ProposalPipelineSuccess)
+    assert result.repair_attempted is True
+    assert result.initial_failure_stage == "validation"
+    assert tuple(issue.code for issue in result.initial_validation_issues) == ("authority_leakage",)
+    assert len(runtime.invoke_calls) == 2
+
+
+def test_second_attempt_failure_stays_fail_closed_with_final_reason() -> None:
+    request = _generation_request()
+    runtime = _TrackingContractRuntime(
+        responses=[
+            _response(
+                request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state",
+                output_text="NOT_A_VALID_PROPOSAL_LINE",
+            ),
+            _response(
+                request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state:repair-1",
+                output_text="STILL_NOT_VALID",
+            ),
+        ]
+    )
+
+    result = run_proposal_generation_pipeline(
+        request,
+        infrastructure_services=_FakeServices(runtime),
+    )
+
+    assert isinstance(result, ProposalPipelineFailure)
+    assert result.failure_stage == "parse"
+    assert result.repair_attempted is True
+    assert result.initial_failure_stage == "parse"
+    assert "malformed proposal output line" in str(result.error)
+    assert len(runtime.invoke_calls) == 2
 
 
 def test_validated_success_returns_consolidated_primary_proposal_result_shape() -> None:
@@ -143,7 +291,7 @@ def test_validated_success_returns_consolidated_primary_proposal_result_shape() 
             request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state",
             output_text=(
                 "PROPOSAL_COUNT: 2\n"
-                "SCARCITY_REASON: NONE\n"
+                "SCARCITY_REASON: No additional scarcity explanation identified from the provided support.\n"
                 "OPTION_1_TYPE: direct_action\n"
                 "OPTION_1_TITLE: Apply the bounded patch\n"
                 "OPTION_1_SUMMARY: Apply the smallest safe patch now.\n"
@@ -151,7 +299,7 @@ def test_validated_success_returns_consolidated_primary_proposal_result_shape() 
                 "OPTION_1_ASSUMPTIONS: The failing edge is already reproduced\n"
                 "OPTION_1_RISKS: Small regression risk remains\n"
                 "OPTION_1_CONSTRAINTS: Stay inside the current project scope\n"
-                "OPTION_1_BLOCKERS: NONE\n"
+                "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
                 "OPTION_1_PLANNING_NEEDED: no\n"
                 "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
                 "OPTION_1_REVERSIBILITY: Straightforward rollback\n"
@@ -163,7 +311,7 @@ def test_validated_success_returns_consolidated_primary_proposal_result_shape() 
                 "OPTION_2_ASSUMPTIONS: The signal can be collected quickly\n"
                 "OPTION_2_RISKS: Progress slows while evidence is gathered\n"
                 "OPTION_2_CONSTRAINTS: Keep the investigation inside current scope\n"
-                "OPTION_2_BLOCKERS: NONE\n"
+                "OPTION_2_BLOCKERS: No explicit blockers identified from the provided support.\n"
                 "OPTION_2_PLANNING_NEEDED: no\n"
                 "OPTION_2_FEASIBILITY: Feasible with current tools\n"
                 "OPTION_2_REVERSIBILITY: Investigation only\n"
@@ -188,6 +336,7 @@ def test_validated_success_returns_consolidated_primary_proposal_result_shape() 
 @dataclass
 class _TrackingContractRuntime:
     response: ModelResponse | None = None
+    responses: list[ModelResponse] = field(default_factory=list)
     raised_exception: Exception | None = None
     invoke_calls: list[ContractCallRequest] = field(default_factory=list)
     invoke_with_request_calls: list[tuple[object, str]] = field(default_factory=list)
@@ -196,6 +345,8 @@ class _TrackingContractRuntime:
         self.invoke_calls.append(call)
         if self.raised_exception is not None:
             raise self.raised_exception
+        if self.responses:
+            return self.responses.pop(0)
         assert self.response is not None
         return self.response
 

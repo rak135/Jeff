@@ -143,7 +143,7 @@ def test_research_json_payload_exposes_truth_and_support_without_provider_specif
     assert payload["support"]["artifact_id"].startswith("research-")
 
     interface_sources = [
-        Path("jeff/interface/commands.py"),
+        Path("jeff/interface/commands/registry.py"),
         Path("jeff/interface/json_views.py"),
         Path("jeff/interface/render.py"),
         Path("jeff/interface/cli.py"),

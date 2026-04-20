@@ -1,0 +1,78 @@
+{
+  "action_scope": {
+    "project_id": "project-1",
+    "run_id": "run-2",
+    "work_unit_id": "wu-1"
+  },
+  "basis_state_version": 8,
+  "governance_approval": {
+    "action_binding_key": null,
+    "action_id": null,
+    "approval_verdict": "not_required",
+    "basis_state_version": null
+  },
+  "governance_policy": {
+    "action_forbidden": false,
+    "approval_required": false,
+    "destructive": false,
+    "direction_sensitive": false,
+    "freshness_sensitive": true,
+    "protected_surface": false,
+    "revalidation_required": false
+  },
+  "governance_truth": {
+    "blocked_reasons": [],
+    "degraded_truth": false,
+    "direction_ok": true,
+    "requires_revalidation": false,
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-2",
+      "work_unit_id": "wu-1"
+    },
+    "state_version": 8,
+    "target_available": true,
+    "truth_mismatch": false
+  },
+  "operator_override": null,
+  "proposal_result": {
+    "options": [
+      {
+        "assumptions": [],
+        "blockers": [],
+        "constraints": [],
+        "feasibility": null,
+        "main_risks": [],
+        "option_index": 1,
+        "planning_needed": false,
+        "proposal_id": "proposal-1",
+        "proposal_type": "direct_action",
+        "reversibility": null,
+        "summary": "Perform the validation of the repository local path as specified by the trigger.",
+        "support_refs": [],
+        "title": "Validate repository local path",
+        "why_now": "The objective requires validation of the repo local path to support action preparation."
+      }
+    ],
+    "request_id": "proposal-generation:project-1:wu-1:run-2:validate-repo-local-path",
+    "scarcity_reason": "Only one direct candidate path exists to satisfy the objective given the absence of additional research or constraints.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-2",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "record_class": "selection_review_support",
+  "recorded_at": "2026-04-19T20:28:52+00:00",
+  "run_id": "run-2",
+  "schema_version": "1.0",
+  "selection_result": {
+    "considered_proposal_ids": [
+      "proposal-1"
+    ],
+    "non_selection_outcome": null,
+    "rationale": "selected proposal-1 because it stays within bounded choice with low assumption burden and no unresolved blockers or material burden.",
+    "selected_proposal_id": "proposal-1",
+    "selection_id": "run-2:selection"
+  }
+}

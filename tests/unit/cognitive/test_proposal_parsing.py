@@ -57,15 +57,15 @@ def test_parse_two_option_output() -> None:
     result = parse_proposal_generation_result(
         _raw_result(
             "PROPOSAL_COUNT: 2\n"
-            "SCARCITY_REASON: NONE\n"
+            "SCARCITY_REASON: No additional scarcity explanation identified from the provided support.\n"
             "OPTION_1_TYPE: direct_action\n"
             "OPTION_1_TITLE: Apply the bounded patch\n"
             "OPTION_1_SUMMARY: Make the small safe change now.\n"
             "OPTION_1_WHY_NOW: The path is already supported.\n"
-            "OPTION_1_ASSUMPTIONS: NONE\n"
+            "OPTION_1_ASSUMPTIONS: No explicit assumptions identified from the provided support.\n"
             "OPTION_1_RISKS: Small rollback cost\n"
             "OPTION_1_CONSTRAINTS: Current scope only\n"
-            "OPTION_1_BLOCKERS: NONE\n"
+            "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
             "OPTION_1_PLANNING_NEEDED: no\n"
             "OPTION_1_FEASIBILITY: High under current support\n"
             "OPTION_1_REVERSIBILITY: Straightforward rollback\n"
@@ -77,7 +77,7 @@ def test_parse_two_option_output() -> None:
             "OPTION_2_ASSUMPTIONS: The signal can be gathered quickly\n"
             "OPTION_2_RISKS: Slower progress\n"
             "OPTION_2_CONSTRAINTS: Must stay inside current work unit\n"
-            "OPTION_2_BLOCKERS: NONE\n"
+            "OPTION_2_BLOCKERS: No explicit blockers identified from the provided support.\n"
             "OPTION_2_PLANNING_NEEDED: no\n"
             "OPTION_2_FEASIBILITY: Feasible with current tools\n"
             "OPTION_2_REVERSIBILITY: Investigation only\n"
@@ -94,15 +94,15 @@ def test_parse_three_option_output() -> None:
     result = parse_proposal_generation_result(
         _raw_result(
             "PROPOSAL_COUNT: 3\n"
-            "SCARCITY_REASON: NONE\n"
+            "SCARCITY_REASON: No additional scarcity explanation identified from the provided support.\n"
             "OPTION_1_TYPE: direct_action\n"
             "OPTION_1_TITLE: Apply the patch\n"
             "OPTION_1_SUMMARY: Do the small change now.\n"
             "OPTION_1_WHY_NOW: Current support is sufficient.\n"
-            "OPTION_1_ASSUMPTIONS: NONE\n"
+            "OPTION_1_ASSUMPTIONS: No explicit assumptions identified from the provided support.\n"
             "OPTION_1_RISKS: Small regression risk\n"
             "OPTION_1_CONSTRAINTS: Current project only\n"
-            "OPTION_1_BLOCKERS: NONE\n"
+            "OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\n"
             "OPTION_1_PLANNING_NEEDED: no\n"
             "OPTION_1_FEASIBILITY: High\n"
             "OPTION_1_REVERSIBILITY: Good\n"
@@ -114,7 +114,7 @@ def test_parse_three_option_output() -> None:
             "OPTION_2_ASSUMPTIONS: Multi-step work is actually needed\n"
             "OPTION_2_RISKS: Planning overhead\n"
             "OPTION_2_CONSTRAINTS: Review checkpoints required\n"
-            "OPTION_2_BLOCKERS: NONE\n"
+            "OPTION_2_BLOCKERS: No explicit blockers identified from the provided support.\n"
             "OPTION_2_PLANNING_NEEDED: yes\n"
             "OPTION_2_FEASIBILITY: Moderate\n"
             "OPTION_2_REVERSIBILITY: High before execution\n"
@@ -123,7 +123,7 @@ def test_parse_three_option_output() -> None:
             "OPTION_3_TITLE: Escalate the judgment boundary\n"
             "OPTION_3_SUMMARY: Bring the risk tradeoff to the operator.\n"
             "OPTION_3_WHY_NOW: Autonomous choice would cross a judgment boundary.\n"
-            "OPTION_3_ASSUMPTIONS: NONE\n"
+            "OPTION_3_ASSUMPTIONS: No explicit assumptions identified from the provided support.\n"
             "OPTION_3_RISKS: Slower decision velocity\n"
             "OPTION_3_CONSTRAINTS: Requires operator attention\n"
             "OPTION_3_BLOCKERS: Judgment boundary remains unresolved\n"
@@ -146,7 +146,7 @@ def test_missing_required_markers_fail_explicitly() -> None:
     with pytest.raises(ProposalGenerationParseError, match="missing SCARCITY_REASON"):
         parse_proposal_generation_result(_raw_result("PROPOSAL_COUNT: 0\n"))
 
-    with pytest.raises(ProposalGenerationParseError, match="missing required fields"):
+    with pytest.raises(ProposalGenerationParseError, match="must contain exactly 14 non-empty lines"):
         parse_proposal_generation_result(
             _raw_result(
                 "PROPOSAL_COUNT: 1\n"
@@ -170,7 +170,7 @@ def test_option_field_extraction_is_deterministic() -> None:
             "OPTION_1_CONSTRAINTS: Must stay bounded to current ask\n"
             "OPTION_1_BLOCKERS: Scope remains ambiguous\n"
             "OPTION_1_PLANNING_NEEDED: no\n"
-            "OPTION_1_FEASIBILITY: NONE\n"
+            "OPTION_1_FEASIBILITY: No explicit feasibility statement identified from the provided support.\n"
             "OPTION_1_REVERSIBILITY: Fully reversible\n"
             "OPTION_1_SUPPORT_REFS: ctx-1,research-4\n",
         )
@@ -181,6 +181,50 @@ def test_option_field_extraction_is_deterministic() -> None:
     assert option.feasibility is None
     assert option.reversibility == "Fully reversible"
     assert option.support_refs == ("ctx-1", "research-4")
+
+
+def test_parser_rejects_legacy_none_markers_explicitly() -> None:
+    with pytest.raises(ProposalGenerationParseError, match="legacy NONE"):
+        parse_proposal_generation_result(
+            _raw_result(
+                "PROPOSAL_COUNT: 1\n"
+                "SCARCITY_REASON: Only one path remains.\n"
+                "OPTION_1_TYPE: investigate\n"
+                "OPTION_1_TITLE: Confirm the blocker\n"
+                "OPTION_1_SUMMARY: Run a bounded investigation.\n"
+                "OPTION_1_WHY_NOW: Current contradiction blocks stronger action.\n"
+                "OPTION_1_ASSUMPTIONS: NONE\n"
+                "OPTION_1_RISKS: Investigation may confirm no viable path\n"
+                "OPTION_1_CONSTRAINTS: Stay inside project scope\n"
+                "OPTION_1_BLOCKERS: Direct action remains blocked\n"
+                "OPTION_1_PLANNING_NEEDED: no\n"
+                "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
+                "OPTION_1_REVERSIBILITY: Fully reversible\n"
+                "OPTION_1_SUPPORT_REFS: ctx-1,research-2\n",
+            )
+        )
+
+
+def test_parser_rejects_field_order_drift_explicitly() -> None:
+    with pytest.raises(ProposalGenerationParseError, match="field order drifted"):
+        parse_proposal_generation_result(
+            _raw_result(
+                "PROPOSAL_COUNT: 1\n"
+                "SCARCITY_REASON: Only one path remains.\n"
+                "OPTION_1_TYPE: investigate\n"
+                "OPTION_1_TITLE: Confirm the blocker\n"
+                "OPTION_1_SUMMARY: Run a bounded investigation.\n"
+                "OPTION_1_WHY_NOW: Current contradiction blocks stronger action.\n"
+                "OPTION_1_RISKS: Investigation may confirm no viable path\n"
+                "OPTION_1_ASSUMPTIONS: The blocker is inspectable\n"
+                "OPTION_1_CONSTRAINTS: Stay inside project scope\n"
+                "OPTION_1_BLOCKERS: Direct action remains blocked\n"
+                "OPTION_1_PLANNING_NEEDED: no\n"
+                "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
+                "OPTION_1_REVERSIBILITY: Fully reversible\n"
+                "OPTION_1_SUPPORT_REFS: ctx-1,research-2\n",
+            )
+        )
 
 
 def test_parser_consumes_slice_d_raw_result_surface_without_runtime() -> None:

@@ -10,6 +10,7 @@
 
 - Groups the bounded post-Selection bridge into one dedicated package.
 - Carries the deterministic bridge objects and transformations from `SelectionResult` plus optional override through resolved basis, materialized effective proposal, explicit next-stage resolution, formed `Action`, and governance handoff.
+- Owns pure selection-review reconstruction and recomputation from preserved Selection, proposal, execution, and governance outputs without taking over Interface persistence concerns.
 
 # Boundaries / Non-Ownership
 
@@ -30,6 +31,7 @@
 - `jeff/cognitive/post_selection/research_to_decision_support_bridge.py`
 - `jeff/cognitive/post_selection/research_to_proposal_consumer.py`
 - `jeff/cognitive/post_selection/governance_handoff.py`
+- `jeff/cognitive/post_selection/selection_review.py`
 - `jeff/cognitive/post_selection/next_stage_resolution.py`
 - `jeff/cognitive/post_selection/HANDOFF.md`
 
@@ -37,6 +39,7 @@
 
 - This package was extracted from the flat `jeff/cognitive/` layout for package hygiene and clearer ownership.
 - The bridge remains deterministic and structural: Selection output stays separate from override choice, resolved basis, effective proposal materialization, explicit next-stage routing, Action formation, and governance handoff.
+- Pure selection-review reconstruction now lives here as a downstream recomputation helper; Interface may persist `SelectionReviewRecord` instances, but it should not own their reconstruction semantics.
 - Orchestrator now consumes the explicit next-stage routing result after effective proposal materialization.
 - The `governance` route continues into `action_formation` and `governance_handoff`.
 - The `planning` route is no longer only a structural routing label: orchestrator may now enter the existing planning stage and preserve a bounded `PlanArtifact`.
@@ -62,6 +65,7 @@
 # Important Invariants
 
 - The package starts from `SelectionResult` and optional operator override; it does not redefine Selection truth.
+- Selection-review reconstruction stays downstream of preserved Selection/proposal/governance outputs; it does not grant permission or mutate truth.
 - Resolved basis stays separate from effective proposal materialization.
 - Explicit next-stage resolution stays separate from Action formation.
 - Effective proposal materialization stays separate from Action formation.
@@ -79,6 +83,7 @@
 - Missing runtime/context inputs for post-selection proposal generation must hold truthfully at the proposal-input boundary instead of guessing or silently skipping the missing requirement.
 - Governance handoff stays separate from governance policy semantics and from execution.
 - The package does not own planning semantics, research-followup semantics, governance semantics, or execution semantics.
+- The package does not own Interface runtime-store persistence or CLI session behavior.
 - No bridge step implies approval or execution start.
 - Research-followup re-entry from continued post-research Selection output must fail closed at an explicit anti-loop boundary unless a later dedicated slice lawfully adds that recursion.
 

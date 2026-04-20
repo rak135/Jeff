@@ -1,0 +1,333 @@
+{
+  "artifact_family": "evidence_bundle",
+  "artifact_id": "artifact-40af7a0f2b804520",
+  "claim_evidence_links": [
+    {
+      "claim_text": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_ids": [
+        "research-7371fa5f1589b534:evidence:1",
+        "research-7371fa5f1589b534:evidence:2",
+        "research-7371fa5f1589b534:evidence:3",
+        "research-7371fa5f1589b534:evidence:4",
+        "research-7371fa5f1589b534:evidence:5",
+        "research-7371fa5f1589b534:evidence:6",
+        "research-7371fa5f1589b534:evidence:7",
+        "research-7371fa5f1589b534:evidence:8",
+        "research-7371fa5f1589b534:evidence:9",
+        "research-7371fa5f1589b534:evidence:10",
+        "research-7371fa5f1589b534:evidence:11",
+        "research-7371fa5f1589b534:evidence:12",
+        "research-7371fa5f1589b534:evidence:13",
+        "research-7371fa5f1589b534:evidence:14",
+        "research-7371fa5f1589b534:evidence:15",
+        "research-7371fa5f1589b534:evidence:16"
+      ]
+    },
+    {
+      "claim_text": "Its primary implemented operator surface is the CLI under jeff.interface.",
+      "evidence_ids": [
+        "research-7371fa5f1589b534:evidence:1",
+        "research-7371fa5f1589b534:evidence:2",
+        "research-7371fa5f1589b534:evidence:3",
+        "research-7371fa5f1589b534:evidence:4",
+        "research-7371fa5f1589b534:evidence:5",
+        "research-7371fa5f1589b534:evidence:6",
+        "research-7371fa5f1589b534:evidence:7",
+        "research-7371fa5f1589b534:evidence:8",
+        "research-7371fa5f1589b534:evidence:9",
+        "research-7371fa5f1589b534:evidence:10",
+        "research-7371fa5f1589b534:evidence:11",
+        "research-7371fa5f1589b534:evidence:12",
+        "research-7371fa5f1589b534:evidence:13",
+        "research-7371fa5f1589b534:evidence:14",
+        "research-7371fa5f1589b534:evidence:15",
+        "research-7371fa5f1589b534:evidence:16"
+      ]
+    },
+    {
+      "claim_text": "Startup loads or initializes a persisted local runtime workspace under .jeff_runtime.",
+      "evidence_ids": [
+        "research-7371fa5f1589b534:evidence:1",
+        "research-7371fa5f1589b534:evidence:2",
+        "research-7371fa5f1589b534:evidence:3",
+        "research-7371fa5f1589b534:evidence:4",
+        "research-7371fa5f1589b534:evidence:5",
+        "research-7371fa5f1589b534:evidence:6",
+        "research-7371fa5f1589b534:evidence:7",
+        "research-7371fa5f1589b534:evidence:8",
+        "research-7371fa5f1589b534:evidence:9",
+        "research-7371fa5f1589b534:evidence:10",
+        "research-7371fa5f1589b534:evidence:11",
+        "research-7371fa5f1589b534:evidence:12",
+        "research-7371fa5f1589b534:evidence:13",
+        "research-7371fa5f1589b534:evidence:14",
+        "research-7371fa5f1589b534:evidence:15",
+        "research-7371fa5f1589b534:evidence:16"
+      ]
+    },
+    {
+      "claim_text": "The system is not a GUI, a broad API surface, an autonomous continuation system, or a broad memory product.",
+      "evidence_ids": [
+        "research-7371fa5f1589b534:evidence:1",
+        "research-7371fa5f1589b534:evidence:2",
+        "research-7371fa5f1589b534:evidence:3",
+        "research-7371fa5f1589b534:evidence:4",
+        "research-7371fa5f1589b534:evidence:5",
+        "research-7371fa5f1589b534:evidence:6",
+        "research-7371fa5f1589b534:evidence:7",
+        "research-7371fa5f1589b534:evidence:8",
+        "research-7371fa5f1589b534:evidence:9",
+        "research-7371fa5f1589b534:evidence:10",
+        "research-7371fa5f1589b534:evidence:11",
+        "research-7371fa5f1589b534:evidence:12",
+        "research-7371fa5f1589b534:evidence:13",
+        "research-7371fa5f1589b534:evidence:14",
+        "research-7371fa5f1589b534:evidence:15",
+        "research-7371fa5f1589b534:evidence:16"
+      ]
+    },
+    {
+      "claim_text": "A local jeff.runtime.toml enables the research commands and the bounded repo-local validation /run path.",
+      "evidence_ids": [
+        "research-7371fa5f1589b534:evidence:1",
+        "research-7371fa5f1589b534:evidence:2",
+        "research-7371fa5f1589b534:evidence:3",
+        "research-7371fa5f1589b534:evidence:4",
+        "research-7371fa5f1589b534:evidence:5",
+        "research-7371fa5f1589b534:evidence:6",
+        "research-7371fa5f1589b534:evidence:7",
+        "research-7371fa5f1589b534:evidence:8",
+        "research-7371fa5f1589b534:evidence:9",
+        "research-7371fa5f1589b534:evidence:10",
+        "research-7371fa5f1589b534:evidence:11",
+        "research-7371fa5f1589b534:evidence:12",
+        "research-7371fa5f1589b534:evidence:13",
+        "research-7371fa5f1589b534:evidence:14",
+        "research-7371fa5f1589b534:evidence:15",
+        "research-7371fa5f1589b534:evidence:16"
+      ]
+    }
+  ],
+  "comparison_criteria": [],
+  "comparison_targets": [],
+  "derived_from_artifact_ids": [
+    "research-7371fa5f1589b534"
+  ],
+  "effective_date": null,
+  "effective_period": null,
+  "event_date": null,
+  "event_framing": null,
+  "evidence_items": [
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:1",
+      "evidence_text": "# Jeff",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:2",
+      "evidence_text": "Jeff is a CLI-first persisted-runtime v1 backbone. It is strongest today at truthful inspection, bounded `/run`, approval-gated continuation, research support, and anti-drift coverage. It is not a GUI, a broad API surface, an autonomous continuation system, or a broad memory product.",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:3",
+      "evidence_text": "```text python -m jeff ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:4",
+      "evidence_text": "After `pip install -e .` the `jeff` console script is also available as a bare command; without the install, use `python -m jeff`.",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:5",
+      "evidence_text": "Startup loads or initializes a persisted local runtime workspace under `.jeff_runtime`. On a fresh or reset runtime, Jeff initializes `project-1` / `wu-1` with no seeded run history; later startups reload the persisted canonical state and support records already present in that workspace. No daemon, GUI, or background continuation is started.",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:6",
+      "evidence_text": "A local `jeff.runtime.toml` enables the bounded repo-local validation `/run <repo-local-validation-objective>` path and the research commands. Without it, the read-oriented CLI still works, but `/run <repo-local-validation-objective>` and `/research ...` remain unavailable.",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:7",
+      "evidence_text": "```text python -m jeff --help python -m jeff --bootstrap-check python -m jeff --reset-runtime --bootstrap-check ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:8",
+      "evidence_text": "```text python -m jeff --command \"/help\" python -m jeff --command \"/project list\" python -m jeff --project project-1 --work wu-1 --command \"/run list\" --json ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:9",
+      "evidence_text": "```powershell python -m jeff --command \"/research docs `\"`\"summary`\"`\" README.md\" ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:10",
+      "evidence_text": "```text python -m jeff ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:11",
+      "evidence_text": "The primary implemented operator surface is the CLI under `jeff.interface`.",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:12",
+      "evidence_text": "- `/run <repo-local-validation-objective>` is the current bounded repo-local validation entry when `jeff.runtime.toml` is loaded. It drives one fixed smoke pytest validation plan with captured command evidence; it is not a general command runner. - `approve` records a bound approval, `revalidate` continues or fails closed, and `reject` terminally blocks that continuation for the current bounded ru",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:13",
+      "evidence_text": "```text powershell -ExecutionPolicy Bypass -File .\\scripts\\windows-postgres-memory-preflight.ps1 -Dsn \"postgresql://user:pass@localhost:5432/jeff_test\" ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:14",
+      "evidence_text": "```text $env:JEFF_TEST_POSTGRES_DSN=\"postgresql://user:pass@localhost:5432/jeff_test\" .\\.venv\\Scripts\\python.exe -m pytest tests\\integration\\memory\\test_postgres_memory.py -v ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:15",
+      "evidence_text": "```text $env:JEFF_TEST_POSTGRES_DSN=\"postgresql://user:pass@localhost:5432/jeff_test\" .\\.venv\\Scripts\\python.exe -m pytest tests\\unit\\memory tests\\integration\\memory -q ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-7371fa5f1589b534:evidence:16",
+      "evidence_text": "- `v1_doc/ARCHITECTURE.md` - `v1_doc/ROADMAP_V1.md` - `v1_doc/TESTS_PLAN.md` - `v1_doc/HANDOFF_STRUCTURE.md` - `v1_doc/DOCS_GOVERNANCE.md`",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    }
+  ],
+  "evidence_refs": [
+    "research-7371fa5f1589b534:evidence:1",
+    "research-7371fa5f1589b534:evidence:2",
+    "research-7371fa5f1589b534:evidence:3",
+    "research-7371fa5f1589b534:evidence:4",
+    "research-7371fa5f1589b534:evidence:5",
+    "research-7371fa5f1589b534:evidence:6",
+    "research-7371fa5f1589b534:evidence:7",
+    "research-7371fa5f1589b534:evidence:8",
+    "research-7371fa5f1589b534:evidence:9",
+    "research-7371fa5f1589b534:evidence:10",
+    "research-7371fa5f1589b534:evidence:11",
+    "research-7371fa5f1589b534:evidence:12",
+    "research-7371fa5f1589b534:evidence:13",
+    "research-7371fa5f1589b534:evidence:14",
+    "research-7371fa5f1589b534:evidence:15",
+    "research-7371fa5f1589b534:evidence:16"
+  ],
+  "findings": [
+    "Jeff is a CLI-first persisted-runtime v1 backbone.",
+    "Its primary implemented operator surface is the CLI under jeff.interface.",
+    "Startup loads or initializes a persisted local runtime workspace under .jeff_runtime.",
+    "The system is not a GUI, a broad API surface, an autonomous continuation system, or a broad memory product.",
+    "A local jeff.runtime.toml enables the research commands and the bounded repo-local validation /run path."
+  ],
+  "freshness_posture": null,
+  "generated_at": "2026-04-19T19:25:11.111296+00:00",
+  "inference": [
+    "Jeff's architecture relies on a local filesystem-based state management system via the .jeff_runtime directory."
+  ],
+  "next_history_record_id": null,
+  "observed_date": null,
+  "previous_history_record_id": null,
+  "project_id": "project-1",
+  "question_or_objective": "what is Jeff architecture",
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_groupings": [],
+  "source_ordering": [],
+  "source_refs": [
+    "document-81eea87a35d7"
+  ],
+  "source_selection_scope": null,
+  "staleness_sensitivity": "medium",
+  "summary": "Evidence extracted for this bounded research output remains inspectable with provenance preserved.",
+  "support_only": true,
+  "title": "Evidence bundle: what is Jeff architecture",
+  "uncertainty": [
+    "No explicit uncertainties identified from the provided evidence."
+  ],
+  "work_unit_id": "wu-1"
+}
