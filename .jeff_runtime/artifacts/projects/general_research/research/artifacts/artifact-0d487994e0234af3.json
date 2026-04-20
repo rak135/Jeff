@@ -1,0 +1,107 @@
+{
+  "artifact_family": "evidence_bundle",
+  "artifact_id": "artifact-0d487994e0234af3",
+  "claim_evidence_links": [
+    {
+      "claim_text": "Jeff initializes a workspace under `.jeff_runtime`, creating `project-1` / `wu-1` with no seeded run history on fresh or reset runtimes, while later startups reload persisted canonical state and support records.",
+      "evidence_ids": [
+        "research-2cbb6dbf21ab48d4:evidence:1",
+        "research-2cbb6dbf21ab48d4:evidence:2",
+        "research-2cbb6dbf21ab48d4:evidence:3"
+      ]
+    },
+    {
+      "claim_text": "The system does not start a GUI, daemon, or background continuation during startup.",
+      "evidence_ids": [
+        "research-2cbb6dbf21ab48d4:evidence:1",
+        "research-2cbb6dbf21ab48d4:evidence:2",
+        "research-2cbb6dbf21ab48d4:evidence:3"
+      ]
+    },
+    {
+      "claim_text": "Jeff is described as a CLI-first persisted-runtime v1 backbone rather than a GUI, a broad API surface, an autonomous continuation system, or a broad memo.",
+      "evidence_ids": [
+        "research-2cbb6dbf21ab48d4:evidence:1",
+        "research-2cbb6dbf21ab48d4:evidence:2",
+        "research-2cbb6dbf21ab48d4:evidence:3"
+      ]
+    }
+  ],
+  "comparison_criteria": [],
+  "comparison_targets": [],
+  "derived_from_artifact_ids": [
+    "research-2cbb6dbf21ab48d4"
+  ],
+  "effective_date": null,
+  "effective_period": null,
+  "event_date": null,
+  "event_framing": null,
+  "evidence_items": [
+    {
+      "caution": null,
+      "claim": "Jeff initializes a workspace under `.jeff_runtime`, creating `project-1` / `wu-1` with no seeded run history on fresh or reset runtimes, while later startups reload persisted canonical state and support records.",
+      "evidence_id": "research-2cbb6dbf21ab48d4:evidence:1",
+      "evidence_text": "Startup loads or initializes a persisted local runtime workspace under `.jeff_runtime`. On a fresh or reset runtime, Jeff initializes `project-1` / `wu-1` with no seeded run history; later startups reload the persisted canonical state and support records already present in that workspace. No daemon, GUI, or background continuation is started.",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff initializes a workspace under `.jeff_runtime`, creating `project-1` / `wu-1` with no seeded run history on fresh or reset runtimes, while later startups reload persisted canonical state and support records.",
+      "evidence_id": "research-2cbb6dbf21ab48d4:evidence:2",
+      "evidence_text": "Core startup checks:",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Jeff initializes a workspace under `.jeff_runtime`, creating `project-1` / `wu-1` with no seeded run history on fresh or reset runtimes, while later startups reload persisted canonical state and support records.",
+      "evidence_id": "research-2cbb6dbf21ab48d4:evidence:3",
+      "evidence_text": "```powershell python -m jeff --command \"/research docs `\"`\"summary`\"`\" README.md\" ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    }
+  ],
+  "evidence_refs": [
+    "research-2cbb6dbf21ab48d4:evidence:1",
+    "research-2cbb6dbf21ab48d4:evidence:2",
+    "research-2cbb6dbf21ab48d4:evidence:3"
+  ],
+  "findings": [
+    "Jeff initializes a workspace under `.jeff_runtime`, creating `project-1` / `wu-1` with no seeded run history on fresh or reset runtimes, while later startups reload persisted canonical state and support records.",
+    "The system does not start a GUI, daemon, or background continuation during startup.",
+    "Jeff is described as a CLI-first persisted-runtime v1 backbone rather than a GUI, a broad API surface, an autonomous continuation system, or a broad memo."
+  ],
+  "freshness_posture": null,
+  "generated_at": "2026-04-20T19:44:00.899383+00:00",
+  "inference": [
+    "The system relies on local filesystem persistence to maintain state between sessions."
+  ],
+  "next_history_record_id": null,
+  "observed_date": null,
+  "previous_history_record_id": null,
+  "project_id": "general_research",
+  "question_or_objective": "startup summary",
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_groupings": [],
+  "source_ordering": [],
+  "source_refs": [
+    "document-81eea87a35d7"
+  ],
+  "source_selection_scope": null,
+  "staleness_sensitivity": "medium",
+  "summary": "Evidence extracted for this bounded research output remains inspectable with provenance preserved.",
+  "support_only": true,
+  "title": "Evidence bundle: startup summary",
+  "uncertainty": [
+    "No explicit uncertainties identified from the provided evidence."
+  ],
+  "work_unit_id": "research-docs-startup-summary-43bf0309"
+}

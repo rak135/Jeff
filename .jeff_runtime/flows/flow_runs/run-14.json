@@ -1,0 +1,235 @@
+{
+  "events": [
+    {
+      "emitted_at": "2026-04-20T19:49:34+00:00",
+      "event_type": "flow_started",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 1,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-14",
+        "work_unit_id": "wu-1"
+      },
+      "stage": null,
+      "summary": "flow flow:run-14 started"
+    },
+    {
+      "emitted_at": "2026-04-20T19:49:34+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 2,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-14",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "context",
+      "summary": "entered context"
+    },
+    {
+      "emitted_at": "2026-04-20T19:49:34+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 3,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-14",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "context",
+      "summary": "exited context"
+    },
+    {
+      "emitted_at": "2026-04-20T19:49:34+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 4,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-14",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "proposal",
+      "summary": "entered proposal"
+    },
+    {
+      "emitted_at": "2026-04-20T19:49:56+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 5,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-14",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "proposal",
+      "summary": "exited proposal"
+    },
+    {
+      "emitted_at": "2026-04-20T19:49:56+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 6,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-14",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "entered selection via deterministic path"
+    },
+    {
+      "emitted_at": "2026-04-20T19:49:56+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 7,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-14",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "exited selection via deterministic path"
+    },
+    {
+      "emitted_at": "2026-04-20T19:49:56+00:00",
+      "event_type": "routing_decision",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 8,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-14",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "defer: Next stage is terminal_non_selection because selection returned defer. This remains a terminal non-execution path in the current slice."
+    }
+  ],
+  "lifecycle": {
+    "current_stage": "selection",
+    "flow_family": "conditional_planning_execution",
+    "flow_id": "flow:run-14",
+    "lifecycle_state": "completed",
+    "reason_summary": "Next stage is terminal_non_selection because selection returned defer. This remains a terminal non-execution path in the current slice.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-14",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "memory_handoff_attempted": true,
+  "memory_handoff_note": "automatic run memory handoff completed with outcome defer",
+  "memory_handoff_result": {
+    "candidate_id": "run-memory-eea988b7644f",
+    "memory_id": null,
+    "reasons": [
+      "support is not yet stable or strong enough for committed memory"
+    ],
+    "write_outcome": "defer"
+  },
+  "objective_summary": "Investigate why the literal labels are being surfaced and propose a bounded fix.",
+  "outputs": {
+    "governance_approval": {
+      "kind": "approval",
+      "value": {
+        "action_binding_key": null,
+        "action_id": null,
+        "approval_verdict": "not_required",
+        "basis_state_version": null
+      }
+    },
+    "governance_policy": {
+      "kind": "policy",
+      "value": {
+        "action_forbidden": false,
+        "approval_required": false,
+        "destructive": false,
+        "direction_sensitive": false,
+        "freshness_sensitive": true,
+        "protected_surface": false,
+        "revalidation_required": false
+      }
+    },
+    "governance_truth": {
+      "kind": "current_truth_snapshot",
+      "value": {
+        "blocked_reasons": [],
+        "degraded_truth": false,
+        "direction_ok": true,
+        "requires_revalidation": false,
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-14",
+          "work_unit_id": "wu-1"
+        },
+        "state_version": 36,
+        "target_available": true,
+        "truth_mismatch": false
+      }
+    },
+    "proposal": {
+      "kind": "proposal_result",
+      "value": {
+        "options": [
+          {
+            "assumptions": [],
+            "blockers": [],
+            "constraints": [
+              "The current /run path is limited to one bounded repo-local validation plan and is not a general execution surface"
+            ],
+            "feasibility": null,
+            "main_risks": [],
+            "option_index": 1,
+            "planning_needed": true,
+            "proposal_id": "proposal-1",
+            "proposal_type": "investigate",
+            "reversibility": null,
+            "summary": "Conduct a bounded investigation to identify why literal labels are being surfaced and determine the necessary fix.",
+            "support_refs": [
+              "visible_constraint:1",
+              "visible_constraint:2"
+            ],
+            "title": "Investigate literal label surfacing cause",
+            "why_now": "This is the primary objective required to move toward a bounded fix."
+          }
+        ],
+        "request_id": "proposal-generation:project-1:wu-1:run-14:investigate-why-the-literal-labels-are-being-surfaced-and-propose-a-bounded-fix",
+        "scarcity_reason": "The objective requires an investigation into literal labels, but the available support provides only general governance constraints on execution paths and no evidence regarding the cause of the labels.",
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-14",
+          "work_unit_id": "wu-1"
+        }
+      }
+    },
+    "selection": {
+      "kind": "selection_result",
+      "value": {
+        "considered_proposal_ids": [
+          "proposal-1"
+        ],
+        "non_selection_outcome": "defer",
+        "rationale": "defer because proposal-1 shows that bounded clarification, investigation, or another precondition is still needed before honest choice.",
+        "selected_proposal_id": null,
+        "selection_id": "run-14:selection"
+      }
+    }
+  },
+  "record_class": "flow_run_support",
+  "recorded_at": "2026-04-20T19:49:56+00:00",
+  "routing_decision": {
+    "auto_execute": false,
+    "reason_summary": "Next stage is terminal_non_selection because selection returned defer. This remains a terminal non-execution path in the current slice.",
+    "route_kind": "stop",
+    "routed_outcome": "defer",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-14",
+      "work_unit_id": "wu-1"
+    },
+    "source_stage": "selection"
+  },
+  "run_id": "run-14",
+  "schema_version": "1.0",
+  "selection_failure": null
+}

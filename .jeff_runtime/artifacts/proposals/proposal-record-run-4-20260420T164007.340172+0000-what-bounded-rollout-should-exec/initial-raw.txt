@@ -1,0 +1,2 @@
+PROPOSAL_COUNT: 0
+SCARCITY_REASON: No bounded rollout targets or actionable paths are defined in the provided truth snapshot or research support.

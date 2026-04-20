@@ -1,0 +1,53 @@
+{
+  "action_scope": {
+    "project_id": "project-1",
+    "run_id": "run-6",
+    "work_unit_id": "wu-1"
+  },
+  "basis_state_version": 16,
+  "governance_approval": {
+    "action_binding_key": null,
+    "action_id": null,
+    "approval_verdict": "not_required",
+    "basis_state_version": null
+  },
+  "governance_policy": {
+    "action_forbidden": false,
+    "approval_required": false,
+    "destructive": false,
+    "direction_sensitive": false,
+    "freshness_sensitive": true,
+    "protected_surface": false,
+    "revalidation_required": false
+  },
+  "governance_truth": {
+    "blocked_reasons": [],
+    "degraded_truth": false,
+    "direction_ok": true,
+    "requires_revalidation": false,
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-6",
+      "work_unit_id": "wu-1"
+    },
+    "state_version": 16,
+    "target_available": true,
+    "truth_mismatch": false
+  },
+  "operator_override": null,
+  "proposal_result": {
+    "options": [],
+    "request_id": "proposal-generation:project-1:wu-1:run-6:what-bounded-rollout-should-execute-now",
+    "scarcity_reason": "No bounded rollout targets or validation plans are identified in the provided truth snapshot or support to form a serious candidate path.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-6",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "record_class": "selection_review_support",
+  "recorded_at": "2026-04-20T16:41:42+00:00",
+  "run_id": "run-6",
+  "schema_version": "1.0",
+  "selection_result": null
+}

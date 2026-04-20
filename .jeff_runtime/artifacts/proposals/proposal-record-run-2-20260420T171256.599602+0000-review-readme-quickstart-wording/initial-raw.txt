@@ -1,0 +1,2 @@
+PROPOSAL_COUNT: 0
+SCARCITY_REASON: No README content or quickstart wording was provided in the truth snapshot or support, making it impossible to propose a bounded improvement step.

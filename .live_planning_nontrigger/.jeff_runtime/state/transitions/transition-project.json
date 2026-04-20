@@ -1,0 +1,28 @@
+{
+  "record_class": "transition_audit_support",
+  "recorded_at": "2026-04-20T18:48:12+00:00",
+  "request": {
+    "basis_state_version": 0,
+    "payload": {
+      "name": "Jeff Runtime Project"
+    },
+    "scope": {
+      "project_id": "project-1",
+      "run_id": null,
+      "work_unit_id": null
+    },
+    "transition_id": "transition-project",
+    "transition_type": "create_project"
+  },
+  "result": {
+    "changed_paths": [
+      "projects.project-1"
+    ],
+    "state_after_version": 1,
+    "state_before_version": 0,
+    "transition_id": "transition-project",
+    "transition_result": "committed",
+    "validation_errors": []
+  },
+  "schema_version": "1.0"
+}

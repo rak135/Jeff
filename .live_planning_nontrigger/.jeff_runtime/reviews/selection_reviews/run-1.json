@@ -1,0 +1,86 @@
+{
+  "action_scope": {
+    "project_id": "project-1",
+    "run_id": "run-1",
+    "work_unit_id": "wu-1"
+  },
+  "basis_state_version": 3,
+  "governance_approval": {
+    "action_binding_key": null,
+    "action_id": null,
+    "approval_verdict": "not_required",
+    "basis_state_version": null
+  },
+  "governance_policy": {
+    "action_forbidden": false,
+    "approval_required": false,
+    "destructive": false,
+    "direction_sensitive": false,
+    "freshness_sensitive": true,
+    "protected_surface": false,
+    "revalidation_required": false
+  },
+  "governance_truth": {
+    "blocked_reasons": [],
+    "degraded_truth": false,
+    "direction_ok": true,
+    "requires_revalidation": false,
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-1",
+      "work_unit_id": "wu-1"
+    },
+    "state_version": 3,
+    "target_available": true,
+    "truth_mismatch": false
+  },
+  "operator_override": null,
+  "proposal_result": {
+    "options": [
+      {
+        "assumptions": [
+          "Current support remains stable"
+        ],
+        "blockers": [],
+        "constraints": [
+          "Stay inside the current project scope"
+        ],
+        "feasibility": "High under the current bounded support",
+        "main_risks": [
+          "Small rollback cost"
+        ],
+        "option_index": 1,
+        "planning_needed": false,
+        "proposal_id": "proposal-1",
+        "proposal_type": "direct_action",
+        "reversibility": "Straightforward rollback",
+        "summary": "Take the smallest truthful bounded next step now.",
+        "support_refs": [
+          "ctx-1"
+        ],
+        "title": "Advance the bounded rollout",
+        "why_now": "The lawful live context already supports immediate bounded action."
+      }
+    ],
+    "request_id": "proposal-generation:project-1:wu-1:run-1:what-bounded-rollout-should-execute-now",
+    "scarcity_reason": "Only one serious bounded option is currently grounded.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-1",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "record_class": "selection_review_support",
+  "recorded_at": "2026-04-20T18:48:12+00:00",
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "selection_result": {
+    "considered_proposal_ids": [
+      "proposal-1"
+    ],
+    "non_selection_outcome": null,
+    "rationale": "selected proposal-1 because it stays within bounded choice with some visible support and less visible burden than the alternatives.",
+    "selected_proposal_id": "proposal-1",
+    "selection_id": "run-1:selection"
+  }
+}

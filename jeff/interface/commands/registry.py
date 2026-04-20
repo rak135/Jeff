@@ -14,6 +14,7 @@ from ..render import render_help
 from ..session import CliSession
 from .inspect import inspect_command, lifecycle_command, show_command, trace_command
 from .models import CommandResult, InterfaceContext
+from .plan import plan_command
 from .proposal import proposal_command
 from .requests import request_command
 from .research import research_command
@@ -65,6 +66,9 @@ def execute_command(
         return _apply_json_mode(result, json_output=json_output)
     if tokens[0] == "selection":
         result = selection_command(tokens=tokens, session=session, context=context)
+        return _apply_json_mode(result, json_output=json_output)
+    if tokens[0] == "plan":
+        result = plan_command(tokens=tokens, session=session, context=context)
         return _apply_json_mode(result, json_output=json_output)
     if tokens[0] == "proposal":
         result = proposal_command(tokens=tokens, session=session, context=context)

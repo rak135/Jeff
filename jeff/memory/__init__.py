@@ -5,6 +5,7 @@ Only committed memory_ids may be referenced canonically.
 """
 
 from .embedder import HashEmbedder, NullEmbedder, VectorEmbedder
+from .local_file_store import LocalFileMemoryStore
 from .models import (
     CommittedMemoryRecord,
     MemoryCandidate,
@@ -20,7 +21,6 @@ from .retrieval import (
     canonical_memory_link_for_state,
     retrieve_memory,
 )
-from .run_handoff import handoff_run_summary_to_memory
 from .schemas import (
     MemoryLink,
     MemoryRetrievalEvent,
@@ -49,6 +49,7 @@ from .write_pipeline import (
     supersede_candidate,
     write_memory_candidate,
 )
+from .run_handoff import handoff_run_summary_to_memory
 
 __all__ = [
     # Core models
@@ -72,6 +73,7 @@ __all__ = [
     "handoff_run_summary_to_memory",
     # Store
     "InMemoryMemoryStore",
+    "LocalFileMemoryStore",
     "MemoryStoreProtocol",
     "PostgresMemoryStore",
     # Embedders

@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from jeff.bootstrap import build_startup_interface_context, run_startup_preflight
+from jeff.memory import InMemoryMemoryStore, LocalFileMemoryStore
 
 
 def test_bootstrap_loads_jeff_runtime_toml_when_present(tmp_path: Path) -> None:
@@ -38,7 +39,7 @@ research = "fake-research"
     assert context.memory_store is not None
 
 
-def test_startup_preflight_reports_in_memory_memory_backend_status(tmp_path: Path) -> None:
+def test_startup_preflight_reports_local_file_memory_backend_status(tmp_path: Path) -> None:
     _write_runtime_config(
         tmp_path,
         """
@@ -59,7 +60,30 @@ model_name = "fake-model"
     checks = run_startup_preflight(base_dir=tmp_path)
 
     assert any("bounded /run objective path enabled: repo-local validation" in check for check in checks)
-    assert any("research memory backend configured: in_memory" in check for check in checks)
+    assert any("research memory backend configured: local_file" in check for check in checks)
+
+
+def test_bootstrap_uses_local_file_memory_backend_by_default_for_local_runtime(tmp_path: Path) -> None:
+    _write_runtime_config(
+        tmp_path,
+        """
+[runtime]
+default_adapter_id = "fake-default"
+
+[research]
+artifact_store_root = ".jeff_runtime"
+enable_memory_handoff = true
+
+[[adapters]]
+adapter_id = "fake-default"
+provider_kind = "fake"
+model_name = "fake-model"
+""".strip(),
+    )
+
+    context = build_startup_interface_context(base_dir=tmp_path)
+
+    assert isinstance(context.memory_store, LocalFileMemoryStore)
 
 
 def test_bootstrap_can_select_postgres_memory_backend_from_runtime_config(
@@ -67,7 +91,6 @@ def test_bootstrap_can_select_postgres_memory_backend_from_runtime_config(
     monkeypatch,
 ) -> None:
     import jeff.bootstrap as bootstrap_module
-    from jeff.memory import InMemoryMemoryStore
 
     _write_runtime_config(
         tmp_path,
@@ -104,6 +127,34 @@ model_name = "fake-model"
     assert context.memory_store is not None
     assert calls[0] == ("postgres", 64)
     assert any("research memory backend configured: postgres" in check for check in checks)
+
+
+def test_bootstrap_can_select_in_memory_backend_from_runtime_config(tmp_path: Path) -> None:
+    _write_runtime_config(
+        tmp_path,
+        """
+[runtime]
+default_adapter_id = "fake-default"
+
+[research]
+artifact_store_root = ".jeff_runtime"
+enable_memory_handoff = true
+
+[research.memory]
+backend = "in_memory"
+
+[[adapters]]
+adapter_id = "fake-default"
+provider_kind = "fake"
+model_name = "fake-model"
+""".strip(),
+    )
+
+    context = build_startup_interface_context(base_dir=tmp_path)
+    checks = run_startup_preflight(base_dir=tmp_path)
+
+    assert isinstance(context.memory_store, InMemoryMemoryStore)
+    assert any("research memory backend configured: in_memory" in check for check in checks)
 
 
 def test_bootstrap_assembles_infrastructure_runtime_and_supports_research_purpose_lookup(tmp_path: Path) -> None:

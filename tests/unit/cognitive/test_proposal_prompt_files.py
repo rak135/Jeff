@@ -49,6 +49,8 @@ def test_step1_generation_prompt_template_contains_required_output_contract() ->
     assert "Do not invent a second or third option just for variety." in template
     assert "Do not emit approval, permission, authorization, selection, winner, ranking, readiness-to-start, proceed-now, or execution-clearance language." in template
     assert "Use the exact fallback values above instead of NONE." in template
+    assert "For PROPOSAL_COUNT 1, make SCARCITY_REASON name the specific narrowing factor" in template
+    assert "Do not use fallback text for assumptions, risks, constraints, blockers, feasibility, or reversibility" in template
 
 
 def test_render_prompt_substitutes_step1_generation_placeholders() -> None:

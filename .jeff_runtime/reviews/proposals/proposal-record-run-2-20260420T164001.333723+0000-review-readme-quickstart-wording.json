@@ -1,0 +1,248 @@
+{
+  "context_package": {
+    "archive_support_inputs": [],
+    "compiled_knowledge_support_inputs": [],
+    "governance_truth_records": [],
+    "memory_support_inputs": [],
+    "purpose": "proposal support action preparation Review README quickstart wording and propose one bounded improvement step.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-2",
+      "work_unit_id": "wu-1"
+    },
+    "support_inputs": [],
+    "trigger": {
+      "trigger_family": "operator_input",
+      "trigger_summary": "Review README quickstart wording and propose one bounded improvement step."
+    },
+    "truth_records": [
+      {
+        "scope": {
+          "project_id": "project-1",
+          "run_id": null,
+          "work_unit_id": null
+        },
+        "summary": "project:project-1 Jeff Runtime Project [active]",
+        "truth_family": "project"
+      },
+      {
+        "scope": {
+          "project_id": "project-1",
+          "run_id": null,
+          "work_unit_id": "wu-1"
+        },
+        "summary": "work_unit:wu-1 Current bounded Jeff work. [open]",
+        "truth_family": "work_unit"
+      },
+      {
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-2",
+          "work_unit_id": "wu-1"
+        },
+        "summary": "run:run-2 [completed]",
+        "truth_family": "run"
+      }
+    ]
+  },
+  "created_at": "2026-04-20T16:40:01.333723+00:00",
+  "final_error_message": null,
+  "final_failure_stage": null,
+  "final_proposal_result": {
+    "options": [
+      {
+        "assumptions": [
+          "The README quickstart content is accessible for review."
+        ],
+        "blockers": [],
+        "constraints": [],
+        "feasibility": null,
+        "main_risks": [],
+        "option_index": 1,
+        "planning_needed": false,
+        "proposal_id": "proposal-1",
+        "proposal_type": "direct_action",
+        "reversibility": null,
+        "summary": "Examine the current README quickstart section to identify a single bounded wording improvement.",
+        "support_refs": [
+          "objective",
+          "trigger",
+          "purpose"
+        ],
+        "title": "Review README quickstart wording",
+        "why_now": "The objective explicitly triggers a review for a bounded improvement step."
+      }
+    ],
+    "request_id": "proposal-generation:project-1:wu-1:run-2:review-readme-quickstart-wording-and-propose-one-bounded-improvement-step",
+    "scarcity_reason": "Current support lacks a specific identified error or target area within the README quickstart, restricting the proposal to a general review action.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-2",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "final_validation_outcome": "passed",
+  "initial_attempt": {
+    "attempt_kind": "initial",
+    "error_message": null,
+    "failure_stage": null,
+    "parse_error": null,
+    "parsed_artifact_ref": "C:\\DATA\\PROJECTS\\JEFF\\.jeff_runtime\\artifacts\\proposals\\proposal-record-run-2-20260420T164001.333723+0000-review-readme-quickstart-wording\\initial-parsed.json",
+    "parsed_result": {
+      "options": [
+        {
+          "assumptions": [
+            "The README quickstart content is accessible for review."
+          ],
+          "blockers": [],
+          "constraints": [],
+          "feasibility": null,
+          "option_index": 1,
+          "planning_needed": false,
+          "proposal_type": "direct_action",
+          "reversibility": null,
+          "risks": [],
+          "summary": "Examine the current README quickstart section to identify a single bounded wording improvement.",
+          "support_refs": [
+            "objective",
+            "trigger",
+            "purpose"
+          ],
+          "title": "Review README quickstart wording",
+          "why_now": "The objective explicitly triggers a review for a bounded improvement step."
+        }
+      ],
+      "proposal_count": 1,
+      "raw_result": {
+        "adapter_id": "ollama_default",
+        "model_name": "gemma4:31b-cloud",
+        "prompt_bundle": {
+          "objective": "Review README quickstart wording and propose one bounded improvement step.",
+          "prompt": "TASK: bounded proposal generation\nGenerate 0 to 3 serious proposal options from the provided bounded inputs.\nUse only the provided truth-first context and support.\nKeep proposal distinct from selection, approval, readiness, governance, start authority, action entry, execution clearance, and truth mutation.\nNo fake diversity. If two options are materially the same, keep only the strongest representative.\nIf support is weak, stale, contradictory, or scope-insufficient, let that narrow or suppress options rather than padding.\nEach output value must stay on one physical line.\nUse semicolon-separated items for list-like fields and comma-separated items for support refs.\nDo not output NONE anywhere.\nEach required line must appear exactly once in canonical order.\nTreat the objective, scope, truth snapshot, and current constraints as usable support when they directly justify a narrower statement.\nDo not use fallback text for assumptions, risks, constraints, blockers, feasibility, or reversibility if the objective or current scope already grounds a specific bounded statement.\nFor PROPOSAL_COUNT 1, make SCARCITY_REASON name the specific narrowing factor instead of generic \"only one path exists\" wording.\nFor direct_action, name the concrete bounded target from the objective or support rather than generic \"take the next step\" phrasing.\n\nUse these exact fallback values when the field has no supported content:\n- SCARCITY fallback for PROPOSAL_COUNT 2 or 3 only: No additional scarcity explanation identified from the provided support.\n- ASSUMPTIONS fallback: No explicit assumptions identified from the provided support.\n- RISKS fallback: No explicit risks identified from the provided support.\n- CONSTRAINTS fallback: No explicit constraints identified from the provided support.\n- BLOCKERS fallback: No explicit blockers identified from the provided support.\n- FEASIBILITY fallback: No explicit feasibility statement identified from the provided support.\n- REVERSIBILITY fallback: No explicit reversibility statement identified from the provided support.\n- SUPPORT_REFS fallback token: none\n\nReturn exactly the following top-level lines first:\nPROPOSAL_COUNT: <0|1|2|3>\nSCARCITY_REASON: <explicit text or No additional scarcity explanation identified from the provided support.>\n\nIf PROPOSAL_COUNT is 0:\n- SCARCITY_REASON must be explicit and must not use the scarcity fallback.\n- Do not emit any OPTION_n_* fields.\n\nIf PROPOSAL_COUNT is 1:\n- SCARCITY_REASON must be explicit and must not use the scarcity fallback.\n- Emit exactly one OPTION_1_* block.\n\nIf PROPOSAL_COUNT is 2 or 3:\n- Emit exactly one complete OPTION_n_* block for each retained option in numeric order starting at 1.\n- If no special scarcity note is needed, use the exact scarcity fallback.\n\nFor each retained option, emit exactly these lines in this order:\nOPTION_n_TYPE: <direct_action|investigate|clarify|defer|escalate|planning_insertion>\nOPTION_n_TITLE: <short bounded title>\nOPTION_n_SUMMARY: <1-2 sentence bounded summary>\nOPTION_n_WHY_NOW: <why this option matters now>\nOPTION_n_ASSUMPTIONS: <semicolon-separated items or exact assumptions fallback>\nOPTION_n_RISKS: <semicolon-separated items or exact risks fallback>\nOPTION_n_CONSTRAINTS: <semicolon-separated items or exact constraints fallback>\nOPTION_n_BLOCKERS: <semicolon-separated items or exact blockers fallback>\nOPTION_n_PLANNING_NEEDED: <yes|no>\nOPTION_n_FEASIBILITY: <short bounded text or exact feasibility fallback>\nOPTION_n_REVERSIBILITY: <short bounded text or exact reversibility fallback>\nOPTION_n_SUPPORT_REFS: <comma-separated support refs or none>\n\nFORBIDDEN:\n- Do not emit approval, permission, authorization, selection, winner, ranking, readiness-to-start, proceed-now, or execution-clearance language.\n- Do not say an option is selected, preferred, best, approved, authorized, ready, cleared, or should start now.\n- Do not describe direct_action as permission or readiness. It remains only a candidate path under current support.\n- Do not invent a second or third option just for variety.\n- Do not duplicate one option with wording variants.\n- Do not hide missing support, contradiction, blockers, or uncertainty.\n\nWHEN INFORMATION IS MISSING:\n- Prefer PROPOSAL_COUNT 0 or 1 over padded diversity.\n- Keep the option narrower rather than stronger.\n- Use the exact fallback values above instead of NONE.\n- Make SCARCITY_REASON explicit whenever fewer than two serious options exist.\n- Ground the option in the actual objective and scope before falling back to generic placeholder language.\n\nINTERNAL SELF-CHECK BEFORE RETURNING:\n- PROPOSAL_COUNT matches the number of emitted option blocks.\n- The first two lines are PROPOSAL_COUNT and SCARCITY_REASON.\n- Every required OPTION_n_* line appears once and in canonical order.\n- No line contains NONE.\n- No line claims permission, approval, selection, winner status, readiness, or start authority.\n- If PROPOSAL_COUNT is 0 or 1, SCARCITY_REASON is explicit and not the scarcity fallback.\n\nCANONICAL EXAMPLE 0-OPTION:\nPROPOSAL_COUNT: 0\nSCARCITY_REASON: Current support is too contradictory to describe a serious candidate path without overstating confidence.\n\nCANONICAL EXAMPLE 1-OPTION:\nPROPOSAL_COUNT: 1\nSCARCITY_REASON: Only one serious path is supported under the current blocker state.\nOPTION_1_TYPE: investigate\nOPTION_1_TITLE: Confirm the blocking dependency\nOPTION_1_SUMMARY: Run a bounded investigation to verify the unresolved dependency before stronger action framing.\nOPTION_1_WHY_NOW: Current contradiction keeps direct_action from being honest.\nOPTION_1_ASSUMPTIONS: The dependency can be checked with available evidence\nOPTION_1_RISKS: Investigation may confirm that no viable path exists yet\nOPTION_1_CONSTRAINTS: Current scope is limited to dependency verification\nOPTION_1_BLOCKERS: Direct_action remains blocked until the dependency is clarified\nOPTION_1_PLANNING_NEEDED: no\nOPTION_1_FEASIBILITY: Feasible if the required evidence can be gathered now\nOPTION_1_REVERSIBILITY: Fully reversible because it is information-gathering only\nOPTION_1_SUPPORT_REFS: ctx-1,research-2\n\nOBJECTIVE:\nobjective=Review README quickstart wording and propose one bounded improvement step.\ntrigger=Review README quickstart wording and propose one bounded improvement step.\npurpose=proposal support action preparation Review README quickstart wording and propose one bounded improvement step.\nSCOPE:\nproject_id=project-1; work_unit_id=wu-1; run_id=run-2\nTRUTH_SNAPSHOT:\ntruth_record_1|family=project|summary=project:project-1 Jeff Runtime Project [active]\ntruth_record_2|family=work_unit|summary=work_unit:wu-1 Current bounded Jeff work. [open]\ntruth_record_3|family=run|summary=run:run-2 [completed]\nCURRENT_CONSTRAINTS:\nNONE\nRESEARCH_SUPPORT:\nNONE\nOTHER_SUPPORT:\nNONE\nUNCERTAINTIES:\nNONE",
+          "prompt_file": "STEP1_GENERATION.md",
+          "request_id": "proposal-generation:project-1:wu-1:run-2:review-readme-quickstart-wording-and-propose-one-bounded-improvement-step",
+          "scope": {
+            "project_id": "project-1",
+            "run_id": "run-2",
+            "work_unit_id": "wu-1"
+          },
+          "system_instructions": "You are Jeff Proposal Step 1 generation.\nYour job is to generate bounded candidate options from the provided context and support only.\nProposal generates candidate paths, not authority.\nReturn parser-friendly plain text only.\nNo markdown, no code fences, no commentary outside the declared output lines.\nDo not invent options to satisfy a quota.\nDo not decide, approve, authorize, rank, recommend, or select.\nDo not emit permission, approval, authorization, winner, readiness, start-now, or execution-clearance language.\nResearch may inform proposal but does not replace it.\nSurface assumptions, risks, constraints, blockers, and scarcity honestly.\nDirect_action is still only a candidate path under current support. It is not permission, not readiness, not approval, not selection, and not authority to start.\nIf no serious option exists, return PROPOSAL_COUNT: 0 and explain the scarcity honestly.\nIf only one serious option exists, return PROPOSAL_COUNT: 1 and explain the scarcity honestly.\nNever return more than 3 serious options.\nBefore returning, perform an internal completeness check against the required line contract and correct any drift."
+        },
+        "provider_name": "ollama",
+        "raw_output_text": "PROPOSAL_COUNT: 1\nSCARCITY_REASON: Current support lacks a specific identified error or target area within the README quickstart, restricting the proposal to a general review action.\nOPTION_1_TYPE: direct_action\nOPTION_1_TITLE: Review README quickstart wording\nOPTION_1_SUMMARY: Examine the current README quickstart section to identify a single bounded wording improvement.\nOPTION_1_WHY_NOW: The objective explicitly triggers a review for a bounded improvement step.\nOPTION_1_ASSUMPTIONS: The README quickstart content is accessible for review.\nOPTION_1_RISKS: No explicit risks identified from the provided support.\nOPTION_1_CONSTRAINTS: No explicit constraints identified from the provided support.\nOPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\nOPTION_1_PLANNING_NEEDED: no\nOPTION_1_FEASIBILITY: No explicit feasibility statement identified from the provided support.\nOPTION_1_REVERSIBILITY: No explicit reversibility statement identified from the provided support.\nOPTION_1_SUPPORT_REFS: objective,trigger,purpose",
+        "raw_response_ref": null,
+        "request_id": "proposal-generation:project-1:wu-1:run-2:review-readme-quickstart-wording-and-propose-one-bounded-improvement-step",
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-2",
+          "work_unit_id": "wu-1"
+        },
+        "usage": {
+          "estimated_cost": null,
+          "input_tokens": 1892,
+          "latency_ms": 23141,
+          "output_tokens": 247,
+          "total_tokens": 2139
+        },
+        "warnings": []
+      },
+      "scarcity_reason": "Current support lacks a specific identified error or target area within the README quickstart, restricting the proposal to a general review action."
+    },
+    "prompt_bundle": {
+      "objective": "Review README quickstart wording and propose one bounded improvement step.",
+      "prompt": "TASK: bounded proposal generation\nGenerate 0 to 3 serious proposal options from the provided bounded inputs.\nUse only the provided truth-first context and support.\nKeep proposal distinct from selection, approval, readiness, governance, start authority, action entry, execution clearance, and truth mutation.\nNo fake diversity. If two options are materially the same, keep only the strongest representative.\nIf support is weak, stale, contradictory, or scope-insufficient, let that narrow or suppress options rather than padding.\nEach output value must stay on one physical line.\nUse semicolon-separated items for list-like fields and comma-separated items for support refs.\nDo not output NONE anywhere.\nEach required line must appear exactly once in canonical order.\nTreat the objective, scope, truth snapshot, and current constraints as usable support when they directly justify a narrower statement.\nDo not use fallback text for assumptions, risks, constraints, blockers, feasibility, or reversibility if the objective or current scope already grounds a specific bounded statement.\nFor PROPOSAL_COUNT 1, make SCARCITY_REASON name the specific narrowing factor instead of generic \"only one path exists\" wording.\nFor direct_action, name the concrete bounded target from the objective or support rather than generic \"take the next step\" phrasing.\n\nUse these exact fallback values when the field has no supported content:\n- SCARCITY fallback for PROPOSAL_COUNT 2 or 3 only: No additional scarcity explanation identified from the provided support.\n- ASSUMPTIONS fallback: No explicit assumptions identified from the provided support.\n- RISKS fallback: No explicit risks identified from the provided support.\n- CONSTRAINTS fallback: No explicit constraints identified from the provided support.\n- BLOCKERS fallback: No explicit blockers identified from the provided support.\n- FEASIBILITY fallback: No explicit feasibility statement identified from the provided support.\n- REVERSIBILITY fallback: No explicit reversibility statement identified from the provided support.\n- SUPPORT_REFS fallback token: none\n\nReturn exactly the following top-level lines first:\nPROPOSAL_COUNT: <0|1|2|3>\nSCARCITY_REASON: <explicit text or No additional scarcity explanation identified from the provided support.>\n\nIf PROPOSAL_COUNT is 0:\n- SCARCITY_REASON must be explicit and must not use the scarcity fallback.\n- Do not emit any OPTION_n_* fields.\n\nIf PROPOSAL_COUNT is 1:\n- SCARCITY_REASON must be explicit and must not use the scarcity fallback.\n- Emit exactly one OPTION_1_* block.\n\nIf PROPOSAL_COUNT is 2 or 3:\n- Emit exactly one complete OPTION_n_* block for each retained option in numeric order starting at 1.\n- If no special scarcity note is needed, use the exact scarcity fallback.\n\nFor each retained option, emit exactly these lines in this order:\nOPTION_n_TYPE: <direct_action|investigate|clarify|defer|escalate|planning_insertion>\nOPTION_n_TITLE: <short bounded title>\nOPTION_n_SUMMARY: <1-2 sentence bounded summary>\nOPTION_n_WHY_NOW: <why this option matters now>\nOPTION_n_ASSUMPTIONS: <semicolon-separated items or exact assumptions fallback>\nOPTION_n_RISKS: <semicolon-separated items or exact risks fallback>\nOPTION_n_CONSTRAINTS: <semicolon-separated items or exact constraints fallback>\nOPTION_n_BLOCKERS: <semicolon-separated items or exact blockers fallback>\nOPTION_n_PLANNING_NEEDED: <yes|no>\nOPTION_n_FEASIBILITY: <short bounded text or exact feasibility fallback>\nOPTION_n_REVERSIBILITY: <short bounded text or exact reversibility fallback>\nOPTION_n_SUPPORT_REFS: <comma-separated support refs or none>\n\nFORBIDDEN:\n- Do not emit approval, permission, authorization, selection, winner, ranking, readiness-to-start, proceed-now, or execution-clearance language.\n- Do not say an option is selected, preferred, best, approved, authorized, ready, cleared, or should start now.\n- Do not describe direct_action as permission or readiness. It remains only a candidate path under current support.\n- Do not invent a second or third option just for variety.\n- Do not duplicate one option with wording variants.\n- Do not hide missing support, contradiction, blockers, or uncertainty.\n\nWHEN INFORMATION IS MISSING:\n- Prefer PROPOSAL_COUNT 0 or 1 over padded diversity.\n- Keep the option narrower rather than stronger.\n- Use the exact fallback values above instead of NONE.\n- Make SCARCITY_REASON explicit whenever fewer than two serious options exist.\n- Ground the option in the actual objective and scope before falling back to generic placeholder language.\n\nINTERNAL SELF-CHECK BEFORE RETURNING:\n- PROPOSAL_COUNT matches the number of emitted option blocks.\n- The first two lines are PROPOSAL_COUNT and SCARCITY_REASON.\n- Every required OPTION_n_* line appears once and in canonical order.\n- No line contains NONE.\n- No line claims permission, approval, selection, winner status, readiness, or start authority.\n- If PROPOSAL_COUNT is 0 or 1, SCARCITY_REASON is explicit and not the scarcity fallback.\n\nCANONICAL EXAMPLE 0-OPTION:\nPROPOSAL_COUNT: 0\nSCARCITY_REASON: Current support is too contradictory to describe a serious candidate path without overstating confidence.\n\nCANONICAL EXAMPLE 1-OPTION:\nPROPOSAL_COUNT: 1\nSCARCITY_REASON: Only one serious path is supported under the current blocker state.\nOPTION_1_TYPE: investigate\nOPTION_1_TITLE: Confirm the blocking dependency\nOPTION_1_SUMMARY: Run a bounded investigation to verify the unresolved dependency before stronger action framing.\nOPTION_1_WHY_NOW: Current contradiction keeps direct_action from being honest.\nOPTION_1_ASSUMPTIONS: The dependency can be checked with available evidence\nOPTION_1_RISKS: Investigation may confirm that no viable path exists yet\nOPTION_1_CONSTRAINTS: Current scope is limited to dependency verification\nOPTION_1_BLOCKERS: Direct_action remains blocked until the dependency is clarified\nOPTION_1_PLANNING_NEEDED: no\nOPTION_1_FEASIBILITY: Feasible if the required evidence can be gathered now\nOPTION_1_REVERSIBILITY: Fully reversible because it is information-gathering only\nOPTION_1_SUPPORT_REFS: ctx-1,research-2\n\nOBJECTIVE:\nobjective=Review README quickstart wording and propose one bounded improvement step.\ntrigger=Review README quickstart wording and propose one bounded improvement step.\npurpose=proposal support action preparation Review README quickstart wording and propose one bounded improvement step.\nSCOPE:\nproject_id=project-1; work_unit_id=wu-1; run_id=run-2\nTRUTH_SNAPSHOT:\ntruth_record_1|family=project|summary=project:project-1 Jeff Runtime Project [active]\ntruth_record_2|family=work_unit|summary=work_unit:wu-1 Current bounded Jeff work. [open]\ntruth_record_3|family=run|summary=run:run-2 [completed]\nCURRENT_CONSTRAINTS:\nNONE\nRESEARCH_SUPPORT:\nNONE\nOTHER_SUPPORT:\nNONE\nUNCERTAINTIES:\nNONE",
+      "prompt_file": "STEP1_GENERATION.md",
+      "request_id": "proposal-generation:project-1:wu-1:run-2:review-readme-quickstart-wording-and-propose-one-bounded-improvement-step",
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-2",
+        "work_unit_id": "wu-1"
+      },
+      "system_instructions": "You are Jeff Proposal Step 1 generation.\nYour job is to generate bounded candidate options from the provided context and support only.\nProposal generates candidate paths, not authority.\nReturn parser-friendly plain text only.\nNo markdown, no code fences, no commentary outside the declared output lines.\nDo not invent options to satisfy a quota.\nDo not decide, approve, authorize, rank, recommend, or select.\nDo not emit permission, approval, authorization, winner, readiness, start-now, or execution-clearance language.\nResearch may inform proposal but does not replace it.\nSurface assumptions, risks, constraints, blockers, and scarcity honestly.\nDirect_action is still only a candidate path under current support. It is not permission, not readiness, not approval, not selection, and not authority to start.\nIf no serious option exists, return PROPOSAL_COUNT: 0 and explain the scarcity honestly.\nIf only one serious option exists, return PROPOSAL_COUNT: 1 and explain the scarcity honestly.\nNever return more than 3 serious options.\nBefore returning, perform an internal completeness check against the required line contract and correct any drift."
+    },
+    "proposal_result": {
+      "options": [
+        {
+          "assumptions": [
+            "The README quickstart content is accessible for review."
+          ],
+          "blockers": [],
+          "constraints": [],
+          "feasibility": null,
+          "main_risks": [],
+          "option_index": 1,
+          "planning_needed": false,
+          "proposal_id": "proposal-1",
+          "proposal_type": "direct_action",
+          "reversibility": null,
+          "summary": "Examine the current README quickstart section to identify a single bounded wording improvement.",
+          "support_refs": [
+            "objective",
+            "trigger",
+            "purpose"
+          ],
+          "title": "Review README quickstart wording",
+          "why_now": "The objective explicitly triggers a review for a bounded improvement step."
+        }
+      ],
+      "request_id": "proposal-generation:project-1:wu-1:run-2:review-readme-quickstart-wording-and-propose-one-bounded-improvement-step",
+      "scarcity_reason": "Current support lacks a specific identified error or target area within the README quickstart, restricting the proposal to a general review action.",
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-2",
+        "work_unit_id": "wu-1"
+      }
+    },
+    "raw_artifact_ref": "C:\\DATA\\PROJECTS\\JEFF\\.jeff_runtime\\artifacts\\proposals\\proposal-record-run-2-20260420T164001.333723+0000-review-readme-quickstart-wording\\initial-raw.txt",
+    "raw_result": {
+      "adapter_id": "ollama_default",
+      "model_name": "gemma4:31b-cloud",
+      "prompt_bundle": {
+        "objective": "Review README quickstart wording and propose one bounded improvement step.",
+        "prompt": "TASK: bounded proposal generation\nGenerate 0 to 3 serious proposal options from the provided bounded inputs.\nUse only the provided truth-first context and support.\nKeep proposal distinct from selection, approval, readiness, governance, start authority, action entry, execution clearance, and truth mutation.\nNo fake diversity. If two options are materially the same, keep only the strongest representative.\nIf support is weak, stale, contradictory, or scope-insufficient, let that narrow or suppress options rather than padding.\nEach output value must stay on one physical line.\nUse semicolon-separated items for list-like fields and comma-separated items for support refs.\nDo not output NONE anywhere.\nEach required line must appear exactly once in canonical order.\nTreat the objective, scope, truth snapshot, and current constraints as usable support when they directly justify a narrower statement.\nDo not use fallback text for assumptions, risks, constraints, blockers, feasibility, or reversibility if the objective or current scope already grounds a specific bounded statement.\nFor PROPOSAL_COUNT 1, make SCARCITY_REASON name the specific narrowing factor instead of generic \"only one path exists\" wording.\nFor direct_action, name the concrete bounded target from the objective or support rather than generic \"take the next step\" phrasing.\n\nUse these exact fallback values when the field has no supported content:\n- SCARCITY fallback for PROPOSAL_COUNT 2 or 3 only: No additional scarcity explanation identified from the provided support.\n- ASSUMPTIONS fallback: No explicit assumptions identified from the provided support.\n- RISKS fallback: No explicit risks identified from the provided support.\n- CONSTRAINTS fallback: No explicit constraints identified from the provided support.\n- BLOCKERS fallback: No explicit blockers identified from the provided support.\n- FEASIBILITY fallback: No explicit feasibility statement identified from the provided support.\n- REVERSIBILITY fallback: No explicit reversibility statement identified from the provided support.\n- SUPPORT_REFS fallback token: none\n\nReturn exactly the following top-level lines first:\nPROPOSAL_COUNT: <0|1|2|3>\nSCARCITY_REASON: <explicit text or No additional scarcity explanation identified from the provided support.>\n\nIf PROPOSAL_COUNT is 0:\n- SCARCITY_REASON must be explicit and must not use the scarcity fallback.\n- Do not emit any OPTION_n_* fields.\n\nIf PROPOSAL_COUNT is 1:\n- SCARCITY_REASON must be explicit and must not use the scarcity fallback.\n- Emit exactly one OPTION_1_* block.\n\nIf PROPOSAL_COUNT is 2 or 3:\n- Emit exactly one complete OPTION_n_* block for each retained option in numeric order starting at 1.\n- If no special scarcity note is needed, use the exact scarcity fallback.\n\nFor each retained option, emit exactly these lines in this order:\nOPTION_n_TYPE: <direct_action|investigate|clarify|defer|escalate|planning_insertion>\nOPTION_n_TITLE: <short bounded title>\nOPTION_n_SUMMARY: <1-2 sentence bounded summary>\nOPTION_n_WHY_NOW: <why this option matters now>\nOPTION_n_ASSUMPTIONS: <semicolon-separated items or exact assumptions fallback>\nOPTION_n_RISKS: <semicolon-separated items or exact risks fallback>\nOPTION_n_CONSTRAINTS: <semicolon-separated items or exact constraints fallback>\nOPTION_n_BLOCKERS: <semicolon-separated items or exact blockers fallback>\nOPTION_n_PLANNING_NEEDED: <yes|no>\nOPTION_n_FEASIBILITY: <short bounded text or exact feasibility fallback>\nOPTION_n_REVERSIBILITY: <short bounded text or exact reversibility fallback>\nOPTION_n_SUPPORT_REFS: <comma-separated support refs or none>\n\nFORBIDDEN:\n- Do not emit approval, permission, authorization, selection, winner, ranking, readiness-to-start, proceed-now, or execution-clearance language.\n- Do not say an option is selected, preferred, best, approved, authorized, ready, cleared, or should start now.\n- Do not describe direct_action as permission or readiness. It remains only a candidate path under current support.\n- Do not invent a second or third option just for variety.\n- Do not duplicate one option with wording variants.\n- Do not hide missing support, contradiction, blockers, or uncertainty.\n\nWHEN INFORMATION IS MISSING:\n- Prefer PROPOSAL_COUNT 0 or 1 over padded diversity.\n- Keep the option narrower rather than stronger.\n- Use the exact fallback values above instead of NONE.\n- Make SCARCITY_REASON explicit whenever fewer than two serious options exist.\n- Ground the option in the actual objective and scope before falling back to generic placeholder language.\n\nINTERNAL SELF-CHECK BEFORE RETURNING:\n- PROPOSAL_COUNT matches the number of emitted option blocks.\n- The first two lines are PROPOSAL_COUNT and SCARCITY_REASON.\n- Every required OPTION_n_* line appears once and in canonical order.\n- No line contains NONE.\n- No line claims permission, approval, selection, winner status, readiness, or start authority.\n- If PROPOSAL_COUNT is 0 or 1, SCARCITY_REASON is explicit and not the scarcity fallback.\n\nCANONICAL EXAMPLE 0-OPTION:\nPROPOSAL_COUNT: 0\nSCARCITY_REASON: Current support is too contradictory to describe a serious candidate path without overstating confidence.\n\nCANONICAL EXAMPLE 1-OPTION:\nPROPOSAL_COUNT: 1\nSCARCITY_REASON: Only one serious path is supported under the current blocker state.\nOPTION_1_TYPE: investigate\nOPTION_1_TITLE: Confirm the blocking dependency\nOPTION_1_SUMMARY: Run a bounded investigation to verify the unresolved dependency before stronger action framing.\nOPTION_1_WHY_NOW: Current contradiction keeps direct_action from being honest.\nOPTION_1_ASSUMPTIONS: The dependency can be checked with available evidence\nOPTION_1_RISKS: Investigation may confirm that no viable path exists yet\nOPTION_1_CONSTRAINTS: Current scope is limited to dependency verification\nOPTION_1_BLOCKERS: Direct_action remains blocked until the dependency is clarified\nOPTION_1_PLANNING_NEEDED: no\nOPTION_1_FEASIBILITY: Feasible if the required evidence can be gathered now\nOPTION_1_REVERSIBILITY: Fully reversible because it is information-gathering only\nOPTION_1_SUPPORT_REFS: ctx-1,research-2\n\nOBJECTIVE:\nobjective=Review README quickstart wording and propose one bounded improvement step.\ntrigger=Review README quickstart wording and propose one bounded improvement step.\npurpose=proposal support action preparation Review README quickstart wording and propose one bounded improvement step.\nSCOPE:\nproject_id=project-1; work_unit_id=wu-1; run_id=run-2\nTRUTH_SNAPSHOT:\ntruth_record_1|family=project|summary=project:project-1 Jeff Runtime Project [active]\ntruth_record_2|family=work_unit|summary=work_unit:wu-1 Current bounded Jeff work. [open]\ntruth_record_3|family=run|summary=run:run-2 [completed]\nCURRENT_CONSTRAINTS:\nNONE\nRESEARCH_SUPPORT:\nNONE\nOTHER_SUPPORT:\nNONE\nUNCERTAINTIES:\nNONE",
+        "prompt_file": "STEP1_GENERATION.md",
+        "request_id": "proposal-generation:project-1:wu-1:run-2:review-readme-quickstart-wording-and-propose-one-bounded-improvement-step",
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-2",
+          "work_unit_id": "wu-1"
+        },
+        "system_instructions": "You are Jeff Proposal Step 1 generation.\nYour job is to generate bounded candidate options from the provided context and support only.\nProposal generates candidate paths, not authority.\nReturn parser-friendly plain text only.\nNo markdown, no code fences, no commentary outside the declared output lines.\nDo not invent options to satisfy a quota.\nDo not decide, approve, authorize, rank, recommend, or select.\nDo not emit permission, approval, authorization, winner, readiness, start-now, or execution-clearance language.\nResearch may inform proposal but does not replace it.\nSurface assumptions, risks, constraints, blockers, and scarcity honestly.\nDirect_action is still only a candidate path under current support. It is not permission, not readiness, not approval, not selection, and not authority to start.\nIf no serious option exists, return PROPOSAL_COUNT: 0 and explain the scarcity honestly.\nIf only one serious option exists, return PROPOSAL_COUNT: 1 and explain the scarcity honestly.\nNever return more than 3 serious options.\nBefore returning, perform an internal completeness check against the required line contract and correct any drift."
+      },
+      "provider_name": "ollama",
+      "raw_output_text": "PROPOSAL_COUNT: 1\nSCARCITY_REASON: Current support lacks a specific identified error or target area within the README quickstart, restricting the proposal to a general review action.\nOPTION_1_TYPE: direct_action\nOPTION_1_TITLE: Review README quickstart wording\nOPTION_1_SUMMARY: Examine the current README quickstart section to identify a single bounded wording improvement.\nOPTION_1_WHY_NOW: The objective explicitly triggers a review for a bounded improvement step.\nOPTION_1_ASSUMPTIONS: The README quickstart content is accessible for review.\nOPTION_1_RISKS: No explicit risks identified from the provided support.\nOPTION_1_CONSTRAINTS: No explicit constraints identified from the provided support.\nOPTION_1_BLOCKERS: No explicit blockers identified from the provided support.\nOPTION_1_PLANNING_NEEDED: no\nOPTION_1_FEASIBILITY: No explicit feasibility statement identified from the provided support.\nOPTION_1_REVERSIBILITY: No explicit reversibility statement identified from the provided support.\nOPTION_1_SUPPORT_REFS: objective,trigger,purpose",
+      "raw_response_ref": null,
+      "request_id": "proposal-generation:project-1:wu-1:run-2:review-readme-quickstart-wording-and-propose-one-bounded-improvement-step",
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-2",
+        "work_unit_id": "wu-1"
+      },
+      "usage": {
+        "estimated_cost": null,
+        "input_tokens": 1892,
+        "latency_ms": 23141,
+        "output_tokens": 247,
+        "total_tokens": 2139
+      },
+      "warnings": []
+    },
+    "validation_artifact_ref": null,
+    "validation_issues": []
+  },
+  "objective": "Review README quickstart wording and propose one bounded improvement step.",
+  "proposal_id": "proposal-record-run-2-20260420T164001.333723+0000-review-readme-quickstart-wording",
+  "record_class": "proposal_operator_record",
+  "record_ref": "C:\\DATA\\PROJECTS\\JEFF\\.jeff_runtime\\reviews\\proposals\\proposal-record-run-2-20260420T164001.333723+0000-review-readme-quickstart-wording.json",
+  "recorded_at": "2026-04-20T16:40:01+00:00",
+  "repair_attempt": null,
+  "schema_version": "1.0",
+  "scope": {
+    "project_id": "project-1",
+    "run_id": "run-2",
+    "work_unit_id": "wu-1"
+  },
+  "source_proposal_id": null,
+  "status": "success",
+  "visible_constraints": []
+}

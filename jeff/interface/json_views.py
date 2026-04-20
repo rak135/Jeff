@@ -15,6 +15,7 @@ from jeff.cognitive import (
     ResearchSynthesisRuntimeError,
     validate_research_artifact_record,
 )
+from jeff.cognitive.planning import PlanArtifact, materialize_active_step_action, resume_posture
 from jeff.core.containers.models import Project, Run, WorkUnit
 from jeff.memory import MemoryWriteDecision
 from jeff.orchestrator import FlowRunResult
@@ -121,6 +122,7 @@ def run_show_json(
             "live_context": _live_context_summary_json(live_context_package),
             "execution_summary": _execution_summary_json(flow_run=None),
             "proposal_summary": _proposal_summary_json(selection_review=selection_review, flow_run=None),
+            "planning_summary": _planning_summary_json(flow_run=None),
             "evaluation_summary": _evaluation_summary_json(flow_run=None),
         }
         return payload
@@ -133,6 +135,7 @@ def run_show_json(
         "live_context": _live_context_summary_json(live_context_package),
         "execution_summary": _execution_summary_json(flow_run=flow_run),
         "proposal_summary": _proposal_summary_json(selection_review=selection_review, flow_run=flow_run),
+        "planning_summary": _planning_summary_json(flow_run=flow_run),
         "evaluation_summary": _evaluation_summary_json(flow_run=flow_run),
         "recent_events": trace_json(flow_run)["support"]["events"][-5:],
     }
@@ -603,6 +606,13 @@ def _request_entry_hint_json(*, flow_run: FlowRunResult, selection_review: objec
     receipt_only_commands: list[str] = []
     if routing.routed_outcome == "approval_required":
         conditional_commands = [f"/approve {run_id}", f"/reject {run_id}"]
+    elif routing.routed_outcome == "planning":
+        planning = _planning_summary_json(flow_run=flow_run)
+        candidate = planning.get("candidate_action")
+        if planning.get("available") and candidate is not None and candidate.get("available"):
+            conditional_commands = [f"/plan execute {run_id}"]
+        elif planning.get("available"):
+            receipt_only_commands = [f"/plan show {run_id}"]
     elif routing.routed_outcome == "revalidate":
         conditional_commands = [f"/reject {run_id}"]
         if approval_verdict == "granted":
@@ -626,6 +636,7 @@ def _request_entry_hint_json(*, flow_run: FlowRunResult, selection_review: objec
 
 def _flow_derived_json(flow_run: FlowRunResult) -> dict[str, Any]:
     selection = flow_run.outputs.get("selection")
+    planning = flow_run.outputs.get("planning")
     governance = flow_run.outputs.get("governance")
     execution = flow_run.outputs.get("execution")
     outcome = flow_run.outputs.get("outcome")
@@ -640,6 +651,8 @@ def _flow_derived_json(flow_run: FlowRunResult) -> dict[str, Any]:
         "active_stage": flow_run.lifecycle.current_stage,
         "active_module": _module_for_stage(flow_run.lifecycle.current_stage),
         "selected_proposal_id": None if selection is None else _selected_proposal_id(selection),
+        "plan_status": None if not isinstance(planning, PlanArtifact) else planning.plan_status,
+        "active_plan_step_id": None if not isinstance(planning, PlanArtifact) else planning.active_step_id,
         "governance_outcome": None if governance is None else governance.governance_outcome,
         "allowed_now": None if governance is None else governance.allowed_now,
         "approval_verdict": None if governance is None else governance.approval_verdict,
@@ -697,6 +710,294 @@ def _proposal_summary_json(*, selection_review: object | None, flow_run: FlowRun
     }
 
 
+def _planning_summary_json(*, flow_run: FlowRunResult | None) -> dict[str, Any]:
+    if flow_run is None:
+        return {
+            "available": False,
+            "plan_id": None,
+            "plan_status": None,
+            "step_count": None,
+            "active_step_id": None,
+            "active_step_title": None,
+            "checkpoint_count": None,
+            "resume_posture": None,
+            "candidate_action": None,
+            "active_step_runtime": None,
+            "latest_step_runtime": None,
+            "missing_reason": "no planning summary is available for this run",
+        }
+
+    plan = flow_run.outputs.get("planning")
+    if not isinstance(plan, PlanArtifact):
+        return {
+            "available": False,
+            "plan_id": None,
+            "plan_status": None,
+            "step_count": None,
+            "active_step_id": None,
+            "active_step_title": None,
+            "checkpoint_count": None,
+            "resume_posture": None,
+            "candidate_action": None,
+            "active_step_runtime": None,
+            "latest_step_runtime": None,
+            "missing_reason": "no planning summary is available for this run",
+        }
+
+    active_step = plan.active_step
+    candidate = materialize_active_step_action(
+        plan=plan,
+        scope=flow_run.lifecycle.scope,
+        basis_state_version=0,
+        require_single_open_step=False,
+    )
+    return {
+        "available": True,
+        "plan_id": plan.plan_id,
+        "plan_status": plan.plan_status,
+        "step_count": len(plan.intended_steps),
+        "active_step_id": plan.active_step_id,
+        "active_step_title": None if active_step is None else active_step.title,
+        "checkpoint_count": len(plan.checkpoint_history),
+        "resume_posture": resume_posture(plan),
+        "candidate_action": {
+            "available": candidate.action_formed,
+            "step_id": candidate.step_id,
+            "action_id": None if candidate.action is None else str(candidate.action.action_id),
+            "intent_summary": None if candidate.action is None else candidate.action.intent_summary,
+            "no_action_reason": candidate.no_action_reason,
+            "summary": candidate.summary,
+        },
+        "active_step_runtime": None if active_step is None else _plan_step_runtime_json(plan.runtime_for_step(active_step.step_id)),
+        "latest_step_runtime": _plan_step_runtime_json(plan.latest_runtime_record),
+        "missing_reason": None,
+    }
+
+
+def plan_show_json(*, project: Project, work_unit: WorkUnit, run: Run, flow_run: FlowRunResult, plan: PlanArtifact) -> dict[str, Any]:
+    candidate = materialize_active_step_action(
+        plan=plan,
+        scope=flow_run.lifecycle.scope,
+        basis_state_version=0,
+        require_single_open_step=False,
+    )
+    active = plan.active_step
+    return {
+        "view": "plan_show",
+        "truth": {
+            "project_id": str(project.project_id),
+            "work_unit_id": str(work_unit.work_unit_id),
+            "run_id": str(run.run_id),
+        },
+        "plan": {
+            "available": True,
+            "plan_id": plan.plan_id,
+            "selected_proposal_id": None if plan.selected_proposal_id is None else str(plan.selected_proposal_id),
+            "bounded_objective": plan.bounded_objective,
+            "plan_status": plan.plan_status,
+            "origin_basis": plan.origin_basis,
+            "revision_number": plan.revision_number,
+            "active_step_id": plan.active_step_id,
+            "step_count": len(plan.intended_steps),
+            "checkpoint_count": len(plan.checkpoint_history),
+            "resume_posture": resume_posture(plan),
+            "assumptions": list(plan.assumptions),
+            "dependencies": list(plan.dependencies),
+            "risks": list(plan.risks),
+            "blockers": list(plan.blockers),
+            "checkpoints": list(plan.checkpoints),
+            "stop_conditions": list(plan.stop_conditions),
+            "invalidation_conditions": list(plan.invalidation_conditions),
+            "support_refs": list(plan.support_refs),
+        },
+        "active_step": None if active is None else _plan_step_json(active),
+        "active_step_runtime": None if active is None else _plan_step_runtime_json(plan.runtime_for_step(active.step_id)),
+        "latest_step_runtime": _plan_step_runtime_json(plan.latest_runtime_record),
+        "candidate_action": {
+            "available": candidate.action_formed,
+            "step_id": candidate.step_id,
+            "action_id": None if candidate.action is None else str(candidate.action.action_id),
+            "intent_summary": None if candidate.action is None else candidate.action.intent_summary,
+            "no_action_reason": candidate.no_action_reason,
+            "summary": candidate.summary,
+        },
+        "checkpoint_history": [
+            {
+                "checkpoint_id": item.checkpoint_id,
+                "step_id": item.step_id,
+                "decision": item.decision,
+                "summary": item.summary,
+                "previous_plan_status": item.previous_plan_status,
+                "resulting_plan_status": item.resulting_plan_status,
+                "next_active_step_id": item.next_active_step_id,
+            }
+            for item in plan.checkpoint_history
+        ],
+    }
+
+
+def plan_steps_json(*, project: Project, work_unit: WorkUnit, run: Run, plan: PlanArtifact) -> dict[str, Any]:
+    return {
+        "view": "plan_steps",
+        "truth": {
+            "project_id": str(project.project_id),
+            "work_unit_id": str(work_unit.work_unit_id),
+            "run_id": str(run.run_id),
+            "plan_id": plan.plan_id,
+        },
+        "steps": [_plan_step_json(step, runtime_record=plan.runtime_for_step(step.step_id)) for step in plan.intended_steps],
+    }
+
+
+def plan_checkpoint_json(*, project: Project, work_unit: WorkUnit, run: Run, plan: PlanArtifact) -> dict[str, Any]:
+    latest = None if not plan.checkpoint_history else plan.checkpoint_history[-1]
+    return {
+        "view": "plan_checkpoint",
+        "truth": {
+            "project_id": str(project.project_id),
+            "work_unit_id": str(work_unit.work_unit_id),
+            "run_id": str(run.run_id),
+            "plan_id": plan.plan_id,
+        },
+        "checkpoint": {
+            "available": latest is not None,
+            "plan_status": plan.plan_status,
+            "active_step_id": plan.active_step_id,
+            "resume_posture": resume_posture(plan),
+            "latest_runtime": _plan_step_runtime_json(plan.latest_runtime_record),
+            "latest": None if latest is None else {
+                "checkpoint_id": latest.checkpoint_id,
+                "step_id": latest.step_id,
+                "decision": latest.decision,
+                "summary": latest.summary,
+                "previous_plan_status": latest.previous_plan_status,
+                "resulting_plan_status": latest.resulting_plan_status,
+                "next_active_step_id": latest.next_active_step_id,
+            },
+        },
+    }
+
+
+def plan_execute_json(
+    *,
+    project: Project,
+    work_unit: WorkUnit,
+    run: Run,
+    plan: PlanArtifact,
+    executable: bool,
+    executed: bool,
+    action_id: str | None,
+    execution_reason: str,
+    governance: Any | None,
+    execution: Any | None,
+    outcome: Any | None,
+    evaluation: Any | None,
+) -> dict[str, Any]:
+    active_runtime = plan.active_step_runtime
+    latest_checkpoint = None if not plan.checkpoint_history else plan.checkpoint_history[-1]
+    return {
+        "view": "plan_execute",
+        "truth": {
+            "project_id": str(project.project_id),
+            "work_unit_id": str(work_unit.work_unit_id),
+            "run_id": str(run.run_id),
+            "plan_id": plan.plan_id,
+        },
+        "execution_attempt": {
+            "active_step_id": plan.active_step_id,
+            "executable": executable,
+            "executed": executed,
+            "action_id": action_id,
+            "reason": execution_reason,
+        },
+        "plan": {
+            "plan_status": plan.plan_status,
+            "active_step_id": plan.active_step_id,
+            "resume_posture": resume_posture(plan),
+            "checkpoint_count": len(plan.checkpoint_history),
+        },
+        "active_step_runtime": _plan_step_runtime_json(active_runtime),
+        "governance": None if governance is None else {
+            "governance_outcome": governance.governance_outcome,
+            "allowed_now": governance.allowed_now,
+            "approval_verdict": governance.approval_verdict,
+            "policy_verdict": governance.policy_verdict,
+            "readiness_state": governance.readiness.readiness_state,
+            "reason_summary": "; ".join(governance.readiness.reasons or governance.readiness.cautions or ()),
+        },
+        "execution": None if execution is None else {
+            "execution_status": execution.execution_status,
+            "execution_command_id": execution.execution_command_id,
+            "exit_code": execution.exit_code,
+            "output_summary": execution.output_summary,
+        },
+        "outcome": None if outcome is None else {
+            "outcome_state": outcome.outcome_state,
+            "observed_completion_posture": outcome.observed_completion_posture,
+            "target_effect_posture": outcome.target_effect_posture,
+        },
+        "evaluation": None if evaluation is None else {
+            "evaluation_verdict": evaluation.evaluation_verdict,
+            "recommended_next_step": evaluation.recommended_next_step,
+            "rationale": evaluation.rationale,
+        },
+        "checkpoint": None if latest_checkpoint is None else {
+            "decision": latest_checkpoint.decision,
+            "summary": latest_checkpoint.summary,
+            "resulting_plan_status": latest_checkpoint.resulting_plan_status,
+            "next_active_step_id": latest_checkpoint.next_active_step_id,
+        },
+    }
+
+
+def _plan_step_json(step: Any, runtime_record: Any | None = None) -> dict[str, Any]:
+    return {
+        "step_id": step.step_id,
+        "step_order": step.step_order,
+        "title": step.title,
+        "summary": step.summary,
+        "step_objective": step.step_objective,
+        "step_type": step.step_type,
+        "step_inputs_summary": list(step.step_inputs_summary),
+        "assumptions": list(step.assumptions),
+        "risks": list(step.risks),
+        "dependencies": list(step.dependencies),
+        "entry_conditions": list(step.entry_conditions),
+        "success_criteria": list(step.success_criteria),
+        "checkpoint_required": step.checkpoint_required,
+        "revalidation_required_on_resume": step.revalidation_required_on_resume,
+        "candidate_action_summary": step.candidate_action_summary,
+        "step_status": step.step_status,
+        "support_refs": list(step.support_refs),
+        "runtime": _plan_step_runtime_json(runtime_record),
+    }
+
+
+def _plan_step_runtime_json(runtime_record: Any | None) -> dict[str, Any] | None:
+    if runtime_record is None:
+        return None
+    return {
+        "step_id": runtime_record.step_id,
+        "runtime_state": runtime_record.runtime_state,
+        "executability_posture": runtime_record.executability_posture,
+        "action_id": runtime_record.action_id,
+        "action_intent_summary": runtime_record.action_intent_summary,
+        "last_governance_outcome": runtime_record.last_governance_outcome,
+        "last_governance_allowed_now": runtime_record.last_governance_allowed_now,
+        "last_governance_reason_summary": runtime_record.last_governance_reason_summary,
+        "last_execution_status": runtime_record.last_execution_status,
+        "last_execution_command_id": runtime_record.last_execution_command_id,
+        "last_execution_summary": runtime_record.last_execution_summary,
+        "last_outcome_state": runtime_record.last_outcome_state,
+        "last_outcome_summary": runtime_record.last_outcome_summary,
+        "last_evaluation_verdict": runtime_record.last_evaluation_verdict,
+        "last_evaluation_next_step": runtime_record.last_evaluation_next_step,
+        "last_evaluation_reason_summary": runtime_record.last_evaluation_reason_summary,
+        "latest_checkpoint_decision": runtime_record.latest_checkpoint_decision,
+        "latest_checkpoint_summary": runtime_record.latest_checkpoint_summary,
+    }
+
+
 def proposal_record_json(
     *,
     record: ProposalOperatorRecord,
@@ -733,6 +1034,7 @@ def proposal_record_json(
             "final_result_available": record.final_proposal_result is not None,
             "parsed_intermediate_available": summary["parsed_intermediate_available"],
         },
+        "proposal_input_bundle": _proposal_input_bundle_summary_json(record),
         "attempts": {
             "initial": _proposal_attempt_json(record.initial_attempt),
             "repair": None if record.repair_attempt is None else _proposal_attempt_json(record.repair_attempt),
@@ -856,6 +1158,134 @@ def _proposal_record_summary(record: ProposalOperatorRecord) -> dict[str, Any]:
         "retained_options": [],
         "summary_source": "none",
         "parsed_intermediate_available": False,
+    }
+
+
+def _proposal_input_bundle_summary_json(record: ProposalOperatorRecord) -> dict[str, Any]:
+    bundle = record.proposal_input_bundle
+    return {
+        "request_frame": {
+            "objective": bundle.request_frame.objective,
+            "trigger_summary": bundle.request_frame.trigger_summary,
+            "purpose": bundle.request_frame.purpose,
+            "visible_constraints": list(bundle.request_frame.visible_constraints),
+        },
+        "scope_frame": {
+            "project_id": bundle.scope_frame.project_id,
+            "work_unit_id": bundle.scope_frame.work_unit_id,
+            "run_id": bundle.scope_frame.run_id,
+        },
+        "truth_snapshot": {
+            "item_count": len(bundle.truth_snapshot.items),
+            "items": [
+                {
+                    "source_label": item.source_label,
+                    "truth_family": item.truth_family,
+                    "summary": item.summary,
+                }
+                for item in bundle.truth_snapshot.items
+            ],
+        },
+        "governance_relevant_support": {
+            "item_count": len(bundle.governance_relevant_support.items),
+            "items": [
+                {
+                    "source_label": item.source_label,
+                    "source_family": item.source_family,
+                    "summary": item.summary,
+                    "source_id": item.source_id,
+                }
+                for item in bundle.governance_relevant_support.items
+            ],
+        },
+        "current_execution_support": {
+            "item_count": len(bundle.current_execution_support.items),
+            "items": [
+                {
+                    "source_label": item.source_label,
+                    "source_family": item.source_family,
+                    "summary": item.summary,
+                    "source_id": item.source_id,
+                }
+                for item in bundle.current_execution_support.items
+            ],
+        },
+        "evidence_support": {
+            "evidence_count": len(bundle.evidence_support.evidence_summaries),
+            "uncertainty_count": len(bundle.evidence_support.uncertainty_summaries),
+            "contradiction_count": len(bundle.evidence_support.contradiction_summaries),
+            "artifact_refs": list(bundle.evidence_support.artifact_refs),
+            "evidence_summaries": [
+                {
+                    "source_label": item.source_label,
+                    "source_family": item.source_family,
+                    "summary": item.summary,
+                    "source_id": item.source_id,
+                }
+                for item in bundle.evidence_support.evidence_summaries
+            ],
+            "uncertainty_summaries": [
+                {
+                    "source_label": item.source_label,
+                    "source_family": item.source_family,
+                    "summary": item.summary,
+                    "source_id": item.source_id,
+                }
+                for item in bundle.evidence_support.uncertainty_summaries
+            ],
+            "contradiction_summaries": [
+                {
+                    "source_label": item.source_label,
+                    "source_family": item.source_family,
+                    "summary": item.summary,
+                    "source_id": item.source_id,
+                }
+                for item in bundle.evidence_support.contradiction_summaries
+            ],
+        },
+        "memory_support": {
+            "memory_ids": list(bundle.memory_support.memory_ids),
+            "summary_count": len(bundle.memory_support.memory_summaries),
+            "lesson_count": len(bundle.memory_support.memory_lessons),
+            "risk_count": len(bundle.memory_support.memory_risk_reminders),
+            "precedent_count": len(bundle.memory_support.memory_precedents),
+            "memory_summaries": [
+                {
+                    "source_label": item.source_label,
+                    "source_family": item.source_family,
+                    "summary": item.summary,
+                    "source_id": item.source_id,
+                }
+                for item in bundle.memory_support.memory_summaries
+            ],
+            "memory_lessons": [
+                {
+                    "source_label": item.source_label,
+                    "source_family": item.source_family,
+                    "summary": item.summary,
+                    "source_id": item.source_id,
+                }
+                for item in bundle.memory_support.memory_lessons
+            ],
+            "memory_risk_reminders": [
+                {
+                    "source_label": item.source_label,
+                    "source_family": item.source_family,
+                    "summary": item.summary,
+                    "source_id": item.source_id,
+                }
+                for item in bundle.memory_support.memory_risk_reminders
+            ],
+            "memory_precedents": [
+                {
+                    "source_label": item.source_label,
+                    "source_family": item.source_family,
+                    "summary": item.summary,
+                    "source_id": item.source_id,
+                }
+                for item in bundle.memory_support.memory_precedents
+            ],
+        },
     }
 
 

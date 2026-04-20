@@ -1,0 +1,14 @@
+PROPOSAL_COUNT: 1
+SCARCITY_REASON: Support is limited to the objective and existence of the run record, providing only one direct path for validation.
+OPTION_1_TYPE: direct_action
+OPTION_1_TITLE: Run bounded validation path for run-5
+OPTION_1_SUMMARY: Execute the bounded validation path associated with run-5 and report any failures truthfully.
+OPTION_1_WHY_NOW: The objective explicitly triggers the need to run the validation path and surface failures.
+OPTION_1_ASSUMPTIONS: No explicit assumptions identified from the provided support.
+OPTION_1_RISKS: No explicit risks identified from the provided support.
+OPTION_1_CONSTRAINTS: No explicit constraints identified from the provided support.
+OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.
+OPTION_1_PLANNING_NEEDED: no
+OPTION_1_FEASIBILITY: No explicit feasibility statement identified from the provided support.
+OPTION_1_REVERSIBILITY: No explicit reversibility statement identified from the provided support.
+OPTION_1_SUPPORT_REFS: truth_record_3

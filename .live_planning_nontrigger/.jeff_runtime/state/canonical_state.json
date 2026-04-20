@@ -1,0 +1,40 @@
+{
+  "record_class": "canonical_state_snapshot",
+  "recorded_at": "2026-04-20T18:48:12+00:00",
+  "schema_version": "1.0",
+  "state": {
+    "projects": {
+      "project-1": {
+        "name": "Jeff Runtime Project",
+        "project_id": "project-1",
+        "project_lifecycle_state": "active",
+        "work_units": {
+          "wu-1": {
+            "objective": "Current bounded Jeff work.",
+            "project_id": "project-1",
+            "runs": {
+              "run-1": {
+                "last_evaluation_verdict": "unacceptable",
+                "last_execution_status": "failed",
+                "last_outcome_state": "failed",
+                "project_id": "project-1",
+                "run_id": "run-1",
+                "run_lifecycle_state": "completed",
+                "work_unit_id": "wu-1"
+              }
+            },
+            "work_unit_id": "wu-1",
+            "work_unit_lifecycle_state": "open"
+          }
+        }
+      }
+    },
+    "state_meta": {
+      "last_transition_id": "transition-sync-run-project-1-wu-1-run-1-4",
+      "state_version": 4
+    },
+    "system": {
+      "system_lifecycle_state": "ready"
+    }
+  }
+}

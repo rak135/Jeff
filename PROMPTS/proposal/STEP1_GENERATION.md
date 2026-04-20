@@ -26,6 +26,10 @@ Each output value must stay on one physical line.
 Use semicolon-separated items for list-like fields and comma-separated items for support refs.
 Do not output NONE anywhere.
 Each required line must appear exactly once in canonical order.
+Treat the request frame, scope frame, truth snapshot, governance-relevant support, current execution support, evidence support, and memory support as usable support when they directly justify a narrower statement.
+Do not use fallback text for assumptions, risks, constraints, blockers, feasibility, or reversibility if the request frame, current scope, governance-relevant support, current execution support, evidence support, or memory support already grounds a specific bounded statement.
+For PROPOSAL_COUNT 1, make SCARCITY_REASON name the specific narrowing factor instead of generic "only one path exists" wording.
+For direct_action, name the concrete bounded target from the objective or support rather than generic "take the next step" phrasing.
 
 Use these exact fallback values when the field has no supported content:
 - SCARCITY fallback for PROPOSAL_COUNT 2 or 3 only: No additional scarcity explanation identified from the provided support.
@@ -80,6 +84,7 @@ WHEN INFORMATION IS MISSING:
 - Keep the option narrower rather than stronger.
 - Use the exact fallback values above instead of NONE.
 - Make SCARCITY_REASON explicit whenever fewer than two serious options exist.
+- Ground the option in the actual objective and scope before falling back to generic placeholder language.
 
 INTERNAL SELF-CHECK BEFORE RETURNING:
 - PROPOSAL_COUNT matches the number of emitted option blocks.
@@ -109,14 +114,20 @@ OPTION_1_FEASIBILITY: Feasible if the required evidence can be gathered now
 OPTION_1_REVERSIBILITY: Fully reversible because it is information-gathering only
 OPTION_1_SUPPORT_REFS: ctx-1,research-2
 
-OBJECTIVE:
-{{OBJECTIVE}}
-SCOPE:
-{{SCOPE}}
+REQUEST_FRAME:
+{{REQUEST_FRAME}}
+SCOPE_FRAME:
+{{SCOPE_FRAME}}
 TRUTH_SNAPSHOT:
 {{TRUTH_SNAPSHOT}}
-CURRENT_CONSTRAINTS:
-{{CURRENT_CONSTRAINTS}}
+GOVERNANCE_RELEVANT_SUPPORT:
+{{GOVERNANCE_RELEVANT_SUPPORT}}
+CURRENT_EXECUTION_SUPPORT:
+{{CURRENT_EXECUTION_SUPPORT}}
+EVIDENCE_SUPPORT:
+{{EVIDENCE_SUPPORT}}
+MEMORY_SUPPORT:
+{{MEMORY_SUPPORT}}
 RESEARCH_SUPPORT:
 {{RESEARCH_SUPPORT}}
 OTHER_SUPPORT:

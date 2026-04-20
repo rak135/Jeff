@@ -1,0 +1,29 @@
+{
+  "record_class": "transition_audit_support",
+  "recorded_at": "2026-04-20T18:48:28+00:00",
+  "request": {
+    "basis_state_version": 1,
+    "payload": {
+      "objective": "Current bounded Jeff work.",
+      "work_unit_id": "wu-1"
+    },
+    "scope": {
+      "project_id": "project-1",
+      "run_id": null,
+      "work_unit_id": null
+    },
+    "transition_id": "transition-work-unit",
+    "transition_type": "create_work_unit"
+  },
+  "result": {
+    "changed_paths": [
+      "projects.project-1.work_units.wu-1"
+    ],
+    "state_after_version": 2,
+    "state_before_version": 1,
+    "transition_id": "transition-work-unit",
+    "transition_result": "committed",
+    "validation_errors": []
+  },
+  "schema_version": "1.0"
+}

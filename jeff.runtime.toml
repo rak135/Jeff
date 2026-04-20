@@ -5,6 +5,9 @@ default_adapter_id = "ollama_default"
 artifact_store_root = ".jeff_runtime/artifacts/research"
 enable_memory_handoff = true
 
+[research.memory]
+backend = "local_file"
+
 [[adapters]]
 adapter_id = "ollama_default"
 provider_kind = "ollama"

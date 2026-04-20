@@ -44,7 +44,7 @@ def test_single_review_required_step_does_not_form_action() -> None:
 
     assert result.action_formed is False
     assert result.action is None
-    assert "requires review" in result.no_action_reason
+    assert "review-only" in result.no_action_reason
 
 
 def test_missing_plan_output_fails_closed() -> None:
@@ -87,7 +87,7 @@ def test_multi_step_plan_does_not_guess_action() -> None:
 
     assert result.action_formed is False
     assert result.action is None
-    assert "do not define how to choose exactly one executable next action" in result.no_action_reason
+    assert "must not guess a single executable next action" in result.no_action_reason
 
 
 def test_action_basis_summary_maps_cleanly_to_action_intent_summary() -> None:

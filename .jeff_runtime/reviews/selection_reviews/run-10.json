@@ -1,0 +1,89 @@
+{
+  "action_scope": {
+    "project_id": "project-1",
+    "run_id": "run-10",
+    "work_unit_id": "wu-1"
+  },
+  "basis_state_version": 24,
+  "governance_approval": {
+    "action_binding_key": null,
+    "action_id": null,
+    "approval_verdict": "not_required",
+    "basis_state_version": null
+  },
+  "governance_policy": {
+    "action_forbidden": false,
+    "approval_required": false,
+    "destructive": false,
+    "direction_sensitive": false,
+    "freshness_sensitive": true,
+    "protected_surface": false,
+    "revalidation_required": false
+  },
+  "governance_truth": {
+    "blocked_reasons": [],
+    "degraded_truth": false,
+    "direction_ok": true,
+    "requires_revalidation": false,
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-10",
+      "work_unit_id": "wu-1"
+    },
+    "state_version": 24,
+    "target_available": true,
+    "truth_mismatch": false
+  },
+  "operator_override": null,
+  "proposal_result": {
+    "options": [
+      {
+        "assumptions": [
+          "No blockers exist that invalidate the fixed repo-local validation plan"
+        ],
+        "blockers": [],
+        "constraints": [
+          "The /run path is limited to this one bounded repo-local validation plan and is not a general execution surface"
+        ],
+        "feasibility": null,
+        "main_risks": [],
+        "option_index": 1,
+        "planning_needed": false,
+        "proposal_id": "proposal-1",
+        "proposal_type": "direct_action",
+        "reversibility": null,
+        "summary": "Execute the fixed bounded repo-local validation plan as the only supported path for the current run.",
+        "support_refs": [
+          "visible_constraint:1",
+          "visible_constraint:2",
+          "governance_support_1",
+          "governance_support_2",
+          "current_execution_support_1",
+          "current_execution_support_2"
+        ],
+        "title": "Execute repo-local validation plan",
+        "why_now": "The objective identifies the bounded repo-local validation plan as the candidate for the current run."
+      }
+    ],
+    "request_id": "proposal-generation:project-1:wu-1:run-10:what-bounded-rollout-should-execute-now:repair-1",
+    "scarcity_reason": "Visible constraints restrict the current /run path to a single bounded repo-local validation plan.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-10",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "record_class": "selection_review_support",
+  "recorded_at": "2026-04-20T17:49:10+00:00",
+  "run_id": "run-10",
+  "schema_version": "1.0",
+  "selection_result": {
+    "considered_proposal_ids": [
+      "proposal-1"
+    ],
+    "non_selection_outcome": null,
+    "rationale": "selected proposal-1 because it stays within bounded choice with stronger visible support and the lightest visible decision burden.",
+    "selected_proposal_id": "proposal-1",
+    "selection_id": "run-10:selection"
+  }
+}

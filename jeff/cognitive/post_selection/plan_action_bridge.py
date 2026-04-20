@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from jeff.cognitive import PlanArtifact
+from jeff.cognitive import PlanArtifact, materialize_active_step_action
 from jeff.contracts import Action
 from jeff.core.schemas import Scope
 
@@ -155,21 +155,7 @@ def bridge_plan_to_action(
             summary="No Action formed because the plan artifact does not preserve selected proposal linkage.",
         )
 
-    if len(plan.intended_steps) != 1:
-        return PlannedActionBridgeResult(
-            bridge_id=f"plan-action-bridge:{request_id}",
-            action=None,
-            action_formed=False,
-            plan_selected_proposal_id=str(plan.selected_proposal_id),
-            action_basis_summary=None,
-            no_action_reason=(
-                f"Plan artifact contains {len(plan.intended_steps)} intended steps and current repo semantics "
-                "do not define how to choose exactly one executable next action."
-            ),
-            summary="No Action formed because the current plan artifact exposes multiple intended steps.",
-        )
-
-    planned_step = plan.intended_steps[0]
+    planned_step = plan.active_step or plan.intended_steps[0]
     if not isinstance(planned_step, PlanStep):
         raise PlanActionBridgeError(
             (
@@ -181,22 +167,26 @@ def bridge_plan_to_action(
             )
         )
 
-    if planned_step.review_required:
+    candidate = materialize_active_step_action(
+        plan=plan,
+        scope=request.scope,
+        basis_state_version=request.basis_state_version,
+        require_single_open_step=True,
+    )
+    if not candidate.action_formed or candidate.action is None:
         return PlannedActionBridgeResult(
             bridge_id=f"plan-action-bridge:{request_id}",
             action=None,
             action_formed=False,
             plan_selected_proposal_id=str(plan.selected_proposal_id),
             action_basis_summary=None,
-            no_action_reason=(
-                "The only intended step requires review and does not yet provide one executable action basis."
-            ),
-            summary="No Action formed because the current plan artifact still requires review before execution.",
+            no_action_reason=candidate.no_action_reason,
+            summary=candidate.summary,
         )
 
     try:
         action_basis_summary = require_text(
-            planned_step.summary,
+            candidate.action.intent_summary,
             field_name="plan_artifact.intended_steps[0].summary",
         )
     except (TypeError, ValueError) as exc:
@@ -210,26 +200,15 @@ def bridge_plan_to_action(
             )
         ) from exc
 
-    action = Action(
-        action_id=f"action:planned:{plan.selected_proposal_id}:{request_id}",
-        scope=request.scope,
-        intent_summary=action_basis_summary,
-        target_summary=plan.bounded_objective,
-        basis_state_version=request.basis_state_version,
-        basis_label=(
-            f"planned_action;proposal_id={plan.selected_proposal_id};"
-            "action_basis=single_intended_step"
-        ),
-    )
     return PlannedActionBridgeResult(
         bridge_id=f"plan-action-bridge:{request_id}",
-        action=action,
+        action=candidate.action,
         action_formed=True,
         plan_selected_proposal_id=str(plan.selected_proposal_id),
         action_basis_summary=action_basis_summary,
         no_action_reason=None,
         summary=(
-            f"Action formed from plan output for proposal {plan.selected_proposal_id} using the single bounded "
-            "intended step."
+            f"Action formed from plan output for proposal {plan.selected_proposal_id} using the active bounded "
+            "plan step."
         ),
     )

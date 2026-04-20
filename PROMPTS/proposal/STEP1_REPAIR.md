@@ -32,6 +32,9 @@ CANONICAL CONTRACT REMINDER:
 - OPTION_n fields must appear exactly once per retained option and in canonical order.
 - Direct_action remains only a candidate path, never permission or readiness.
 - Do not use approval, authorization, winner, selected, best-option, ready-to-start, proceed-now, execute-now, or similar authority language.
+- Re-ground assumptions, risks, constraints, blockers, feasibility, reversibility, and scarcity in the request frame, scope frame, truth snapshot, governance-relevant support, current execution support, evidence support, and memory support before using fallback text.
+- For PROPOSAL_COUNT 1, make SCARCITY_REASON name the concrete narrowing factor instead of generic "only one path exists" wording.
+- For direct_action, name the concrete bounded target from the objective or support rather than generic next-step phrasing.
 
 FAILURE_STAGE:
 {{FAILURE_STAGE}}
@@ -42,14 +45,20 @@ VALIDATION_ISSUES:
 PRIOR_OUTPUT:
 {{PRIOR_OUTPUT}}
 
-OBJECTIVE:
-{{OBJECTIVE}}
-SCOPE:
-{{SCOPE}}
+REQUEST_FRAME:
+{{REQUEST_FRAME}}
+SCOPE_FRAME:
+{{SCOPE_FRAME}}
 TRUTH_SNAPSHOT:
 {{TRUTH_SNAPSHOT}}
-CURRENT_CONSTRAINTS:
-{{CURRENT_CONSTRAINTS}}
+GOVERNANCE_RELEVANT_SUPPORT:
+{{GOVERNANCE_RELEVANT_SUPPORT}}
+CURRENT_EXECUTION_SUPPORT:
+{{CURRENT_EXECUTION_SUPPORT}}
+EVIDENCE_SUPPORT:
+{{EVIDENCE_SUPPORT}}
+MEMORY_SUPPORT:
+{{MEMORY_SUPPORT}}
 RESEARCH_SUPPORT:
 {{RESEARCH_SUPPORT}}
 OTHER_SUPPORT:

@@ -1,0 +1,48 @@
+{
+  "artifact_family": "source_set",
+  "artifact_id": "artifact-b0d130794d754f48",
+  "claim_evidence_links": [],
+  "comparison_criteria": [],
+  "comparison_targets": [],
+  "derived_from_artifact_ids": [
+    "research-2cbb6dbf21ab48d4"
+  ],
+  "effective_date": null,
+  "effective_period": null,
+  "event_date": null,
+  "event_framing": null,
+  "evidence_items": [],
+  "evidence_refs": [],
+  "findings": [],
+  "freshness_posture": null,
+  "generated_at": "2026-04-20T19:44:00.899383+00:00",
+  "inference": [],
+  "next_history_record_id": null,
+  "observed_date": null,
+  "previous_history_record_id": null,
+  "project_id": "general_research",
+  "question_or_objective": "startup summary",
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_groupings": [
+    {
+      "group_name": "document",
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    }
+  ],
+  "source_ordering": [
+    "document-81eea87a35d7"
+  ],
+  "source_refs": [
+    "document-81eea87a35d7"
+  ],
+  "source_selection_scope": "Bounded source set captured from local_documents for: startup summary",
+  "staleness_sensitivity": "medium",
+  "summary": "The bounded source selection for this research run remains reproducible and project-scoped.",
+  "support_only": true,
+  "title": "Source set: startup summary",
+  "uncertainty": [],
+  "work_unit_id": "research-docs-startup-summary-43bf0309"
+}

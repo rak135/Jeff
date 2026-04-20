@@ -1,0 +1,333 @@
+{
+  "artifact_family": "evidence_bundle",
+  "artifact_id": "artifact-25353fba49474216",
+  "claim_evidence_links": [
+    {
+      "claim_text": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_ids": [
+        "research-ea051c3a99226327:evidence:1",
+        "research-ea051c3a99226327:evidence:2",
+        "research-ea051c3a99226327:evidence:3",
+        "research-ea051c3a99226327:evidence:4",
+        "research-ea051c3a99226327:evidence:5",
+        "research-ea051c3a99226327:evidence:6",
+        "research-ea051c3a99226327:evidence:7",
+        "research-ea051c3a99226327:evidence:8",
+        "research-ea051c3a99226327:evidence:9",
+        "research-ea051c3a99226327:evidence:10",
+        "research-ea051c3a99226327:evidence:11",
+        "research-ea051c3a99226327:evidence:12",
+        "research-ea051c3a99226327:evidence:13",
+        "research-ea051c3a99226327:evidence:14",
+        "research-ea051c3a99226327:evidence:15",
+        "research-ea051c3a99226327:evidence:16"
+      ]
+    },
+    {
+      "claim_text": "Fresh or reset runtimes initialize project-1 and wu-1 without seeded history, while subsequent startups reload existing canonical state and support records",
+      "evidence_ids": [
+        "research-ea051c3a99226327:evidence:1",
+        "research-ea051c3a99226327:evidence:2",
+        "research-ea051c3a99226327:evidence:3",
+        "research-ea051c3a99226327:evidence:4",
+        "research-ea051c3a99226327:evidence:5",
+        "research-ea051c3a99226327:evidence:6",
+        "research-ea051c3a99226327:evidence:7",
+        "research-ea051c3a99226327:evidence:8",
+        "research-ea051c3a99226327:evidence:9",
+        "research-ea051c3a99226327:evidence:10",
+        "research-ea051c3a99226327:evidence:11",
+        "research-ea051c3a99226327:evidence:12",
+        "research-ea051c3a99226327:evidence:13",
+        "research-ea051c3a99226327:evidence:14",
+        "research-ea051c3a99226327:evidence:15",
+        "research-ea051c3a99226327:evidence:16"
+      ]
+    },
+    {
+      "claim_text": "Startup does not include a GUI, daemon, or background continuation",
+      "evidence_ids": [
+        "research-ea051c3a99226327:evidence:1",
+        "research-ea051c3a99226327:evidence:2",
+        "research-ea051c3a99226327:evidence:3",
+        "research-ea051c3a99226327:evidence:4",
+        "research-ea051c3a99226327:evidence:5",
+        "research-ea051c3a99226327:evidence:6",
+        "research-ea051c3a99226327:evidence:7",
+        "research-ea051c3a99226327:evidence:8",
+        "research-ea051c3a99226327:evidence:9",
+        "research-ea051c3a99226327:evidence:10",
+        "research-ea051c3a99226327:evidence:11",
+        "research-ea051c3a99226327:evidence:12",
+        "research-ea051c3a99226327:evidence:13",
+        "research-ea051c3a99226327:evidence:14",
+        "research-ea051c3a99226327:evidence:15",
+        "research-ea051c3a99226327:evidence:16"
+      ]
+    },
+    {
+      "claim_text": "The system is a CLI-first persisted-runtime v1 backbone",
+      "evidence_ids": [
+        "research-ea051c3a99226327:evidence:1",
+        "research-ea051c3a99226327:evidence:2",
+        "research-ea051c3a99226327:evidence:3",
+        "research-ea051c3a99226327:evidence:4",
+        "research-ea051c3a99226327:evidence:5",
+        "research-ea051c3a99226327:evidence:6",
+        "research-ea051c3a99226327:evidence:7",
+        "research-ea051c3a99226327:evidence:8",
+        "research-ea051c3a99226327:evidence:9",
+        "research-ea051c3a99226327:evidence:10",
+        "research-ea051c3a99226327:evidence:11",
+        "research-ea051c3a99226327:evidence:12",
+        "research-ea051c3a99226327:evidence:13",
+        "research-ea051c3a99226327:evidence:14",
+        "research-ea051c3a99226327:evidence:15",
+        "research-ea051c3a99226327:evidence:16"
+      ]
+    },
+    {
+      "claim_text": "Access to /run and /research commands during startup requires a local jeff.runtime.toml file",
+      "evidence_ids": [
+        "research-ea051c3a99226327:evidence:1",
+        "research-ea051c3a99226327:evidence:2",
+        "research-ea051c3a99226327:evidence:3",
+        "research-ea051c3a99226327:evidence:4",
+        "research-ea051c3a99226327:evidence:5",
+        "research-ea051c3a99226327:evidence:6",
+        "research-ea051c3a99226327:evidence:7",
+        "research-ea051c3a99226327:evidence:8",
+        "research-ea051c3a99226327:evidence:9",
+        "research-ea051c3a99226327:evidence:10",
+        "research-ea051c3a99226327:evidence:11",
+        "research-ea051c3a99226327:evidence:12",
+        "research-ea051c3a99226327:evidence:13",
+        "research-ea051c3a99226327:evidence:14",
+        "research-ea051c3a99226327:evidence:15",
+        "research-ea051c3a99226327:evidence:16"
+      ]
+    }
+  ],
+  "comparison_criteria": [],
+  "comparison_targets": [],
+  "derived_from_artifact_ids": [
+    "research-ea051c3a99226327"
+  ],
+  "effective_date": null,
+  "effective_period": null,
+  "event_date": null,
+  "event_framing": null,
+  "evidence_items": [
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:1",
+      "evidence_text": "Startup loads or initializes a persisted local runtime workspace under `.jeff_runtime`. On a fresh or reset runtime, Jeff initializes `project-1` / `wu-1` with no seeded run history; later startups reload the persisted canonical state and support records already present in that workspace. No daemon, GUI, or background continuation is started.",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:2",
+      "evidence_text": "```powershell python -m jeff --command \"/research docs `\"`\"summary`\"`\" README.md\" ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:3",
+      "evidence_text": "# Jeff",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:4",
+      "evidence_text": "Jeff is a CLI-first persisted-runtime v1 backbone. It is strongest today at truthful inspection, bounded `/run`, approval-gated continuation, research support, and anti-drift coverage. It is not a GUI, a broad API surface, an autonomous continuation system, or a broad memory product.",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:5",
+      "evidence_text": "```text python -m jeff ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:6",
+      "evidence_text": "After `pip install -e .` the `jeff` console script is also available as a bare command; without the install, use `python -m jeff`.",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:7",
+      "evidence_text": "A local `jeff.runtime.toml` enables the bounded repo-local validation `/run <repo-local-validation-objective>` path and the research commands. Without it, the read-oriented CLI still works, but `/run <repo-local-validation-objective>` and `/research ...` remain unavailable.",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:8",
+      "evidence_text": "Core startup checks:",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:9",
+      "evidence_text": "```text python -m jeff --help python -m jeff --bootstrap-check python -m jeff --reset-runtime --bootstrap-check ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:10",
+      "evidence_text": "```text python -m jeff --command \"/help\" python -m jeff --command \"/project list\" python -m jeff --project project-1 --work wu-1 --command \"/run list\" --json ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:11",
+      "evidence_text": "```text python -m jeff ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:12",
+      "evidence_text": "The primary implemented operator surface is the CLI under `jeff.interface`.",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:13",
+      "evidence_text": "- `/run <repo-local-validation-objective>` is the current bounded repo-local validation entry when `jeff.runtime.toml` is loaded. It drives one fixed smoke pytest validation plan with captured command evidence; it is not a general command runner. - `approve` records a bound approval, `revalidate` continues or fails closed, and `reject` terminally blocks that continuation for the current bounded ru",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:14",
+      "evidence_text": "```text powershell -ExecutionPolicy Bypass -File .\\scripts\\windows-postgres-memory-preflight.ps1 -Dsn \"postgresql://user:pass@localhost:5432/jeff_test\" ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:15",
+      "evidence_text": "```text $env:JEFF_TEST_POSTGRES_DSN=\"postgresql://user:pass@localhost:5432/jeff_test\" .\\.venv\\Scripts\\python.exe -m pytest tests\\integration\\memory\\test_postgres_memory.py -v ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    },
+    {
+      "caution": null,
+      "claim": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+      "evidence_id": "research-ea051c3a99226327:evidence:16",
+      "evidence_text": "```text $env:JEFF_TEST_POSTGRES_DSN=\"postgresql://user:pass@localhost:5432/jeff_test\" .\\.venv\\Scripts\\python.exe -m pytest tests\\unit\\memory tests\\integration\\memory -q ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    }
+  ],
+  "evidence_refs": [
+    "research-ea051c3a99226327:evidence:1",
+    "research-ea051c3a99226327:evidence:2",
+    "research-ea051c3a99226327:evidence:3",
+    "research-ea051c3a99226327:evidence:4",
+    "research-ea051c3a99226327:evidence:5",
+    "research-ea051c3a99226327:evidence:6",
+    "research-ea051c3a99226327:evidence:7",
+    "research-ea051c3a99226327:evidence:8",
+    "research-ea051c3a99226327:evidence:9",
+    "research-ea051c3a99226327:evidence:10",
+    "research-ea051c3a99226327:evidence:11",
+    "research-ea051c3a99226327:evidence:12",
+    "research-ea051c3a99226327:evidence:13",
+    "research-ea051c3a99226327:evidence:14",
+    "research-ea051c3a99226327:evidence:15",
+    "research-ea051c3a99226327:evidence:16"
+  ],
+  "findings": [
+    "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+    "Fresh or reset runtimes initialize project-1 and wu-1 without seeded history, while subsequent startups reload existing canonical state and support records",
+    "Startup does not include a GUI, daemon, or background continuation",
+    "The system is a CLI-first persisted-runtime v1 backbone",
+    "Access to /run and /research commands during startup requires a local jeff.runtime.toml file"
+  ],
+  "freshness_posture": null,
+  "generated_at": "2026-04-20T19:43:06.762188+00:00",
+  "inference": [
+    "The presence of jeff.runtime.toml determines whether the system operates as a read-oriented CLI or provides extended validation and research capabilities."
+  ],
+  "next_history_record_id": null,
+  "observed_date": null,
+  "previous_history_record_id": null,
+  "project_id": "general_research",
+  "question_or_objective": "Summarize Jeff README startup behavior",
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_groupings": [],
+  "source_ordering": [],
+  "source_refs": [
+    "document-81eea87a35d7"
+  ],
+  "source_selection_scope": null,
+  "staleness_sensitivity": "medium",
+  "summary": "Evidence extracted for this bounded research output remains inspectable with provenance preserved.",
+  "support_only": true,
+  "title": "Evidence bundle: Summarize Jeff README startup behavior",
+  "uncertainty": [
+    "No explicit uncertainties identified from the provided evidence."
+  ],
+  "work_unit_id": "research-docs-summarize-jeff-readme-startup-behavior-501178cf"
+}

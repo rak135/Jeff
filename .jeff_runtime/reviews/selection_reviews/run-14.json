@@ -1,0 +1,83 @@
+{
+  "action_scope": {
+    "project_id": "project-1",
+    "run_id": "run-14",
+    "work_unit_id": "wu-1"
+  },
+  "basis_state_version": 36,
+  "governance_approval": {
+    "action_binding_key": null,
+    "action_id": null,
+    "approval_verdict": "not_required",
+    "basis_state_version": null
+  },
+  "governance_policy": {
+    "action_forbidden": false,
+    "approval_required": false,
+    "destructive": false,
+    "direction_sensitive": false,
+    "freshness_sensitive": true,
+    "protected_surface": false,
+    "revalidation_required": false
+  },
+  "governance_truth": {
+    "blocked_reasons": [],
+    "degraded_truth": false,
+    "direction_ok": true,
+    "requires_revalidation": false,
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-14",
+      "work_unit_id": "wu-1"
+    },
+    "state_version": 36,
+    "target_available": true,
+    "truth_mismatch": false
+  },
+  "operator_override": null,
+  "proposal_result": {
+    "options": [
+      {
+        "assumptions": [],
+        "blockers": [],
+        "constraints": [
+          "The current /run path is limited to one bounded repo-local validation plan and is not a general execution surface"
+        ],
+        "feasibility": null,
+        "main_risks": [],
+        "option_index": 1,
+        "planning_needed": true,
+        "proposal_id": "proposal-1",
+        "proposal_type": "investigate",
+        "reversibility": null,
+        "summary": "Conduct a bounded investigation to identify why literal labels are being surfaced and determine the necessary fix.",
+        "support_refs": [
+          "visible_constraint:1",
+          "visible_constraint:2"
+        ],
+        "title": "Investigate literal label surfacing cause",
+        "why_now": "This is the primary objective required to move toward a bounded fix."
+      }
+    ],
+    "request_id": "proposal-generation:project-1:wu-1:run-14:investigate-why-the-literal-labels-are-being-surfaced-and-propose-a-bounded-fix",
+    "scarcity_reason": "The objective requires an investigation into literal labels, but the available support provides only general governance constraints on execution paths and no evidence regarding the cause of the labels.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-14",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "record_class": "selection_review_support",
+  "recorded_at": "2026-04-20T19:49:56+00:00",
+  "run_id": "run-14",
+  "schema_version": "1.0",
+  "selection_result": {
+    "considered_proposal_ids": [
+      "proposal-1"
+    ],
+    "non_selection_outcome": "defer",
+    "rationale": "defer because proposal-1 shows that bounded clarification, investigation, or another precondition is still needed before honest choice.",
+    "selected_proposal_id": null,
+    "selection_id": "run-14:selection"
+  }
+}

@@ -1,0 +1,250 @@
+{
+  "events": [
+    {
+      "emitted_at": "2026-04-20T19:47:28+00:00",
+      "event_type": "flow_started",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 1,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-13",
+        "work_unit_id": "wu-1"
+      },
+      "stage": null,
+      "summary": "flow flow:run-13 started"
+    },
+    {
+      "emitted_at": "2026-04-20T19:47:28+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 2,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-13",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "context",
+      "summary": "entered context"
+    },
+    {
+      "emitted_at": "2026-04-20T19:47:28+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 3,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-13",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "context",
+      "summary": "exited context"
+    },
+    {
+      "emitted_at": "2026-04-20T19:47:28+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 4,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-13",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "proposal",
+      "summary": "entered proposal"
+    },
+    {
+      "emitted_at": "2026-04-20T19:47:40+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 5,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-13",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "proposal",
+      "summary": "exited proposal"
+    },
+    {
+      "emitted_at": "2026-04-20T19:47:40+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 6,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-13",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "entered selection via deterministic path"
+    },
+    {
+      "emitted_at": "2026-04-20T19:47:40+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 7,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-13",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "exited selection via deterministic path"
+    },
+    {
+      "emitted_at": "2026-04-20T19:47:40+00:00",
+      "event_type": "routing_decision",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 8,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-13",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "escalated: Next stage is escalation_surface because selection returned escalate. This route stops at an explicit escalation surface in the current slice."
+    },
+    {
+      "emitted_at": "2026-04-20T19:47:40+00:00",
+      "event_type": "flow_escalated",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 9,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-13",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "Next stage is escalation_surface because selection returned escalate. This route stops at an explicit escalation surface in the current slice."
+    }
+  ],
+  "lifecycle": {
+    "current_stage": "selection",
+    "flow_family": "conditional_planning_execution",
+    "flow_id": "flow:run-13",
+    "lifecycle_state": "escalated",
+    "reason_summary": "Next stage is escalation_surface because selection returned escalate. This route stops at an explicit escalation surface in the current slice.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-13",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "memory_handoff_attempted": true,
+  "memory_handoff_note": "automatic run memory handoff completed with outcome defer",
+  "memory_handoff_result": {
+    "candidate_id": "run-memory-6d2f4011d022",
+    "memory_id": null,
+    "reasons": [
+      "support is not yet stable or strong enough for committed memory"
+    ],
+    "write_outcome": "defer"
+  },
+  "objective_summary": "Plan the next bounded operator validation slice and hold for review.",
+  "outputs": {
+    "governance_approval": {
+      "kind": "approval",
+      "value": {
+        "action_binding_key": null,
+        "action_id": null,
+        "approval_verdict": "not_required",
+        "basis_state_version": null
+      }
+    },
+    "governance_policy": {
+      "kind": "policy",
+      "value": {
+        "action_forbidden": false,
+        "approval_required": false,
+        "destructive": false,
+        "direction_sensitive": false,
+        "freshness_sensitive": true,
+        "protected_surface": false,
+        "revalidation_required": false
+      }
+    },
+    "governance_truth": {
+      "kind": "current_truth_snapshot",
+      "value": {
+        "blocked_reasons": [],
+        "degraded_truth": false,
+        "direction_ok": true,
+        "requires_revalidation": false,
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-13",
+          "work_unit_id": "wu-1"
+        },
+        "state_version": 34,
+        "target_available": true,
+        "truth_mismatch": false
+      }
+    },
+    "proposal": {
+      "kind": "proposal_result",
+      "value": {
+        "options": [
+          {
+            "assumptions": [],
+            "blockers": [],
+            "constraints": [
+              "The /run path is limited to one bounded repo-local validation plan and is not a general execution surface"
+            ],
+            "feasibility": null,
+            "main_risks": [],
+            "option_index": 1,
+            "planning_needed": true,
+            "proposal_id": "proposal-1",
+            "proposal_type": "direct_action",
+            "reversibility": null,
+            "summary": "Plan the next bounded operator validation slice using the fixed repo-local validation plan and hold for review.",
+            "support_refs": [
+              "governance_support_1",
+              "governance_support_2",
+              "current_execution_support_1",
+              "current_execution_support_2"
+            ],
+            "title": "Plan repo-local validation slice",
+            "why_now": "This is the only supported candidate path for validation under current constraints."
+          }
+        ],
+        "request_id": "proposal-generation:project-1:wu-1:run-13:plan-the-next-bounded-operator-validation-slice-and-hold-for-review",
+        "scarcity_reason": "Visible constraints limit the candidate path to a single fixed repo-local validation plan.",
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-13",
+          "work_unit_id": "wu-1"
+        }
+      }
+    },
+    "selection": {
+      "kind": "selection_result",
+      "value": {
+        "considered_proposal_ids": [
+          "proposal-1"
+        ],
+        "non_selection_outcome": "escalate",
+        "rationale": "escalate because proposal-1 frames an operator judgment boundary more honestly than forcing a bounded autonomous choice.",
+        "selected_proposal_id": null,
+        "selection_id": "run-13:selection"
+      }
+    }
+  },
+  "record_class": "flow_run_support",
+  "recorded_at": "2026-04-20T19:47:40+00:00",
+  "routing_decision": {
+    "auto_execute": false,
+    "reason_summary": "Next stage is escalation_surface because selection returned escalate. This route stops at an explicit escalation surface in the current slice.",
+    "route_kind": "hold",
+    "routed_outcome": "escalated",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-13",
+      "work_unit_id": "wu-1"
+    },
+    "source_stage": "selection"
+  },
+  "run_id": "run-13",
+  "schema_version": "1.0",
+  "selection_failure": null
+}

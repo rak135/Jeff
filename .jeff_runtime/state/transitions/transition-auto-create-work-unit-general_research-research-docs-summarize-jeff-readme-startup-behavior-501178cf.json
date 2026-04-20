@@ -1,0 +1,29 @@
+{
+  "record_class": "transition_audit_support",
+  "recorded_at": "2026-04-20T19:42:59+00:00",
+  "request": {
+    "basis_state_version": 27,
+    "payload": {
+      "objective": "Ad-hoc docs research: Summarize Jeff README startup behavior",
+      "work_unit_id": "research-docs-summarize-jeff-readme-startup-behavior-501178cf"
+    },
+    "scope": {
+      "project_id": "general_research",
+      "run_id": null,
+      "work_unit_id": null
+    },
+    "transition_id": "transition-auto-create-work-unit-general_research-research-docs-summarize-jeff-readme-startup-behavior-501178cf",
+    "transition_type": "create_work_unit"
+  },
+  "result": {
+    "changed_paths": [
+      "projects.general_research.work_units.research-docs-summarize-jeff-readme-startup-behavior-501178cf"
+    ],
+    "state_after_version": 28,
+    "state_before_version": 27,
+    "transition_id": "transition-auto-create-work-unit-general_research-research-docs-summarize-jeff-readme-startup-behavior-501178cf",
+    "transition_result": "committed",
+    "validation_errors": []
+  },
+  "schema_version": "1.0"
+}

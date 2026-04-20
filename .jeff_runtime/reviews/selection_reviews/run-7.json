@@ -1,0 +1,83 @@
+{
+  "action_scope": {
+    "project_id": "project-1",
+    "run_id": "run-7",
+    "work_unit_id": "wu-1"
+  },
+  "basis_state_version": 18,
+  "governance_approval": {
+    "action_binding_key": null,
+    "action_id": null,
+    "approval_verdict": "not_required",
+    "basis_state_version": null
+  },
+  "governance_policy": {
+    "action_forbidden": false,
+    "approval_required": false,
+    "destructive": false,
+    "direction_sensitive": false,
+    "freshness_sensitive": true,
+    "protected_surface": false,
+    "revalidation_required": false
+  },
+  "governance_truth": {
+    "blocked_reasons": [],
+    "degraded_truth": false,
+    "direction_ok": true,
+    "requires_revalidation": false,
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-7",
+      "work_unit_id": "wu-1"
+    },
+    "state_version": 18,
+    "target_available": true,
+    "truth_mismatch": false
+  },
+  "operator_override": null,
+  "proposal_result": {
+    "options": [
+      {
+        "assumptions": [],
+        "blockers": [],
+        "constraints": [
+          "The /run path is limited to one bounded repo-local validation plan and is not a general execution surface."
+        ],
+        "feasibility": null,
+        "main_risks": [],
+        "option_index": 1,
+        "planning_needed": false,
+        "proposal_id": "proposal-1",
+        "proposal_type": "direct_action",
+        "reversibility": null,
+        "summary": "Execute the fixed repo-local validation plan as the sole bounded candidate for the current run.",
+        "support_refs": [
+          "constraint_1",
+          "constraint_2"
+        ],
+        "title": "Execute repo-local validation plan",
+        "why_now": "The objective asks for the bounded rollout to execute and constraints identify this as the only candidate."
+      }
+    ],
+    "request_id": "proposal-generation:project-1:wu-1:run-7:what-bounded-rollout-should-execute-now:repair-1",
+    "scarcity_reason": "Current constraints restrict the execution surface to a single fixed repo-local validation plan.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-7",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "record_class": "selection_review_support",
+  "recorded_at": "2026-04-20T16:43:11+00:00",
+  "run_id": "run-7",
+  "schema_version": "1.0",
+  "selection_result": {
+    "considered_proposal_ids": [
+      "proposal-1"
+    ],
+    "non_selection_outcome": null,
+    "rationale": "selected proposal-1 because it stays within bounded choice with stronger visible support and no unresolved blockers or material burden.",
+    "selected_proposal_id": "proposal-1",
+    "selection_id": "run-7:selection"
+  }
+}

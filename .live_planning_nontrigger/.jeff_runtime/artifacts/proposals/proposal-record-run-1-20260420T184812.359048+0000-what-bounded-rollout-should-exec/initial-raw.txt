@@ -1,0 +1,14 @@
+PROPOSAL_COUNT: 1
+SCARCITY_REASON: Only one serious bounded option is currently grounded.
+OPTION_1_TYPE: direct_action
+OPTION_1_TITLE: Advance the bounded rollout
+OPTION_1_SUMMARY: Take the smallest truthful bounded next step now.
+OPTION_1_WHY_NOW: The lawful live context already supports immediate bounded action.
+OPTION_1_ASSUMPTIONS: Current support remains stable
+OPTION_1_RISKS: Small rollback cost
+OPTION_1_CONSTRAINTS: Stay inside the current project scope
+OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.
+OPTION_1_PLANNING_NEEDED: no
+OPTION_1_FEASIBILITY: High under the current bounded support
+OPTION_1_REVERSIBILITY: Straightforward rollback
+OPTION_1_SUPPORT_REFS: ctx-1

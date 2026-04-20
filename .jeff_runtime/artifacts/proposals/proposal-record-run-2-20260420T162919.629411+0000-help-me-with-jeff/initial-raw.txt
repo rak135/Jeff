@@ -1,0 +1,2 @@
+PROPOSAL_COUNT: 0
+SCARCITY_REASON: The provided context and support contain no specific goals, problems, or requirements related to "Jeff" beyond the existence of a project and work unit, making it impossible to generate a serious candidate path.

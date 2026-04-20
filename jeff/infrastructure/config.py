@@ -137,7 +137,7 @@ class PurposeOverrides:
 
 @dataclass(frozen=True, slots=True)
 class ResearchMemoryRuntimeConfig:
-    backend: str = "in_memory"
+    backend: str = "local_file"
     postgres_dsn: str | None = None
     postgres_embedding_dim: int = 64
 
@@ -252,7 +252,7 @@ def load_runtime_config(path: str | Path) -> JeffRuntimeConfig:
             artifact_store_root=research_table.get("artifact_store_root"),
             enable_memory_handoff=research_table.get("enable_memory_handoff", True),
             memory=ResearchMemoryRuntimeConfig(
-                backend=memory_table.get("backend", "in_memory"),
+                backend=memory_table.get("backend", "local_file"),
                 postgres_dsn=memory_table.get("postgres_dsn"),
                 postgres_embedding_dim=memory_table.get("postgres_embedding_dim", 64),
             ),
@@ -288,6 +288,6 @@ def _normalize_provider_kind(value: Any) -> str:
 
 def _normalize_memory_backend(value: Any) -> str:
     normalized = _require_text(value, field_name="research.memory.backend").lower()
-    if normalized not in {"in_memory", "postgres"}:
+    if normalized not in {"in_memory", "local_file", "postgres"}:
         raise ValueError(f"unsupported research.memory.backend in runtime config: {normalized}")
     return normalized

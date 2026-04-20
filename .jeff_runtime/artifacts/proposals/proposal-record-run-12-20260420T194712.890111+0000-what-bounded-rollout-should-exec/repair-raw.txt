@@ -1,0 +1,14 @@
+PROPOSAL_COUNT: 1
+SCARCITY_REASON: Governance constraints limit the candidate path to a single fixed repo-local validation plan.
+OPTION_1_TYPE: direct_action
+OPTION_1_TITLE: Repo-local validation plan
+OPTION_1_SUMMARY: Candidate path for the fixed repo-local validation plan as the only supported candidate for the current /run path.
+OPTION_1_WHY_NOW: The objective requests the identification of the bounded rollout to be considered for execution.
+OPTION_1_ASSUMPTIONS: No blockers currently exist that supersede the fixed validation plan.
+OPTION_1_RISKS: No explicit risks identified from the provided support.
+OPTION_1_CONSTRAINTS: The /run path is limited to one bounded repo-local validation plan and is not a general execution surface.
+OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.
+OPTION_1_PLANNING_NEEDED: no
+OPTION_1_FEASIBILITY: No explicit feasibility statement identified from the provided support.
+OPTION_1_REVERSIBILITY: No explicit reversibility statement identified from the provided support.
+OPTION_1_SUPPORT_REFS: governance_support_1,governance_support_2,current_execution_support_1,current_execution_support_2

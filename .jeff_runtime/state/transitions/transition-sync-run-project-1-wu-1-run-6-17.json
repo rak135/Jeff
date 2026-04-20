@@ -1,0 +1,34 @@
+{
+  "record_class": "transition_audit_support",
+  "recorded_at": "2026-04-20T16:41:42+00:00",
+  "request": {
+    "basis_state_version": 16,
+    "payload": {
+      "last_evaluation_verdict": null,
+      "last_execution_status": null,
+      "last_outcome_state": null,
+      "run_lifecycle_state": "failed_before_execution"
+    },
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-6",
+      "work_unit_id": "wu-1"
+    },
+    "transition_id": "transition-sync-run-project-1-wu-1-run-6-17",
+    "transition_type": "update_run"
+  },
+  "result": {
+    "changed_paths": [
+      "projects.project-1.work_units.wu-1.runs.run-6.run_lifecycle_state",
+      "projects.project-1.work_units.wu-1.runs.run-6.last_execution_status",
+      "projects.project-1.work_units.wu-1.runs.run-6.last_outcome_state",
+      "projects.project-1.work_units.wu-1.runs.run-6.last_evaluation_verdict"
+    ],
+    "state_after_version": 17,
+    "state_before_version": 16,
+    "transition_id": "transition-sync-run-project-1-wu-1-run-6-17",
+    "transition_result": "committed",
+    "validation_errors": []
+  },
+  "schema_version": "1.0"
+}

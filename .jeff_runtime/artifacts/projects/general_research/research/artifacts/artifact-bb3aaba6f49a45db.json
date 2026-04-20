@@ -1,0 +1,79 @@
+{
+  "artifact_family": "evidence_bundle",
+  "artifact_id": "artifact-bb3aaba6f49a45db",
+  "claim_evidence_links": [
+    {
+      "claim_text": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_ids": [
+        "research-6373be96d3803d6a:evidence:1"
+      ]
+    },
+    {
+      "claim_text": "Its strengths include truthful inspection, bounded `/run`, approval-gated continuation, research support, and anti-drift coverage.",
+      "evidence_ids": [
+        "research-6373be96d3803d6a:evidence:1"
+      ]
+    },
+    {
+      "claim_text": "Jeff is not a GUI, a broad API surface, an autonomous continuation system, or a broad memo.",
+      "evidence_ids": [
+        "research-6373be96d3803d6a:evidence:1"
+      ]
+    }
+  ],
+  "comparison_criteria": [],
+  "comparison_targets": [],
+  "derived_from_artifact_ids": [
+    "research-6373be96d3803d6a"
+  ],
+  "effective_date": null,
+  "effective_period": null,
+  "event_date": null,
+  "event_framing": null,
+  "evidence_items": [
+    {
+      "caution": null,
+      "claim": "Jeff is a CLI-first persisted-runtime v1 backbone.",
+      "evidence_id": "research-6373be96d3803d6a:evidence:1",
+      "evidence_text": "```powershell python -m jeff --command \"/research docs `\"`\"summary`\"`\" README.md\" ```",
+      "extraction_quality": null,
+      "source_refs": [
+        "document-81eea87a35d7"
+      ]
+    }
+  ],
+  "evidence_refs": [
+    "research-6373be96d3803d6a:evidence:1"
+  ],
+  "findings": [
+    "Jeff is a CLI-first persisted-runtime v1 backbone.",
+    "Its strengths include truthful inspection, bounded `/run`, approval-gated continuation, research support, and anti-drift coverage.",
+    "Jeff is not a GUI, a broad API surface, an autonomous continuation system, or a broad memo."
+  ],
+  "freshness_posture": null,
+  "generated_at": "2026-04-20T19:44:27.242454+00:00",
+  "inference": [
+    "Jeff is designed for targeted, controlled execution and inspection rather than autonomous or wide-scale interface applications."
+  ],
+  "next_history_record_id": null,
+  "observed_date": null,
+  "previous_history_record_id": null,
+  "project_id": "general_research",
+  "question_or_objective": "summary",
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_groupings": [],
+  "source_ordering": [],
+  "source_refs": [
+    "document-81eea87a35d7"
+  ],
+  "source_selection_scope": null,
+  "staleness_sensitivity": "medium",
+  "summary": "Evidence extracted for this bounded research output remains inspectable with provenance preserved.",
+  "support_only": true,
+  "title": "Evidence bundle: summary",
+  "uncertainty": [
+    "No explicit uncertainties identified from the provided evidence."
+  ],
+  "work_unit_id": "research-docs-summary-d1f80a8e"
+}

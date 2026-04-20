@@ -1,0 +1,85 @@
+{
+  "action_scope": {
+    "project_id": "project-1",
+    "run_id": "run-13",
+    "work_unit_id": "wu-1"
+  },
+  "basis_state_version": 34,
+  "governance_approval": {
+    "action_binding_key": null,
+    "action_id": null,
+    "approval_verdict": "not_required",
+    "basis_state_version": null
+  },
+  "governance_policy": {
+    "action_forbidden": false,
+    "approval_required": false,
+    "destructive": false,
+    "direction_sensitive": false,
+    "freshness_sensitive": true,
+    "protected_surface": false,
+    "revalidation_required": false
+  },
+  "governance_truth": {
+    "blocked_reasons": [],
+    "degraded_truth": false,
+    "direction_ok": true,
+    "requires_revalidation": false,
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-13",
+      "work_unit_id": "wu-1"
+    },
+    "state_version": 34,
+    "target_available": true,
+    "truth_mismatch": false
+  },
+  "operator_override": null,
+  "proposal_result": {
+    "options": [
+      {
+        "assumptions": [],
+        "blockers": [],
+        "constraints": [
+          "The /run path is limited to one bounded repo-local validation plan and is not a general execution surface"
+        ],
+        "feasibility": null,
+        "main_risks": [],
+        "option_index": 1,
+        "planning_needed": true,
+        "proposal_id": "proposal-1",
+        "proposal_type": "direct_action",
+        "reversibility": null,
+        "summary": "Plan the next bounded operator validation slice using the fixed repo-local validation plan and hold for review.",
+        "support_refs": [
+          "governance_support_1",
+          "governance_support_2",
+          "current_execution_support_1",
+          "current_execution_support_2"
+        ],
+        "title": "Plan repo-local validation slice",
+        "why_now": "This is the only supported candidate path for validation under current constraints."
+      }
+    ],
+    "request_id": "proposal-generation:project-1:wu-1:run-13:plan-the-next-bounded-operator-validation-slice-and-hold-for-review",
+    "scarcity_reason": "Visible constraints limit the candidate path to a single fixed repo-local validation plan.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-13",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "record_class": "selection_review_support",
+  "recorded_at": "2026-04-20T19:47:40+00:00",
+  "run_id": "run-13",
+  "schema_version": "1.0",
+  "selection_result": {
+    "considered_proposal_ids": [
+      "proposal-1"
+    ],
+    "non_selection_outcome": "escalate",
+    "rationale": "escalate because proposal-1 frames an operator judgment boundary more honestly than forcing a bounded autonomous choice.",
+    "selected_proposal_id": null,
+    "selection_id": "run-13:selection"
+  }
+}

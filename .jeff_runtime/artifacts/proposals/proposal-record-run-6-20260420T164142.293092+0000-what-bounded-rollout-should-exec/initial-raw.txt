@@ -1,0 +1,2 @@
+PROPOSAL_COUNT: 0
+SCARCITY_REASON: No bounded rollout targets or validation plans are identified in the provided truth snapshot or support to form a serious candidate path.

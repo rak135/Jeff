@@ -1,0 +1,14 @@
+PROPOSAL_COUNT: 1
+SCARCITY_REASON: Provided support contains metadata about the research process but lacks actual descriptive content regarding the Jeff architecture.
+OPTION_1_TYPE: investigate
+OPTION_1_TITLE: Analyze evidence artifacts for architecture details
+OPTION_1_SUMMARY: Inspect the referenced evidence bundles and source sets to extract specific architectural details for Jeff.
+OPTION_1_WHY_NOW: The current truth snapshot and evidence summaries indicate that evidence exists but the content has not yet been surfaced to answer the objective.
+OPTION_1_ASSUMPTIONS: The referenced artifacts artifact-a40760a8dd0c48d6 and artifact-40af7a0f2b804520 contain the architecture descriptions.
+OPTION_1_RISKS: The artifacts may contain procedural metadata rather than architectural specifications.
+OPTION_1_CONSTRAINTS: Investigation is limited to the provided project-scoped source sets.
+OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.
+OPTION_1_PLANNING_NEEDED: no
+OPTION_1_FEASIBILITY: Feasible if the referenced artifacts are accessible for inspection.
+OPTION_1_REVERSIBILITY: Fully reversible as this is an information-gathering action.
+OPTION_1_SUPPORT_REFS: evidence_summary_1,evidence_summary_2,context_research_support_1,context_research_support_2

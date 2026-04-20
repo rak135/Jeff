@@ -1,0 +1,49 @@
+{
+  "artifact_family": "research_brief",
+  "artifact_id": "artifact-a9e689507b8b444b",
+  "claim_evidence_links": [],
+  "comparison_criteria": [],
+  "comparison_targets": [],
+  "derived_from_artifact_ids": [
+    "research-ea051c3a99226327"
+  ],
+  "effective_date": null,
+  "effective_period": null,
+  "event_date": null,
+  "event_framing": null,
+  "evidence_items": [],
+  "evidence_refs": [],
+  "findings": [
+    "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime",
+    "Fresh or reset runtimes initialize project-1 and wu-1 without seeded history, while subsequent startups reload existing canonical state and support records",
+    "Startup does not include a GUI, daemon, or background continuation",
+    "The system is a CLI-first persisted-runtime v1 backbone",
+    "Access to /run and /research commands during startup requires a local jeff.runtime.toml file"
+  ],
+  "freshness_posture": null,
+  "generated_at": "2026-04-20T19:43:06.762188+00:00",
+  "inference": [
+    "The presence of jeff.runtime.toml determines whether the system operates as a read-oriented CLI or provides extended validation and research capabilities."
+  ],
+  "next_history_record_id": null,
+  "observed_date": null,
+  "previous_history_record_id": null,
+  "project_id": "general_research",
+  "question_or_objective": "Summarize Jeff README startup behavior",
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_groupings": [],
+  "source_ordering": [],
+  "source_refs": [
+    "document-81eea87a35d7"
+  ],
+  "source_selection_scope": null,
+  "staleness_sensitivity": "medium",
+  "summary": "Jeff is a CLI-first persisted-runtime v1 backbone that initializes a local workspace under .jeff_runtime. Upon startup, it either initializes a new project and work unit or reloads the existing canonical state and support records, without starting a GUI, daemon, or background continuation.",
+  "support_only": true,
+  "title": "Summarize Jeff README startup behavior",
+  "uncertainty": [
+    "No explicit uncertainties identified from the provided evidence."
+  ],
+  "work_unit_id": "research-docs-summarize-jeff-readme-startup-behavior-501178cf"
+}

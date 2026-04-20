@@ -8,10 +8,20 @@ import sys
 from jeff.action import GovernedExecutionRequest, execute_governed_action, normalize_outcome
 from jeff.action.execution import RepoLocalValidationPlan
 from jeff.cognitive import ContextPackage, evaluate_outcome
+from jeff.cognitive.planning import PlanFormationRequest, form_plan
 from jeff.cognitive.post_selection.action_formation import ActionFormationRequest, form_action_from_materialized_proposal
 from jeff.cognitive.post_selection.action_resolution import SelectionActionResolutionRequest, resolve_selection_action_basis
 from jeff.cognitive.post_selection.effective_proposal import SelectionEffectiveProposalRequest, materialize_effective_proposal
-from jeff.cognitive.proposal import ProposalGenerationRequest, ProposalPipelineFailure, run_proposal_generation_pipeline
+from jeff.cognitive.proposal import (
+    ProposalGenerationRequest,
+    ProposalPipelineFailure,
+    build_operator_record_from_pipeline_result,
+    build_proposal_input_bundle,
+    build_proposal_record_id,
+    proposal_record_created_at_now,
+    resolve_committed_memory_support_records,
+    run_proposal_generation_pipeline,
+)
 from jeff.cognitive.selection import SelectionBridgeRequest, build_and_run_selection
 from jeff.cognitive.types import require_text
 from jeff.core.schemas import Scope
@@ -240,13 +250,34 @@ def _run_bounded_execution_flow(
         return live_context_package
 
     def proposal_stage(context_output):
-        pipeline_result = run_proposal_generation_pipeline(
-            ProposalGenerationRequest(
-                objective=objective,
-                scope=run_scope,
+        proposal_input_bundle = build_proposal_input_bundle(
+            objective=objective,
+            scope=run_scope,
+            context_package=context_output,
+            visible_constraints=_run_proposal_visible_constraints(),
+            current_execution_support=_run_proposal_visible_constraints(),
+            committed_memory_records=resolve_committed_memory_support_records(
+                project_id=str(run_scope.project_id),
                 context_package=context_output,
+                store=context.memory_store,
             ),
+        )
+        request = ProposalGenerationRequest(
+            objective=objective,
+            scope=run_scope,
+            context_package=context_output,
+            visible_constraints=_run_proposal_visible_constraints(),
+            current_execution_support=_run_proposal_visible_constraints(),
+            proposal_input_bundle=proposal_input_bundle,
+        )
+        pipeline_result = run_proposal_generation_pipeline(
+            request,
             infrastructure_services=context.infrastructure_services,
+        )
+        _persist_run_proposal_record(
+            context=context,
+            request=request,
+            pipeline_result=pipeline_result,
         )
         if isinstance(pipeline_result, ProposalPipelineFailure):
             if pipeline_result.failure_stage == "validation":
@@ -268,6 +299,32 @@ def _run_bounded_execution_flow(
         if selection_result is None:
             raise ValueError("selection bridge returned no SelectionResult")
         return selection_result
+
+    def planning_stage(selection_output):
+        proposal_output = proposal_output_holder["proposal"]
+        selected_proposal_id = selection_output.selected_proposal_id
+        if selected_proposal_id is None:
+            raise ValueError("planning stage requires a selected proposal")
+        selected_option = next(
+            (option for option in proposal_output.options if option.proposal_id == selected_proposal_id),
+            None,
+        )
+        if selected_option is None:
+            raise ValueError("planning stage could not find the selected proposal option")
+        return form_plan(
+            PlanFormationRequest(
+                selected_option=selected_option,
+                scope=run_scope,
+                operator_requested=False,
+                multi_step=True,
+                review_heavy=True,
+                high_risk=bool(selected_option.main_risks),
+                time_spanning=True,
+                dependency_heavy=bool(selected_option.blockers or selected_option.constraints),
+                checkpoint_heavy=True,
+                plan_id=f"plan:{run_scope.run_id}:{selected_option.proposal_id}",
+            )
+        )
 
     def action_stage(selection_output):
         proposal_output = proposal_output_holder["proposal"]
@@ -353,18 +410,39 @@ def _run_bounded_execution_flow(
 
     return run_flow(
         flow_id=f"flow:{run_scope.run_id}",
-        flow_family="bounded_proposal_selection_execution",
+        flow_family="conditional_planning_execution",
         scope=run_scope,
         stage_handlers={
             "context": context_stage,
             "proposal": proposal_stage,
             "selection": selection_stage,
+            "planning": planning_stage,
             "action": action_stage,
             "governance": governance_stage,
             "execution": execution_stage,
             "outcome": outcome_stage,
             "evaluation": evaluation_stage,
         },
+    )
+
+
+def _persist_run_proposal_record(*, context: InterfaceContext, request: ProposalGenerationRequest, pipeline_result) -> None:
+    if context.runtime_store is None:
+        return
+    created_at = proposal_record_created_at_now()
+    record = build_operator_record_from_pipeline_result(
+        proposal_id=build_proposal_record_id(scope=request.scope, objective=request.objective, created_at=created_at),
+        created_at=created_at,
+        request=request,
+        pipeline_result=pipeline_result,
+    )
+    context.runtime_store.save_proposal_record(record)
+
+
+def _run_proposal_visible_constraints() -> tuple[str, ...]:
+    return (
+        "The current /run path is limited to one bounded repo-local validation plan and is not a general execution surface.",
+        "If the objective asks what bounded rollout or validation should execute now, the only serious direct_action candidate is that fixed repo-local validation plan unless current support identifies a blocker.",
     )
 
 

@@ -1,0 +1,2 @@
+PROPOSAL_COUNT: 0
+SCARCITY_REASON: No objective, target, or actionable support provided in the input frames to generate a serious candidate path.

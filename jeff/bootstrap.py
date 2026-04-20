@@ -30,7 +30,7 @@ from jeff.infrastructure import (
 from jeff.interface.commands import InterfaceContext
 from jeff.interface.commands.support.flow_runs import sync_run_truth_from_flow
 from jeff.knowledge import KnowledgeStore
-from jeff.memory import InMemoryMemoryStore, MemoryStoreProtocol, PostgresMemoryStore
+from jeff.memory import InMemoryMemoryStore, LocalFileMemoryStore, MemoryStoreProtocol, PostgresMemoryStore
 from jeff.orchestrator.lifecycle import FlowLifecycle
 from jeff.orchestrator.runner import FlowRunResult
 from jeff.orchestrator.trace import OrchestrationEvent
@@ -130,7 +130,7 @@ def build_startup_interface_context(*, base_dir: str | Path | None = None) -> In
                     ),
                     research_archive_store=ResearchArchiveStore(runtime_store.home.artifacts_dir),
                     knowledge_store=KnowledgeStore(runtime_store.home.artifacts_dir),
-                    memory_store=_build_memory_store(runtime_config),
+                    memory_store=_build_memory_store(runtime_config, runtime_root=runtime_store.home.root_dir),
                     research_memory_handoff_enabled=runtime_config.research.enable_memory_handoff,
                     runtime_store=runtime_store,
                     startup_summary=startup_summary,
@@ -164,7 +164,7 @@ def build_startup_interface_context(*, base_dir: str | Path | None = None) -> In
         ),
         research_archive_store=ResearchArchiveStore(runtime_store.home.artifacts_dir),
         knowledge_store=KnowledgeStore(runtime_store.home.artifacts_dir),
-        memory_store=_build_memory_store(runtime_config),
+        memory_store=_build_memory_store(runtime_config, runtime_root=runtime_store.home.root_dir),
         research_memory_handoff_enabled=runtime_config.research.enable_memory_handoff,
         runtime_store=runtime_store,
         startup_summary=startup_summary,
@@ -441,14 +441,20 @@ def _resolve_configured_research_artifact_store_root(config_path: Path, runtime_
     return config_path.parent / configured_root
 
 
-def _build_memory_store(runtime_config: JeffRuntimeConfig) -> MemoryStoreProtocol | None:
+def _build_memory_store(runtime_config: JeffRuntimeConfig, *, runtime_root: Path) -> MemoryStoreProtocol | None:
     if not runtime_config.research.enable_memory_handoff:
         return None
 
     memory_config = runtime_config.research.memory
     if memory_config.backend == "in_memory":
         return InMemoryMemoryStore()
+    if memory_config.backend == "local_file":
+        return _build_local_file_memory_store(runtime_root / "memory")
     return _build_postgres_memory_store(memory_config)
+
+
+def _build_local_file_memory_store(memory_root: Path) -> MemoryStoreProtocol:
+    return LocalFileMemoryStore(memory_root)
 
 
 def _build_postgres_memory_store(memory_config: ResearchMemoryRuntimeConfig) -> MemoryStoreProtocol:
@@ -482,4 +488,6 @@ def _research_memory_status_line(runtime_config: JeffRuntimeConfig) -> str:
     backend = runtime_config.research.memory.backend
     if backend == "postgres":
         return "research memory backend configured: postgres"
-    return "research memory backend configured: in_memory"
+    if backend == "in_memory":
+        return "research memory backend configured: in_memory"
+    return "research memory backend configured: local_file"

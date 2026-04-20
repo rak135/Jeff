@@ -1,0 +1,14 @@
+PROPOSAL_COUNT: 1
+SCARCITY_REASON: Only one serious path exists as the objective is a specific, single-sentence documentation update with no identified alternatives.
+OPTION_1_TYPE: direct_action
+OPTION_1_TITLE: Update README.md quickstart
+OPTION_1_SUMMARY: Add one sentence to the README.md quickstart section clarifying that /project, /work, and /run use are process-local.
+OPTION_1_WHY_NOW: To provide necessary clarification on the scope of command usage for users.
+OPTION_1_ASSUMPTIONS: No explicit assumptions identified from the provided support.
+OPTION_1_RISKS: No explicit risks identified from the provided support.
+OPTION_1_CONSTRAINTS: No explicit constraints identified from the provided support.
+OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.
+OPTION_1_PLANNING_NEEDED: no
+OPTION_1_FEASIBILITY: No explicit feasibility statement identified from the provided support.
+OPTION_1_REVERSIBILITY: No explicit reversibility statement identified from the provided support.
+OPTION_1_SUPPORT_REFS: none

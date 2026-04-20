@@ -1,0 +1,29 @@
+{
+  "record_class": "transition_audit_support",
+  "recorded_at": "2026-04-20T19:43:49+00:00",
+  "request": {
+    "basis_state_version": 29,
+    "payload": {
+      "objective": "Ad-hoc docs research: startup summary",
+      "work_unit_id": "research-docs-startup-summary-43bf0309"
+    },
+    "scope": {
+      "project_id": "general_research",
+      "run_id": null,
+      "work_unit_id": null
+    },
+    "transition_id": "transition-auto-create-work-unit-general_research-research-docs-startup-summary-43bf0309",
+    "transition_type": "create_work_unit"
+  },
+  "result": {
+    "changed_paths": [
+      "projects.general_research.work_units.research-docs-startup-summary-43bf0309"
+    ],
+    "state_after_version": 30,
+    "state_before_version": 29,
+    "transition_id": "transition-auto-create-work-unit-general_research-research-docs-startup-summary-43bf0309",
+    "transition_result": "committed",
+    "validation_errors": []
+  },
+  "schema_version": "1.0"
+}

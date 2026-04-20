@@ -17,17 +17,29 @@ from jeff.action.execution import ExecutionResult, GovernedExecutionRequest
 from jeff.action.outcome import Outcome
 from jeff.cognitive.context import ContextPackage
 from jeff.cognitive.evaluation import EvaluationResult
+from jeff.cognitive.planning import PlanArtifact
+from jeff.cognitive.planning.persistence import plan_artifact_from_payload, plan_artifact_to_payload
 from jeff.cognitive.post_selection.selection_review_record import SelectionReviewRecord
 from jeff.cognitive.post_selection.override import OperatorSelectionOverride
 from jeff.cognitive.proposal import (
     ParsedProposalGenerationResult,
     ParsedProposalOption,
+    build_proposal_input_bundle,
+    ProposalEvidenceSupport,
+    ProposalInputBundle,
     ProposalGenerationPromptBundle,
     ProposalGenerationRawResult,
+    ProposalMemorySupport,
     ProposalOperatorRecord,
+    ProposalRequestFrame,
     ProposalPersistedAttempt,
     ProposalResult,
     ProposalResultOption,
+    ProposalScopeFrame,
+    ProposalSupportItem,
+    ProposalSupportSection,
+    ProposalTruthSnapshot,
+    ProposalTruthSnapshotItem,
     ProposalValidationIssue,
 )
 from jeff.cognitive.run_memory_handoff import RunMemoryHandoffResultSummary
@@ -553,6 +565,166 @@ def _context_package_from_payload(payload: dict[str, Any]) -> ContextPackage:
     )
 
 
+def _proposal_request_frame_to_payload(frame: ProposalRequestFrame) -> dict[str, Any]:
+    return {
+        "objective": frame.objective,
+        "trigger_summary": frame.trigger_summary,
+        "purpose": frame.purpose,
+        "visible_constraints": list(frame.visible_constraints),
+    }
+
+
+def _proposal_request_frame_from_payload(payload: dict[str, Any]) -> ProposalRequestFrame:
+    return ProposalRequestFrame(
+        objective=payload["objective"],
+        trigger_summary=payload["trigger_summary"],
+        purpose=payload["purpose"],
+        visible_constraints=tuple(payload.get("visible_constraints", ())),
+    )
+
+
+def _proposal_scope_frame_to_payload(frame: ProposalScopeFrame) -> dict[str, Any]:
+    return {
+        "project_id": frame.project_id,
+        "work_unit_id": frame.work_unit_id,
+        "run_id": frame.run_id,
+    }
+
+
+def _proposal_scope_frame_from_payload(payload: dict[str, Any]) -> ProposalScopeFrame:
+    return ProposalScopeFrame(
+        project_id=payload["project_id"],
+        work_unit_id=payload.get("work_unit_id"),
+        run_id=payload.get("run_id"),
+    )
+
+
+def _proposal_truth_snapshot_item_to_payload(item: ProposalTruthSnapshotItem) -> dict[str, Any]:
+    return {
+        "source_label": item.source_label,
+        "truth_family": item.truth_family,
+        "summary": item.summary,
+    }
+
+
+def _proposal_truth_snapshot_item_from_payload(payload: dict[str, Any]) -> ProposalTruthSnapshotItem:
+    return ProposalTruthSnapshotItem(
+        source_label=payload["source_label"],
+        truth_family=payload["truth_family"],
+        summary=payload["summary"],
+    )
+
+
+def _proposal_truth_snapshot_to_payload(snapshot: ProposalTruthSnapshot) -> dict[str, Any]:
+    return {"items": [_proposal_truth_snapshot_item_to_payload(item) for item in snapshot.items]}
+
+
+def _proposal_truth_snapshot_from_payload(payload: dict[str, Any]) -> ProposalTruthSnapshot:
+    return ProposalTruthSnapshot(
+        items=tuple(_proposal_truth_snapshot_item_from_payload(item) for item in payload.get("items", ()))
+    )
+
+
+def _proposal_support_item_to_payload(item: ProposalSupportItem) -> dict[str, Any]:
+    return {
+        "source_label": item.source_label,
+        "source_family": item.source_family,
+        "summary": item.summary,
+        "source_id": item.source_id,
+    }
+
+
+def _proposal_support_item_from_payload(payload: dict[str, Any]) -> ProposalSupportItem:
+    return ProposalSupportItem(
+        source_label=payload["source_label"],
+        source_family=payload["source_family"],
+        summary=payload["summary"],
+        source_id=payload.get("source_id"),
+    )
+
+
+def _proposal_support_section_to_payload(section: ProposalSupportSection) -> dict[str, Any]:
+    return {"items": [_proposal_support_item_to_payload(item) for item in section.items]}
+
+
+def _proposal_support_section_from_payload(payload: dict[str, Any]) -> ProposalSupportSection:
+    return ProposalSupportSection(
+        items=tuple(_proposal_support_item_from_payload(item) for item in payload.get("items", ()))
+    )
+
+
+def _proposal_evidence_support_to_payload(section: ProposalEvidenceSupport) -> dict[str, Any]:
+    return {
+        "evidence_summaries": [_proposal_support_item_to_payload(item) for item in section.evidence_summaries],
+        "uncertainty_summaries": [_proposal_support_item_to_payload(item) for item in section.uncertainty_summaries],
+        "contradiction_summaries": [_proposal_support_item_to_payload(item) for item in section.contradiction_summaries],
+        "artifact_refs": list(section.artifact_refs),
+    }
+
+
+def _proposal_evidence_support_from_payload(payload: dict[str, Any]) -> ProposalEvidenceSupport:
+    return ProposalEvidenceSupport(
+        evidence_summaries=tuple(
+            _proposal_support_item_from_payload(item) for item in payload.get("evidence_summaries", ())
+        ),
+        uncertainty_summaries=tuple(
+            _proposal_support_item_from_payload(item) for item in payload.get("uncertainty_summaries", ())
+        ),
+        contradiction_summaries=tuple(
+            _proposal_support_item_from_payload(item) for item in payload.get("contradiction_summaries", ())
+        ),
+        artifact_refs=tuple(payload.get("artifact_refs", ())),
+    )
+
+
+def _proposal_memory_support_to_payload(section: ProposalMemorySupport) -> dict[str, Any]:
+    return {
+        "memory_ids": list(section.memory_ids),
+        "memory_summaries": [_proposal_support_item_to_payload(item) for item in section.memory_summaries],
+        "memory_lessons": [_proposal_support_item_to_payload(item) for item in section.memory_lessons],
+        "memory_risk_reminders": [_proposal_support_item_to_payload(item) for item in section.memory_risk_reminders],
+        "memory_precedents": [_proposal_support_item_to_payload(item) for item in section.memory_precedents],
+    }
+
+
+def _proposal_memory_support_from_payload(payload: dict[str, Any]) -> ProposalMemorySupport:
+    return ProposalMemorySupport(
+        memory_ids=tuple(payload.get("memory_ids", ())),
+        memory_summaries=tuple(_proposal_support_item_from_payload(item) for item in payload.get("memory_summaries", ())),
+        memory_lessons=tuple(_proposal_support_item_from_payload(item) for item in payload.get("memory_lessons", ())),
+        memory_risk_reminders=tuple(
+            _proposal_support_item_from_payload(item) for item in payload.get("memory_risk_reminders", ())
+        ),
+        memory_precedents=tuple(
+            _proposal_support_item_from_payload(item) for item in payload.get("memory_precedents", ())
+        ),
+    )
+
+
+def _proposal_input_bundle_to_payload(bundle: ProposalInputBundle) -> dict[str, Any]:
+    return {
+        "request_frame": _proposal_request_frame_to_payload(bundle.request_frame),
+        "scope_frame": _proposal_scope_frame_to_payload(bundle.scope_frame),
+        "truth_snapshot": _proposal_truth_snapshot_to_payload(bundle.truth_snapshot),
+        "governance_relevant_support": _proposal_support_section_to_payload(bundle.governance_relevant_support),
+        "current_execution_support": _proposal_support_section_to_payload(bundle.current_execution_support),
+        "evidence_support": _proposal_evidence_support_to_payload(bundle.evidence_support),
+        "memory_support": _proposal_memory_support_to_payload(bundle.memory_support),
+    }
+
+
+def _proposal_input_bundle_from_payload(payload: dict[str, Any]) -> ProposalInputBundle:
+    return ProposalInputBundle(
+        request_frame=_proposal_request_frame_from_payload(payload["request_frame"]),
+        scope_frame=_proposal_scope_frame_from_payload(payload["scope_frame"]),
+        truth_snapshot=_proposal_truth_snapshot_from_payload(payload["truth_snapshot"]),
+        governance_relevant_support=_proposal_support_section_from_payload(payload["governance_relevant_support"]),
+        current_execution_support=_proposal_support_section_from_payload(payload["current_execution_support"]),
+        evidence_support=_proposal_evidence_support_from_payload(payload.get("evidence_support", {})),
+        memory_support=_proposal_memory_support_from_payload(payload.get("memory_support", {})),
+    )
+
+
 def _proposal_prompt_bundle_to_payload(prompt_bundle: ProposalGenerationPromptBundle) -> dict[str, Any]:
     return {
         "request_id": prompt_bundle.request_id,
@@ -742,6 +914,7 @@ def _proposal_operator_record_to_payload(record: ProposalOperatorRecord) -> dict
         "objective": record.objective,
         "scope": _scope_to_payload(record.scope),
         "context_package": _context_package_to_payload(record.context_package),
+        "proposal_input_bundle": _proposal_input_bundle_to_payload(record.proposal_input_bundle),
         "visible_constraints": list(record.visible_constraints),
         "initial_attempt": _proposal_persisted_attempt_to_payload(record.initial_attempt),
         "repair_attempt": (
@@ -759,14 +932,28 @@ def _proposal_operator_record_to_payload(record: ProposalOperatorRecord) -> dict
 
 
 def _proposal_operator_record_from_payload(payload: dict[str, Any]) -> ProposalOperatorRecord:
+    scope = _scope_from_payload(payload["scope"])
+    context_package = _context_package_from_payload(payload["context_package"])
+    visible_constraints = tuple(payload.get("visible_constraints", ()))
+    proposal_input_bundle = (
+        _proposal_input_bundle_from_payload(payload["proposal_input_bundle"])
+        if payload.get("proposal_input_bundle") is not None
+        else build_proposal_input_bundle(
+            objective=payload["objective"],
+            scope=scope,
+            context_package=context_package,
+            visible_constraints=visible_constraints,
+        )
+    )
     return ProposalOperatorRecord(
         proposal_id=payload["proposal_id"],
         source_proposal_id=payload.get("source_proposal_id"),
         created_at=payload["created_at"],
         objective=payload["objective"],
-        scope=_scope_from_payload(payload["scope"]),
-        context_package=_context_package_from_payload(payload["context_package"]),
-        visible_constraints=tuple(payload.get("visible_constraints", ())),
+        scope=scope,
+        context_package=context_package,
+        proposal_input_bundle=proposal_input_bundle,
+        visible_constraints=visible_constraints,
         initial_attempt=_proposal_persisted_attempt_from_payload(payload["initial_attempt"]),
         repair_attempt=(
             None
@@ -1065,6 +1252,8 @@ def _supported_flow_output_to_payload(name: str, value: object) -> dict[str, Any
         return {"kind": "proposal_result", "value": _proposal_result_to_payload(value)}
     if isinstance(value, SelectionResult):
         return {"kind": "selection_result", "value": _selection_result_to_payload(value)}
+    if isinstance(value, PlanArtifact):
+        return {"kind": "plan_artifact", "value": plan_artifact_to_payload(value)}
     if isinstance(value, Policy):
         return {"kind": "policy", "value": _policy_to_payload(value)}
     if isinstance(value, Approval):
@@ -1092,6 +1281,8 @@ def _supported_flow_output_from_payload(payload: dict[str, Any], *, state: Globa
         return _proposal_result_from_payload(value)
     if kind == "selection_result":
         return _selection_result_from_payload(value)
+    if kind == "plan_artifact":
+        return plan_artifact_from_payload(value)
     if kind == "policy":
         return _policy_from_payload(value)
     if kind == "approval":
@@ -1554,6 +1745,7 @@ class PersistedRuntimeStore:
                 objective=stored_record.objective,
                 scope=stored_record.scope,
                 context_package=stored_record.context_package,
+                proposal_input_bundle=stored_record.proposal_input_bundle,
                 visible_constraints=stored_record.visible_constraints,
                 initial_attempt=stored_record.initial_attempt,
                 repair_attempt=stored_record.repair_attempt,
@@ -1590,6 +1782,7 @@ class PersistedRuntimeStore:
             objective=record.objective,
             scope=record.scope,
             context_package=record.context_package,
+            proposal_input_bundle=record.proposal_input_bundle,
             visible_constraints=record.visible_constraints,
             initial_attempt=initial_attempt,
             repair_attempt=repair_attempt,

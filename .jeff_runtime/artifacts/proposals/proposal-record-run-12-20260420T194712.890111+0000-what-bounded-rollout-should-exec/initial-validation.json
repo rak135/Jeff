@@ -1,0 +1,9 @@
+{
+  "issues": [
+    {
+      "code": "authority_leakage",
+      "message": "why_now contains forbidden authority language: start_authority",
+      "option_index": 1
+    }
+  ]
+}

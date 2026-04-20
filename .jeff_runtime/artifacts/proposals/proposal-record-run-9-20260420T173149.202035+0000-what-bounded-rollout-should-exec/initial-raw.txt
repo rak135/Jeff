@@ -1,0 +1,14 @@
+PROPOSAL_COUNT: 1
+SCARCITY_REASON: Visible constraints limit the execution surface to a single fixed repo-local validation plan.
+OPTION_1_TYPE: direct_action
+OPTION_1_TITLE: Execute repo-local validation plan
+OPTION_1_SUMMARY: Execute the fixed repo-local validation plan as the only supported candidate for the current /run path.
+OPTION_1_WHY_NOW: The objective asks for the bounded rollout to execute now and the current execution surface is limited to this specific plan.
+OPTION_1_ASSUMPTIONS: No explicit assumptions identified from the provided support.
+OPTION_1_RISKS: No explicit risks identified from the provided support.
+OPTION_1_CONSTRAINTS: The /run path is limited to one bounded repo-local validation plan and is not a general execution surface
+OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.
+OPTION_1_PLANNING_NEEDED: no
+OPTION_1_FEASIBILITY: No explicit feasibility statement identified from the provided support.
+OPTION_1_REVERSIBILITY: No explicit reversibility statement identified from the provided support.
+OPTION_1_SUPPORT_REFS: visible_constraint:1,visible_constraint:2,governance_support_1,governance_support_2,current_execution_support_1,current_execution_support_2

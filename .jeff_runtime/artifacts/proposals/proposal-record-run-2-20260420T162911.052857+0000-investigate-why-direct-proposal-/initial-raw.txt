@@ -1,0 +1,14 @@
+PROPOSAL_COUNT: 1
+SCARCITY_REASON: Only one serious path is supported as the objective specifically defines a single investigative task.
+OPTION_1_TYPE: investigate
+OPTION_1_TITLE: Analyze wu-1 run scope requirements
+OPTION_1_SUMMARY: Investigate the technical cause for why direct proposal use in wu-1 required an explicit run scope before resolution.
+OPTION_1_WHY_NOW: Necessary to understand the requirement for explicit run scope to avoid similar issues in future work units.
+OPTION_1_ASSUMPTIONS: No explicit assumptions identified from the provided support.
+OPTION_1_RISKS: No explicit risks identified from the provided support.
+OPTION_1_CONSTRAINTS: No explicit constraints identified from the provided support.
+OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.
+OPTION_1_PLANNING_NEEDED: no
+OPTION_1_FEASIBILITY: No explicit feasibility statement identified from the provided support.
+OPTION_1_REVERSIBILITY: No explicit reversibility statement identified from the provided support.
+OPTION_1_SUPPORT_REFS: truth_record_2,truth_record_3

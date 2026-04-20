@@ -1,0 +1,256 @@
+{
+  "counter": 2,
+  "embeddings": {},
+  "links": [
+    {
+      "link_type": "evidence_ref",
+      "memory_id": "memory-1",
+      "memory_link_id": "mlink-1",
+      "metadata": {},
+      "target_family": "evaluation",
+      "target_id": "run:run-11:flow:flow:run-11"
+    },
+    {
+      "link_type": "evidence_ref",
+      "memory_id": "memory-2",
+      "memory_link_id": "mlink-1",
+      "metadata": {},
+      "target_family": "evaluation",
+      "target_id": "run:run-12:flow:flow:run-12"
+    }
+  ],
+  "maintenance_jobs": [],
+  "records": [
+    {
+      "conflict_posture": "none",
+      "created_at": "2026-04-20T18:06:05+00:00",
+      "created_from_run_id": "run-11",
+      "freshness_sensitivity": "low",
+      "memory_id": "memory-1",
+      "memory_type": "episodic",
+      "merged_into_memory_id": null,
+      "record_status": "active",
+      "remembered_points": [
+        "Terminal posture: execution completed",
+        "Execution status: completed exit_code=0",
+        "Execution summary: repo-local validation smoke_quickstart_validation exited with code 0",
+        "Outcome state: complete",
+        "Evaluation verdict: acceptable"
+      ],
+      "schema_version": "1.0",
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-11",
+        "work_unit_id": "wu-1"
+      },
+      "stability": "stable",
+      "summary": "Run for 'What bounded rollout should execute now for memory persistence verifi...' ended as execution completed.",
+      "superseded_by_memory_id": null,
+      "supersedes_memory_id": null,
+      "support_quality": "strong",
+      "support_refs": [
+        {
+          "ref_id": "run:run-11:flow:flow:run-11",
+          "ref_kind": "evaluation",
+          "summary": "Flow flow:run-11 from bounded_proposal_selection_execution ended as execution completed"
+        }
+      ],
+      "updated_at": "2026-04-20T18:06:05+00:00",
+      "why_it_matters": "This bounded run completed and may serve as a reusable precedent later."
+    },
+    {
+      "conflict_posture": "none",
+      "created_at": "2026-04-20T19:47:19+00:00",
+      "created_from_run_id": "run-12",
+      "freshness_sensitivity": "low",
+      "memory_id": "memory-2",
+      "memory_type": "episodic",
+      "merged_into_memory_id": null,
+      "record_status": "active",
+      "remembered_points": [
+        "Terminal posture: execution completed",
+        "Execution status: completed exit_code=0",
+        "Execution summary: repo-local validation smoke_quickstart_validation exited with code 0",
+        "Outcome state: complete",
+        "Evaluation verdict: acceptable"
+      ],
+      "schema_version": "1.0",
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-12",
+        "work_unit_id": "wu-1"
+      },
+      "stability": "stable",
+      "summary": "Run for 'What bounded rollout should execute now?' ended as execution completed.",
+      "superseded_by_memory_id": null,
+      "supersedes_memory_id": null,
+      "support_quality": "strong",
+      "support_refs": [
+        {
+          "ref_id": "run:run-12:flow:flow:run-12",
+          "ref_kind": "evaluation",
+          "summary": "Flow flow:run-12 from conditional_planning_execution ended as execution completed"
+        }
+      ],
+      "updated_at": "2026-04-20T19:47:19+00:00",
+      "why_it_matters": "This bounded run completed and may serve as a reusable precedent later."
+    }
+  ],
+  "retrieval_events": [
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T18:05:02+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 0,
+      "project_id": "project-1",
+      "purpose": "proposal support action preparation What bounded rollout should execute now for memory persistence verification 2026-04-20-1?",
+      "retrieval_event_id": "re-fd6e18dc21a7",
+      "returned_count": 0,
+      "semantic_hit_count": 0
+    },
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T18:06:17+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 1,
+      "project_id": "project-1",
+      "purpose": "proposal support direct support action preparation What bounded rollout should execute now for memory persistence verification 2026-04-20-1?",
+      "retrieval_event_id": "re-4ef48be1d4ec",
+      "returned_count": 1,
+      "semantic_hit_count": 0
+    },
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T18:06:27+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 1,
+      "project_id": "project-1",
+      "purpose": "proposal support direct support action preparation What bounded rollout should execute now for memory persistence verification 2026-04-20-1?",
+      "retrieval_event_id": "re-e7e13eeac8d7",
+      "returned_count": 1,
+      "semantic_hit_count": 0
+    },
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T19:41:04+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 0,
+      "project_id": "project-1",
+      "purpose": "proposal support direct support action preparation What prior bounded runtime result in this scope should influence the next bounded rollout?",
+      "retrieval_event_id": "re-f1f6cca1b03d",
+      "returned_count": 0,
+      "semantic_hit_count": 0
+    },
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T19:42:05+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 0,
+      "project_id": "project-1",
+      "purpose": "proposal support direct support action preparation What prior bounded runtime result in this scope should influence the next bounded rollout?",
+      "retrieval_event_id": "re-54eb69bf1bd8",
+      "returned_count": 0,
+      "semantic_hit_count": 0
+    },
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T19:42:24+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 0,
+      "project_id": "project-1",
+      "purpose": "proposal support direct support action preparation What is Jeff architecture?",
+      "retrieval_event_id": "re-579038774527",
+      "returned_count": 0,
+      "semantic_hit_count": 0
+    },
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T19:43:06+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 0,
+      "project_id": "general_research",
+      "purpose": "proposal support Summarize Jeff README startup behavior",
+      "retrieval_event_id": "re-c32da0577f70",
+      "returned_count": 0,
+      "semantic_hit_count": 0
+    },
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T19:44:00+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 0,
+      "project_id": "general_research",
+      "purpose": "proposal support startup summary",
+      "retrieval_event_id": "re-47a38db764d4",
+      "returned_count": 0,
+      "semantic_hit_count": 0
+    },
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T19:44:27+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 0,
+      "project_id": "general_research",
+      "purpose": "proposal support summary",
+      "retrieval_event_id": "re-97e6ca8118a1",
+      "returned_count": 0,
+      "semantic_hit_count": 0
+    },
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T19:45:41+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 0,
+      "project_id": "project-1",
+      "purpose": "proposal support action preparation What bounded rollout should execute now?",
+      "retrieval_event_id": "re-4c5b2f2d1bf9",
+      "returned_count": 0,
+      "semantic_hit_count": 0
+    },
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T19:47:28+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 0,
+      "project_id": "project-1",
+      "purpose": "proposal support action preparation Plan the next bounded operator validation slice and hold for review.",
+      "retrieval_event_id": "re-012b901845e4",
+      "returned_count": 0,
+      "semantic_hit_count": 0
+    },
+    {
+      "contradiction_count": 0,
+      "created_at": "2026-04-20T19:49:34+00:00",
+      "explicit_hit_count": 0,
+      "lexical_hit_count": 0,
+      "project_id": "project-1",
+      "purpose": "proposal support action preparation Investigate why the literal labels are being surfaced and propose a bounded fix.",
+      "retrieval_event_id": "re-b5af53c11850",
+      "returned_count": 0,
+      "semantic_hit_count": 0
+    }
+  ],
+  "schema_version": "1.0",
+  "write_events": [
+    {
+      "candidate_id": "run-memory-5610cdb4b87e",
+      "created_at": "2026-04-20T18:06:05+00:00",
+      "decision_summary": "write for candidate run-memory-5610cdb4b87e",
+      "defer_reason_code": null,
+      "project_id": "project-1",
+      "related_memory_id": "memory-1",
+      "write_event_id": "we-167be1ae6bcb",
+      "write_outcome": "write"
+    },
+    {
+      "candidate_id": "run-memory-4e02c5c17768",
+      "created_at": "2026-04-20T19:47:19+00:00",
+      "decision_summary": "write for candidate run-memory-4e02c5c17768",
+      "defer_reason_code": null,
+      "project_id": "project-1",
+      "related_memory_id": "memory-2",
+      "write_event_id": "we-ac6890e43af4",
+      "write_outcome": "write"
+    }
+  ]
+}

@@ -166,6 +166,73 @@ class Recommendation:
 class PlanStep:
     summary: str
     review_required: bool = False
+    step_id: str | None = None
+    step_order: int = 1
+    title: str | None = None
+    step_objective: str | None = None
+    step_type: Literal["bounded_action", "review", "validation", "analysis", "coordination"] = "bounded_action"
+    step_inputs_summary: tuple[str, ...] = ()
+    assumptions: tuple[str, ...] = ()
+    risks: tuple[str, ...] = ()
+    dependencies: tuple[str, ...] = ()
+    entry_conditions: tuple[str, ...] = ()
+    success_criteria: tuple[str, ...] = ()
+    checkpoint_required: bool | None = None
+    revalidation_required_on_resume: bool = False
+    candidate_action_summary: str | None = None
+    step_status: Literal["pending", "active", "completed", "blocked", "failed", "stopped"] = "pending"
+    support_refs: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "summary", require_text(self.summary, field_name="summary"))
+        if not isinstance(self.step_order, int):
+            raise TypeError("step_order must be an integer")
+        if self.step_order <= 0:
+            raise ValueError("step_order must be greater than zero")
+        if self.step_id is not None:
+            object.__setattr__(self, "step_id", require_text(self.step_id, field_name="step_id"))
+        if self.title is None:
+            object.__setattr__(self, "title", self.summary)
+        else:
+            object.__setattr__(self, "title", require_text(self.title, field_name="title"))
+        if self.step_objective is None:
+            object.__setattr__(self, "step_objective", self.summary)
+        else:
+            object.__setattr__(self, "step_objective", require_text(self.step_objective, field_name="step_objective"))
+        if self.step_type not in {"bounded_action", "review", "validation", "analysis", "coordination"}:
+            raise ValueError("step_type must remain a lawful bounded planning step kind")
+        object.__setattr__(
+            self,
+            "step_inputs_summary",
+            normalize_text_list(self.step_inputs_summary, field_name="step_inputs_summary"),
+        )
+        object.__setattr__(self, "assumptions", normalize_text_list(self.assumptions, field_name="assumptions"))
+        object.__setattr__(self, "risks", normalize_text_list(self.risks, field_name="risks"))
+        object.__setattr__(
+            self,
+            "dependencies",
+            normalize_text_list(self.dependencies, field_name="dependencies"),
+        )
+        object.__setattr__(
+            self,
+            "entry_conditions",
+            normalize_text_list(self.entry_conditions, field_name="entry_conditions"),
+        )
+        object.__setattr__(
+            self,
+            "success_criteria",
+            normalize_text_list(self.success_criteria, field_name="success_criteria"),
+        )
+        if self.candidate_action_summary is None:
+            object.__setattr__(self, "candidate_action_summary", self.summary)
+        else:
+            object.__setattr__(
+                self,
+                "candidate_action_summary",
+                require_text(self.candidate_action_summary, field_name="candidate_action_summary"),
+            )
+        if self.checkpoint_required is None:
+            object.__setattr__(self, "checkpoint_required", self.review_required)
+        if self.step_status not in {"pending", "active", "completed", "blocked", "failed", "stopped"}:
+            raise ValueError("step_status must remain a lawful bounded planning step state")
+        object.__setattr__(self, "support_refs", normalize_text_list(self.support_refs, field_name="support_refs"))

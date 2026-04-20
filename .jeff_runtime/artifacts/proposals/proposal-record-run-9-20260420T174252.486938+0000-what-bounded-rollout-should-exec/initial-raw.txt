@@ -1,0 +1,2 @@
+PROPOSAL_COUNT: 0
+SCARCITY_REASON: No rollout targets or candidate actions are defined in the provided support, leaving no grounded basis for a proposal.

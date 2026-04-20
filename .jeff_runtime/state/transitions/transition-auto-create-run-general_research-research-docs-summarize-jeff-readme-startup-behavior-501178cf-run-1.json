@@ -1,0 +1,28 @@
+{
+  "record_class": "transition_audit_support",
+  "recorded_at": "2026-04-20T19:42:59+00:00",
+  "request": {
+    "basis_state_version": 28,
+    "payload": {
+      "run_id": "run-1"
+    },
+    "scope": {
+      "project_id": "general_research",
+      "run_id": null,
+      "work_unit_id": "research-docs-summarize-jeff-readme-startup-behavior-501178cf"
+    },
+    "transition_id": "transition-auto-create-run-general_research-research-docs-summarize-jeff-readme-startup-behavior-501178cf-run-1",
+    "transition_type": "create_run"
+  },
+  "result": {
+    "changed_paths": [
+      "projects.general_research.work_units.research-docs-summarize-jeff-readme-startup-behavior-501178cf.runs.run-1"
+    ],
+    "state_after_version": 29,
+    "state_before_version": 28,
+    "transition_id": "transition-auto-create-run-general_research-research-docs-summarize-jeff-readme-startup-behavior-501178cf-run-1",
+    "transition_result": "committed",
+    "validation_errors": []
+  },
+  "schema_version": "1.0"
+}

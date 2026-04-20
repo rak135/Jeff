@@ -1,0 +1,2 @@
+PROPOSAL_COUNT: 0
+SCARCITY_REASON: No bounded runtime results or evidence from run-10 were provided in the support to identify a specific influence for the next rollout.

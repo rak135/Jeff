@@ -1,0 +1,175 @@
+{
+  "events": [
+    {
+      "emitted_at": "2026-04-20T16:41:36+00:00",
+      "event_type": "flow_started",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 1,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-6",
+        "work_unit_id": "wu-1"
+      },
+      "stage": null,
+      "summary": "flow flow:run-6 started"
+    },
+    {
+      "emitted_at": "2026-04-20T16:41:36+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 2,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-6",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "context",
+      "summary": "entered context"
+    },
+    {
+      "emitted_at": "2026-04-20T16:41:36+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 3,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-6",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "context",
+      "summary": "exited context"
+    },
+    {
+      "emitted_at": "2026-04-20T16:41:36+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 4,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-6",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "proposal",
+      "summary": "entered proposal"
+    },
+    {
+      "emitted_at": "2026-04-20T16:41:42+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 5,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-6",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "proposal",
+      "summary": "exited proposal"
+    },
+    {
+      "emitted_at": "2026-04-20T16:41:42+00:00",
+      "event_type": "validation_failed",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 6,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-6",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "selection cannot run when proposal generation returned no serious options"
+    }
+  ],
+  "lifecycle": {
+    "current_stage": "selection",
+    "flow_family": "bounded_proposal_selection_execution",
+    "flow_id": "flow:run-6",
+    "lifecycle_state": "invalidated",
+    "reason_summary": "selection cannot run when proposal generation returned no serious options",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-6",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "memory_handoff_attempted": true,
+  "memory_handoff_note": "automatic run memory handoff completed with outcome defer",
+  "memory_handoff_result": {
+    "candidate_id": "run-memory-42d8f2b409b5",
+    "memory_id": null,
+    "reasons": [
+      "support is not yet stable or strong enough for committed memory"
+    ],
+    "write_outcome": "defer"
+  },
+  "objective_summary": "What bounded rollout should execute now?",
+  "outputs": {
+    "governance_approval": {
+      "kind": "approval",
+      "value": {
+        "action_binding_key": null,
+        "action_id": null,
+        "approval_verdict": "not_required",
+        "basis_state_version": null
+      }
+    },
+    "governance_policy": {
+      "kind": "policy",
+      "value": {
+        "action_forbidden": false,
+        "approval_required": false,
+        "destructive": false,
+        "direction_sensitive": false,
+        "freshness_sensitive": true,
+        "protected_surface": false,
+        "revalidation_required": false
+      }
+    },
+    "governance_truth": {
+      "kind": "current_truth_snapshot",
+      "value": {
+        "blocked_reasons": [],
+        "degraded_truth": false,
+        "direction_ok": true,
+        "requires_revalidation": false,
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-6",
+          "work_unit_id": "wu-1"
+        },
+        "state_version": 16,
+        "target_available": true,
+        "truth_mismatch": false
+      }
+    },
+    "proposal": {
+      "kind": "proposal_result",
+      "value": {
+        "options": [],
+        "request_id": "proposal-generation:project-1:wu-1:run-6:what-bounded-rollout-should-execute-now",
+        "scarcity_reason": "No bounded rollout targets or validation plans are identified in the provided truth snapshot or support to form a serious candidate path.",
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-6",
+          "work_unit_id": "wu-1"
+        }
+      }
+    }
+  },
+  "record_class": "flow_run_support",
+  "recorded_at": "2026-04-20T16:41:42+00:00",
+  "routing_decision": {
+    "auto_execute": false,
+    "reason_summary": "selection cannot run when proposal generation returned no serious options",
+    "route_kind": "stop",
+    "routed_outcome": "invalidated",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-6",
+      "work_unit_id": "wu-1"
+    },
+    "source_stage": "selection"
+  },
+  "run_id": "run-6",
+  "schema_version": "1.0",
+  "selection_failure": null
+}

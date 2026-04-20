@@ -1,0 +1,470 @@
+{
+  "events": [
+    {
+      "emitted_at": "2026-04-20T17:31:38+00:00",
+      "event_type": "flow_started",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 1,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": null,
+      "summary": "flow flow:run-9 started"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:38+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 2,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "context",
+      "summary": "entered context"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:38+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 3,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "context",
+      "summary": "exited context"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:38+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 4,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "proposal",
+      "summary": "entered proposal"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:49+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 5,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "proposal",
+      "summary": "exited proposal"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:49+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 6,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "entered selection via deterministic path"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:49+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 7,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "exited selection via deterministic path"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:49+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 8,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "action",
+      "summary": "entered action"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:49+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 9,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "action",
+      "summary": "exited action"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:49+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 10,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "governance",
+      "summary": "entered governance"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:49+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 11,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "governance",
+      "summary": "exited governance"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:49+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 12,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "execution",
+      "summary": "entered execution"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:54+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 13,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "execution",
+      "summary": "exited execution"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:54+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 14,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "outcome",
+      "summary": "entered outcome"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:54+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 15,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "outcome",
+      "summary": "exited outcome"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:54+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 16,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "evaluation",
+      "summary": "entered evaluation"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:54+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 17,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "evaluation",
+      "summary": "exited evaluation"
+    },
+    {
+      "emitted_at": "2026-04-20T17:31:54+00:00",
+      "event_type": "flow_completed",
+      "flow_family": "bounded_proposal_selection_execution",
+      "ordinal": 18,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-9",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "evaluation",
+      "summary": "bounded_proposal_selection_execution completed"
+    }
+  ],
+  "lifecycle": {
+    "current_stage": "evaluation",
+    "flow_family": "bounded_proposal_selection_execution",
+    "flow_id": "flow:run-9",
+    "lifecycle_state": "completed",
+    "reason_summary": "bounded_proposal_selection_execution completed",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-9",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "memory_handoff_attempted": true,
+  "memory_handoff_note": "automatic run memory handoff completed with outcome write",
+  "memory_handoff_result": {
+    "candidate_id": "run-memory-17fd02d19e62",
+    "memory_id": "memory-1",
+    "reasons": [],
+    "write_outcome": "write"
+  },
+  "objective_summary": "What bounded rollout should execute now?",
+  "outputs": {
+    "evaluation": {
+      "kind": "evaluation_result",
+      "value": {
+        "deterministic_override_reasons": [],
+        "evaluation_verdict": "acceptable",
+        "objective_summary": "What bounded rollout should execute now?",
+        "outcome": {
+          "action_id": "action:run-9:selection:proposal-1",
+          "artifact_posture": "report not persisted",
+          "evidence_refs": [],
+          "mismatch_markers": [],
+          "observed_completion_posture": "execution completed",
+          "outcome_state": "complete",
+          "scope": {
+            "project_id": "project-1",
+            "run_id": "run-9",
+            "work_unit_id": "wu-1"
+          },
+          "side_effect_posture": "contained",
+          "target_effect_posture": "bounded repo-local validation passed",
+          "uncertainty_markers": []
+        },
+        "rationale": "Evaluation for 'What bounded rollout should execute now?' follows normalized outcome complete with evidence quality strong.",
+        "recommended_next_step": "accept_as_complete"
+      }
+    },
+    "execution": {
+      "kind": "execution_result",
+      "value": {
+        "artifact_refs": [],
+        "ended_at": "2026-04-20T17:31:54+00:00",
+        "executed_command": "C:\\Users\\Martin\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m pytest -q tests/smoke/test_bootstrap_smoke.py tests/smoke/test_cli_entry_smoke.py tests/smoke/test_quickstart_paths.py",
+        "execution_command_id": "smoke_quickstart_validation",
+        "execution_errors": [],
+        "execution_family": "repo_local_validation",
+        "execution_status": "completed",
+        "execution_warnings": [],
+        "exit_code": 0,
+        "governed_request": {
+          "action": {
+            "action_id": "action:run-9:selection:proposal-1",
+            "basis_label": "selection_source=selection;selection_id=run-9:selection;proposal_id=proposal-1",
+            "basis_state_version": 22,
+            "intent_summary": "Execute the fixed repo-local validation plan as the only supported candidate for the current /run path.",
+            "protected_surface": null,
+            "scope": {
+              "project_id": "project-1",
+              "run_id": "run-9",
+              "work_unit_id": "wu-1"
+            },
+            "target_summary": null
+          },
+          "governance_decision": {
+            "action_binding_key": "cf5acdc9ef168e23158f3962ba910bbaf410370cb16faa04ac8b9442b4839552",
+            "action_id": "action:run-9:selection:proposal-1",
+            "allowed_now": true,
+            "approval_verdict": "not_required",
+            "governance_outcome": "allowed_now",
+            "policy_verdict": "allowed",
+            "readiness": {
+              "action_id": "action:run-9:selection:proposal-1",
+              "cautions": [],
+              "checked_at_state_version": 22,
+              "readiness_state": "ready",
+              "reasons": []
+            }
+          }
+        },
+        "observed_side_effect_notes": [],
+        "output_summary": "repo-local validation smoke_quickstart_validation exited with code 0",
+        "started_at": "2026-04-20T17:31:49+00:00",
+        "stderr_excerpt": null,
+        "stdout_excerpt": "......................                                                   [100%]\n22 passed in 5.35s",
+        "trace_refs": [],
+        "working_directory": "C:\\DATA\\PROJECTS\\JEFF"
+      }
+    },
+    "governance": {
+      "kind": "action_entry_decision",
+      "value": {
+        "action_binding_key": "cf5acdc9ef168e23158f3962ba910bbaf410370cb16faa04ac8b9442b4839552",
+        "action_id": "action:run-9:selection:proposal-1",
+        "allowed_now": true,
+        "approval_verdict": "not_required",
+        "governance_outcome": "allowed_now",
+        "policy_verdict": "allowed",
+        "readiness": {
+          "action_id": "action:run-9:selection:proposal-1",
+          "cautions": [],
+          "checked_at_state_version": 22,
+          "readiness_state": "ready",
+          "reasons": []
+        }
+      }
+    },
+    "governance_approval": {
+      "kind": "approval",
+      "value": {
+        "action_binding_key": null,
+        "action_id": null,
+        "approval_verdict": "not_required",
+        "basis_state_version": null
+      }
+    },
+    "governance_policy": {
+      "kind": "policy",
+      "value": {
+        "action_forbidden": false,
+        "approval_required": false,
+        "destructive": false,
+        "direction_sensitive": false,
+        "freshness_sensitive": true,
+        "protected_surface": false,
+        "revalidation_required": false
+      }
+    },
+    "governance_truth": {
+      "kind": "current_truth_snapshot",
+      "value": {
+        "blocked_reasons": [],
+        "degraded_truth": false,
+        "direction_ok": true,
+        "requires_revalidation": false,
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-9",
+          "work_unit_id": "wu-1"
+        },
+        "state_version": 22,
+        "target_available": true,
+        "truth_mismatch": false
+      }
+    },
+    "outcome": {
+      "kind": "outcome",
+      "value": {
+        "action_id": "action:run-9:selection:proposal-1",
+        "artifact_posture": "report not persisted",
+        "evidence_refs": [],
+        "mismatch_markers": [],
+        "observed_completion_posture": "execution completed",
+        "outcome_state": "complete",
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-9",
+          "work_unit_id": "wu-1"
+        },
+        "side_effect_posture": "contained",
+        "target_effect_posture": "bounded repo-local validation passed",
+        "uncertainty_markers": []
+      }
+    },
+    "proposal": {
+      "kind": "proposal_result",
+      "value": {
+        "options": [
+          {
+            "assumptions": [],
+            "blockers": [],
+            "constraints": [
+              "The /run path is limited to one bounded repo-local validation plan and is not a general execution surface"
+            ],
+            "feasibility": null,
+            "main_risks": [],
+            "option_index": 1,
+            "planning_needed": false,
+            "proposal_id": "proposal-1",
+            "proposal_type": "direct_action",
+            "reversibility": null,
+            "summary": "Execute the fixed repo-local validation plan as the only supported candidate for the current /run path.",
+            "support_refs": [
+              "visible_constraint:1",
+              "visible_constraint:2",
+              "governance_support_1",
+              "governance_support_2",
+              "current_execution_support_1",
+              "current_execution_support_2"
+            ],
+            "title": "Execute repo-local validation plan",
+            "why_now": "The objective requests a bounded rollout and the current execution surface is limited to this specific plan."
+          }
+        ],
+        "request_id": "proposal-generation:project-1:wu-1:run-9:what-bounded-rollout-should-execute-now:repair-1",
+        "scarcity_reason": "Visible constraints limit the execution surface to a single fixed repo-local validation plan.",
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-9",
+          "work_unit_id": "wu-1"
+        }
+      }
+    },
+    "selection": {
+      "kind": "selection_result",
+      "value": {
+        "considered_proposal_ids": [
+          "proposal-1"
+        ],
+        "non_selection_outcome": null,
+        "rationale": "selected proposal-1 because it stays within bounded choice with stronger visible support and no unresolved blockers or material burden.",
+        "selected_proposal_id": "proposal-1",
+        "selection_id": "run-9:selection"
+      }
+    }
+  },
+  "record_class": "flow_run_support",
+  "recorded_at": "2026-04-20T17:31:54+00:00",
+  "routing_decision": null,
+  "run_id": "run-9",
+  "schema_version": "1.0",
+  "selection_failure": null
+}

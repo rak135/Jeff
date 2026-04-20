@@ -108,6 +108,7 @@ def render_run_show(payload: dict[str, Any]) -> str:
     telemetry = payload["telemetry"]
     live_context = support.get("live_context")
     execution = support.get("execution_summary")
+    planning = support.get("planning_summary")
 
     lines = [
         f"RUN {truth['run_id']}",
@@ -197,6 +198,36 @@ def render_run_show(payload: dict[str, Any]) -> str:
             )
     else:
         lines.append(f"[support][proposal] missing={proposal['missing_reason']}")
+
+    if planning is not None and planning["available"]:
+        lines.append(
+            f"[support][planning] plan_id={planning['plan_id']} status={planning['plan_status']} "
+            f"active_step_id={planning['active_step_id'] or '-'} step_count={planning['step_count']} "
+            f"checkpoint_count={planning['checkpoint_count']}"
+        )
+        lines.append(
+            f"[support][planning] active_step={planning['active_step_title'] or '-'} "
+            f"resume_posture={planning['resume_posture']}"
+        )
+        candidate = planning["candidate_action"]
+        if candidate is not None:
+            if candidate["available"]:
+                lines.append(
+                    f"[support][planning] candidate_action step_id={candidate['step_id']} "
+                    f"action_id={candidate['action_id']} intent={_compact_text(candidate['intent_summary'])}"
+                )
+            else:
+                lines.append(f"[support][planning] candidate_action={candidate['summary']}")
+        active_runtime = planning.get("active_step_runtime")
+        if active_runtime is not None:
+            lines.append(
+                f"[support][planning] active_step_runtime state={active_runtime['runtime_state']} "
+                f"governance={active_runtime['last_governance_outcome'] or '-'} "
+                f"execution={active_runtime['last_execution_status'] or '-'} "
+                f"evaluation={active_runtime['last_evaluation_verdict'] or '-'}"
+            )
+    elif planning is not None:
+        lines.append(f"[support][planning] missing={planning['missing_reason']}")
 
     evaluation = support["evaluation_summary"]
     if evaluation["available"]:
@@ -328,6 +359,171 @@ def render_selection_review(payload: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def render_plan_show(payload: dict[str, Any]) -> str:
+    truth = payload["truth"]
+    plan = payload["plan"]
+    active_step = payload["active_step"]
+    active_runtime = payload.get("active_step_runtime")
+    latest_runtime = payload.get("latest_step_runtime")
+    candidate = payload["candidate_action"]
+    lines = [
+        f"PLAN run_id={truth['run_id']}",
+        f"[truth] project_id={truth['project_id']} work_unit_id={truth['work_unit_id']}",
+        (
+            f"[plan] plan_id={plan['plan_id']} selected_proposal_id={plan['selected_proposal_id'] or '-'} "
+            f"status={plan['plan_status']} active_step_id={plan['active_step_id'] or '-'}"
+        ),
+        (
+            f"[plan] step_count={plan['step_count']} checkpoint_count={plan['checkpoint_count']} "
+            f"resume_posture={plan['resume_posture']}"
+        ),
+        f"[plan] objective={_compact_text(plan['bounded_objective'])}",
+    ]
+    if active_step is not None:
+        lines.append(
+            f"[active_step] step_id={active_step['step_id']} order={active_step['step_order']} "
+            f"type={active_step['step_type']} status={active_step['step_status']}"
+        )
+        lines.append(f"[active_step] title={_compact_text(active_step['title'])}")
+        lines.append(f"[active_step] candidate_action={_compact_text(active_step['candidate_action_summary'])}")
+    if active_runtime is not None:
+        lines.append(
+            f"[active_step_runtime] state={active_runtime['runtime_state']} governance={active_runtime['last_governance_outcome'] or '-'} "
+            f"execution={active_runtime['last_execution_status'] or '-'} outcome={active_runtime['last_outcome_state'] or '-'} "
+            f"evaluation={active_runtime['last_evaluation_verdict'] or '-'}"
+        )
+        if active_runtime["latest_checkpoint_decision"] is not None:
+            lines.append(
+                f"[active_step_runtime] latest_checkpoint={active_runtime['latest_checkpoint_decision']} "
+                f"summary={_compact_text(active_runtime['latest_checkpoint_summary'])}"
+            )
+    if candidate["available"]:
+        lines.append(
+            f"[candidate_action] action_id={candidate['action_id']} step_id={candidate['step_id']} "
+            f"intent={_compact_text(candidate['intent_summary'])}"
+        )
+    else:
+        lines.append(f"[candidate_action] note={candidate['summary']}")
+    if payload["checkpoint_history"]:
+        latest = payload["checkpoint_history"][-1]
+        lines.append(
+            f"[checkpoint] latest_decision={latest['decision']} step_id={latest['step_id']} "
+            f"resulting_plan_status={latest['resulting_plan_status']}"
+        )
+        lines.append(f"[checkpoint] summary={_compact_text(latest['summary'])}")
+    if latest_runtime is not None and latest_runtime is not active_runtime:
+        lines.append(
+            f"[latest_runtime] step_id={latest_runtime['step_id']} state={latest_runtime['runtime_state']} "
+            f"execution={latest_runtime['last_execution_status'] or '-'} evaluation={latest_runtime['last_evaluation_verdict'] or '-'}"
+        )
+    return "\n".join(lines)
+
+
+def render_plan_steps(payload: dict[str, Any]) -> str:
+    truth = payload["truth"]
+    lines = [f"PLAN STEPS run_id={truth['run_id']}", f"[truth] plan_id={truth['plan_id']}"]
+    for step in payload["steps"]:
+        lines.append(
+            f"- step_id={step['step_id']} order={step['step_order']} type={step['step_type']} "
+            f"status={step['step_status']} checkpoint_required={step['checkpoint_required']} "
+            f"title={_compact_text(step['title'])}"
+        )
+        runtime = step.get("runtime")
+        if runtime is not None:
+            lines.append(
+                f"  runtime state={runtime['runtime_state']} governance={runtime['last_governance_outcome'] or '-'} "
+                f"execution={runtime['last_execution_status'] or '-'} evaluation={runtime['last_evaluation_verdict'] or '-'}"
+            )
+    return "\n".join(lines)
+
+
+def render_plan_checkpoint(payload: dict[str, Any]) -> str:
+    truth = payload["truth"]
+    checkpoint = payload["checkpoint"]
+    lines = [
+        f"PLAN CHECKPOINT run_id={truth['run_id']}",
+        f"[truth] plan_id={truth['plan_id']}",
+        (
+            f"[checkpoint] available={checkpoint['available']} plan_status={checkpoint['plan_status']} "
+            f"active_step_id={checkpoint['active_step_id'] or '-'} resume_posture={checkpoint['resume_posture']}"
+        ),
+    ]
+    latest = checkpoint["latest"]
+    if latest is not None:
+        lines.append(
+            f"[checkpoint] latest_decision={latest['decision']} step_id={latest['step_id']} "
+            f"resulting_plan_status={latest['resulting_plan_status']}"
+        )
+        lines.append(f"[checkpoint] summary={_compact_text(latest['summary'])}")
+    latest_runtime = checkpoint.get("latest_runtime")
+    if latest_runtime is not None:
+        lines.append(
+            f"[checkpoint] latest_runtime_state={latest_runtime['runtime_state']} execution={latest_runtime['last_execution_status'] or '-'} "
+            f"evaluation={latest_runtime['last_evaluation_verdict'] or '-'}"
+        )
+    return "\n".join(lines)
+
+
+def render_plan_execute(payload: dict[str, Any]) -> str:
+    truth = payload["truth"]
+    attempt = payload["execution_attempt"]
+    plan = payload["plan"]
+    active_runtime = payload.get("active_step_runtime")
+    lines = [
+        f"PLAN EXECUTE run_id={truth['run_id']}",
+        f"[truth] plan_id={truth['plan_id']}",
+        (
+            f"[attempt] active_step_id={attempt['active_step_id'] or '-'} executable={attempt['executable']} "
+            f"executed={attempt['executed']} action_id={attempt['action_id'] or '-'}"
+        ),
+        f"[attempt] reason={_compact_text(attempt['reason'])}",
+        (
+            f"[plan] status={plan['plan_status']} active_step_id={plan['active_step_id'] or '-'} "
+            f"resume_posture={plan['resume_posture']} checkpoint_count={plan['checkpoint_count']}"
+        ),
+    ]
+    governance = payload.get("governance")
+    if governance is not None:
+        lines.append(
+            f"[governance] outcome={governance['governance_outcome']} allowed_now={governance['allowed_now']} "
+            f"approval_verdict={governance['approval_verdict']} readiness={governance['readiness_state']}"
+        )
+        if governance["reason_summary"]:
+            lines.append(f"[governance] reason={_compact_text(governance['reason_summary'])}")
+    execution = payload.get("execution")
+    if execution is not None:
+        lines.append(
+            f"[execution] status={execution['execution_status']} command_id={execution['execution_command_id'] or '-'} "
+            f"exit_code={execution['exit_code']}"
+        )
+        if execution["output_summary"] is not None:
+            lines.append(f"[execution] summary={_compact_text(execution['output_summary'])}")
+    outcome = payload.get("outcome")
+    if outcome is not None:
+        lines.append(
+            f"[outcome] state={outcome['outcome_state']} completion={_compact_text(outcome['observed_completion_posture'])}"
+        )
+    evaluation = payload.get("evaluation")
+    if evaluation is not None:
+        lines.append(
+            f"[evaluation] verdict={evaluation['evaluation_verdict']} next_step={evaluation['recommended_next_step']}"
+        )
+        lines.append(f"[evaluation] rationale={_compact_text(evaluation['rationale'])}")
+    checkpoint = payload.get("checkpoint")
+    if checkpoint is not None:
+        lines.append(
+            f"[checkpoint] decision={checkpoint['decision']} resulting_plan_status={checkpoint['resulting_plan_status']} "
+            f"next_active_step_id={checkpoint['next_active_step_id'] or '-'}"
+        )
+        lines.append(f"[checkpoint] summary={_compact_text(checkpoint['summary'])}")
+    if active_runtime is not None:
+        lines.append(
+            f"[active_step_runtime] state={active_runtime['runtime_state']} governance={active_runtime['last_governance_outcome'] or '-'} "
+            f"execution={active_runtime['last_execution_status'] or '-'} evaluation={active_runtime['last_evaluation_verdict'] or '-'}"
+        )
+    return "\n".join(lines)
+
+
 def render_selection_override_receipt(payload: dict[str, Any]) -> str:
     truth = payload["truth"]
     derived = payload["derived"]
@@ -391,6 +587,7 @@ def render_proposal_record(payload: dict[str, Any]) -> str:
     truth = payload["truth"]
     derived = payload["derived"]
     proposal = payload["proposal"]
+    proposal_input_bundle = payload.get("proposal_input_bundle") or {}
     attempts = payload["attempts"]
     artifacts = payload["artifacts"]
 
@@ -423,6 +620,71 @@ def render_proposal_record(payload: dict[str, Any]) -> str:
             )
     else:
         lines.append("- no retained options available")
+    if proposal_input_bundle:
+        request_frame = proposal_input_bundle["request_frame"]
+        truth_snapshot = proposal_input_bundle["truth_snapshot"]
+        governance_support = proposal_input_bundle["governance_relevant_support"]
+        execution_support = proposal_input_bundle["current_execution_support"]
+        evidence_support = proposal_input_bundle["evidence_support"]
+        memory_support = proposal_input_bundle["memory_support"]
+        lines.append(
+            "[proposal_input_bundle] "
+            f"purpose={request_frame['purpose']} "
+            f"truth_items={truth_snapshot['item_count']} "
+            f"governance_support_items={governance_support['item_count']} "
+            f"execution_support_items={execution_support['item_count']} "
+            f"evidence_items={evidence_support['evidence_count']} "
+            f"memory_items={memory_support['summary_count']}"
+        )
+        if request_frame["visible_constraints"]:
+            lines.append(
+                "[proposal_input_bundle] visible_constraints="
+                + " | ".join(request_frame["visible_constraints"])
+            )
+        for item in truth_snapshot["items"]:
+            lines.append(
+                f"- truth_basis {item['source_label']} family={item['truth_family']} summary={_compact_text(item['summary'])}"
+            )
+        for item in governance_support["items"]:
+            lines.append(
+                f"- governance_basis {item['source_label']} family={item['source_family']} summary={_compact_text(item['summary'])}"
+            )
+        for item in execution_support["items"]:
+            lines.append(
+                f"- execution_basis {item['source_label']} family={item['source_family']} summary={_compact_text(item['summary'])}"
+            )
+        if evidence_support["artifact_refs"]:
+            lines.append("[proposal_input_bundle] evidence_refs=" + " | ".join(evidence_support["artifact_refs"]))
+        for item in evidence_support["evidence_summaries"]:
+            lines.append(
+                f"- evidence_basis {item['source_label']} family={item['source_family']} summary={_compact_text(item['summary'])}"
+            )
+        for item in evidence_support["uncertainty_summaries"]:
+            lines.append(
+                f"- evidence_uncertainty {item['source_label']} family={item['source_family']} summary={_compact_text(item['summary'])}"
+            )
+        for item in evidence_support["contradiction_summaries"]:
+            lines.append(
+                f"- evidence_contradiction {item['source_label']} family={item['source_family']} summary={_compact_text(item['summary'])}"
+            )
+        if memory_support["memory_ids"]:
+            lines.append("[proposal_input_bundle] memory_ids=" + " | ".join(memory_support["memory_ids"]))
+        for item in memory_support["memory_summaries"]:
+            lines.append(
+                f"- memory_basis {item['source_label']} family={item['source_family']} summary={_compact_text(item['summary'])}"
+            )
+        for item in memory_support["memory_lessons"]:
+            lines.append(
+                f"- memory_lesson {item['source_label']} family={item['source_family']} summary={_compact_text(item['summary'])}"
+            )
+        for item in memory_support["memory_risk_reminders"]:
+            lines.append(
+                f"- memory_risk {item['source_label']} family={item['source_family']} summary={_compact_text(item['summary'])}"
+            )
+        for item in memory_support["memory_precedents"]:
+            lines.append(
+                f"- memory_precedent {item['source_label']} family={item['source_family']} summary={_compact_text(item['summary'])}"
+            )
     lines.append(
         f"[attempt][initial] raw={attempts['initial']['raw_available']} parsed={attempts['initial']['parsed_available']} proposal_result={attempts['initial']['proposal_result_available']} failure_stage={attempts['initial']['failure_stage'] or '-'}"
     )
@@ -676,6 +938,10 @@ def render_help() -> str:
             "- /proposal repair [run_id or proposal_id]",
             "- /selection show [run_id]",
             '- /selection override <proposal_id> --why "<operator rationale>" [run_id]',
+            "- /plan show [run_id]",
+            "- /plan steps [run_id]",
+            "- /plan execute [run_id]",
+            "- /plan checkpoint [decision] [run_id]",
             "History/debug:",
             "- /run list",
             "- /run use <run_id>",

@@ -1,0 +1,14 @@
+PROPOSAL_COUNT: 1
+SCARCITY_REASON: The objective requires an investigation into literal labels, but the available support provides only general governance constraints on execution paths and no evidence regarding the cause of the labels.
+OPTION_1_TYPE: investigate
+OPTION_1_TITLE: Investigate literal label surfacing cause
+OPTION_1_SUMMARY: Conduct a bounded investigation to identify why literal labels are being surfaced and determine the necessary fix.
+OPTION_1_WHY_NOW: This is the primary objective required to move toward a bounded fix.
+OPTION_1_ASSUMPTIONS: No explicit assumptions identified from the provided support.
+OPTION_1_RISKS: No explicit risks identified from the provided support.
+OPTION_1_CONSTRAINTS: The current /run path is limited to one bounded repo-local validation plan and is not a general execution surface
+OPTION_1_BLOCKERS: No explicit blockers identified from the provided support.
+OPTION_1_PLANNING_NEEDED: yes
+OPTION_1_FEASIBILITY: No explicit feasibility statement identified from the provided support.
+OPTION_1_REVERSIBILITY: No explicit reversibility statement identified from the provided support.
+OPTION_1_SUPPORT_REFS: visible_constraint:1,visible_constraint:2

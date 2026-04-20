@@ -82,6 +82,14 @@ def validate_stage_sequence(
                 ),
             )
         return ValidationResult(valid=True)
+    if flow_family == "conditional_planning_execution":
+        if stages != expected:
+            return ValidationResult(
+                valid=False,
+                code="illegal_stage_order",
+                reason=f"conditional_planning_execution must use the explicit stage order {expected}",
+            )
+        return ValidationResult(valid=True)
     if stages != expected:
         return ValidationResult(
             valid=False,
@@ -184,6 +192,8 @@ def _scope_from_output(output: object) -> Scope | None:
     if isinstance(output, ResearchArtifact):
         return None
     if isinstance(output, ProposalResult):
+        return output.scope
+    if isinstance(output, PlanArtifact):
         return output.scope
     if isinstance(output, Action):
         return output.scope

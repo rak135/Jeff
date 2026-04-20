@@ -1,0 +1,166 @@
+{
+  "artifact_id": "research-ea051c3a99226327",
+  "created_at": "2026-04-20T19:43:06.762188+00:00",
+  "evidence_items": [
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "Startup loads or initializes a persisted local runtime workspace under `.jeff_runtime`. On a fresh or reset runtime, Jeff initializes `project-1` / `wu-1` with no seeded run history; later startups reload the persisted canonical state and support records already present in that workspace. No daemon, GUI, or background continuation is started."
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```powershell python -m jeff --command \"/research docs `\"`\"summary`\"`\" README.md\" ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "# Jeff"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "Jeff is a CLI-first persisted-runtime v1 backbone. It is strongest today at truthful inspection, bounded `/run`, approval-gated continuation, research support, and anti-drift coverage. It is not a GUI, a broad API surface, an autonomous continuation system, or a broad memory product."
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text python -m jeff ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "After `pip install -e .` the `jeff` console script is also available as a bare command; without the install, use `python -m jeff`."
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "A local `jeff.runtime.toml` enables the bounded repo-local validation `/run <repo-local-validation-objective>` path and the research commands. Without it, the read-oriented CLI still works, but `/run <repo-local-validation-objective>` and `/research ...` remain unavailable."
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "Core startup checks:"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text python -m jeff --help python -m jeff --bootstrap-check python -m jeff --reset-runtime --bootstrap-check ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text python -m jeff --command \"/help\" python -m jeff --command \"/project list\" python -m jeff --project project-1 --work wu-1 --command \"/run list\" --json ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text python -m jeff ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "The primary implemented operator surface is the CLI under `jeff.interface`."
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "- `/run <repo-local-validation-objective>` is the current bounded repo-local validation entry when `jeff.runtime.toml` is loaded. It drives one fixed smoke pytest validation plan with captured command evidence; it is not a general command runner. - `approve` records a bound approval, `revalidate` continues or fails closed, and `reject` terminally blocks that continuation for the current bounded ru"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text powershell -ExecutionPolicy Bypass -File .\\scripts\\windows-postgres-memory-preflight.ps1 -Dsn \"postgresql://user:pass@localhost:5432/jeff_test\" ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text $env:JEFF_TEST_POSTGRES_DSN=\"postgresql://user:pass@localhost:5432/jeff_test\" .\\.venv\\Scripts\\python.exe -m pytest tests\\integration\\memory\\test_postgres_memory.py -v ```"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "```text $env:JEFF_TEST_POSTGRES_DSN=\"postgresql://user:pass@localhost:5432/jeff_test\" .\\.venv\\Scripts\\python.exe -m pytest tests\\unit\\memory tests\\integration\\memory -q ```"
+    }
+  ],
+  "findings": [
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "Startup initializes or loads a persisted local runtime workspace located under .jeff_runtime"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "Fresh or reset runtimes initialize project-1 and wu-1 without seeded history, while subsequent startups reload existing canonical state and support records"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "Startup does not include a GUI, daemon, or background continuation"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "The system is a CLI-first persisted-runtime v1 backbone"
+    },
+    {
+      "source_refs": [
+        "document-81eea87a35d7"
+      ],
+      "text": "Access to /run and /research commands during startup requires a local jeff.runtime.toml file"
+    }
+  ],
+  "inferences": [
+    "The presence of jeff.runtime.toml determines whether the system operates as a read-oriented CLI or provides extended validation and research capabilities."
+  ],
+  "project_id": "general_research",
+  "question": "Summarize Jeff README startup behavior",
+  "recommendation": null,
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "source_ids": [
+    "document-81eea87a35d7"
+  ],
+  "source_items": [
+    {
+      "discovery_rank": 0,
+      "domain": null,
+      "extraction_quality": null,
+      "extractor_used": null,
+      "fetched_at": null,
+      "locator": "C:\\DATA\\PROJECTS\\JEFF\\README.md",
+      "published_at": null,
+      "snippet": "# Jeff Jeff is a CLI-first persisted-runtime v1 backbone. It is strongest today at truthful inspection, bounded `/run`, approval-gated continuation, research support, and anti-drift coverage. It is not a GUI, a broad API surface, an autonomous continuation system, or a broad memo",
+      "source_id": "document-81eea87a35d7",
+      "source_type": "document",
+      "title": "README.md"
+    }
+  ],
+  "source_mode": "local_documents",
+  "summary": "Jeff is a CLI-first persisted-runtime v1 backbone that initializes a local workspace under .jeff_runtime. Upon startup, it either initializes a new project and work unit or reloads the existing canonical state and support records, without starting a GUI, daemon, or background continuation.",
+  "uncertainties": [
+    "No explicit uncertainties identified from the provided evidence."
+  ],
+  "work_unit_id": "research-docs-summarize-jeff-readme-startup-behavior-501178cf"
+}

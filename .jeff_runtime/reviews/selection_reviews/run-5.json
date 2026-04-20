@@ -1,0 +1,80 @@
+{
+  "action_scope": {
+    "project_id": "project-1",
+    "run_id": "run-5",
+    "work_unit_id": "wu-1"
+  },
+  "basis_state_version": 14,
+  "governance_approval": {
+    "action_binding_key": null,
+    "action_id": null,
+    "approval_verdict": "not_required",
+    "basis_state_version": null
+  },
+  "governance_policy": {
+    "action_forbidden": false,
+    "approval_required": false,
+    "destructive": false,
+    "direction_sensitive": false,
+    "freshness_sensitive": true,
+    "protected_surface": false,
+    "revalidation_required": false
+  },
+  "governance_truth": {
+    "blocked_reasons": [],
+    "degraded_truth": false,
+    "direction_ok": true,
+    "requires_revalidation": false,
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-5",
+      "work_unit_id": "wu-1"
+    },
+    "state_version": 14,
+    "target_available": true,
+    "truth_mismatch": false
+  },
+  "operator_override": null,
+  "proposal_result": {
+    "options": [
+      {
+        "assumptions": [],
+        "blockers": [],
+        "constraints": [],
+        "feasibility": null,
+        "main_risks": [],
+        "option_index": 1,
+        "planning_needed": false,
+        "proposal_id": "proposal-1",
+        "proposal_type": "direct_action",
+        "reversibility": null,
+        "summary": "Execute the bounded validation path associated with run-5 and report any failures truthfully.",
+        "support_refs": [
+          "truth_record_3"
+        ],
+        "title": "Run bounded validation path for run-5",
+        "why_now": "The objective explicitly triggers the need to run the validation path and surface failures."
+      }
+    ],
+    "request_id": "proposal-generation:project-1:wu-1:run-5:run-the-bounded-validation-path-and-surface-failures-truthfully",
+    "scarcity_reason": "Support is limited to the objective and existence of the run record, providing only one direct path for validation.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-5",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "record_class": "selection_review_support",
+  "recorded_at": "2026-04-20T16:40:32+00:00",
+  "run_id": "run-5",
+  "schema_version": "1.0",
+  "selection_result": {
+    "considered_proposal_ids": [
+      "proposal-1"
+    ],
+    "non_selection_outcome": null,
+    "rationale": "selected proposal-1 because it stays within bounded choice with some visible support and no unresolved blockers or material burden.",
+    "selected_proposal_id": "proposal-1",
+    "selection_id": "run-5:selection"
+  }
+}

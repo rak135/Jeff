@@ -1,0 +1,101 @@
+{
+  "action_scope": {
+    "project_id": "project-1",
+    "run_id": "run-1",
+    "work_unit_id": "wu-1"
+  },
+  "basis_state_version": 3,
+  "governance_approval": {
+    "action_binding_key": null,
+    "action_id": null,
+    "approval_verdict": "not_required",
+    "basis_state_version": null
+  },
+  "governance_policy": {
+    "action_forbidden": false,
+    "approval_required": false,
+    "destructive": false,
+    "direction_sensitive": false,
+    "freshness_sensitive": true,
+    "protected_surface": false,
+    "revalidation_required": false
+  },
+  "governance_truth": {
+    "blocked_reasons": [],
+    "degraded_truth": false,
+    "direction_ok": true,
+    "requires_revalidation": false,
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-1",
+      "work_unit_id": "wu-1"
+    },
+    "state_version": 3,
+    "target_available": true,
+    "truth_mismatch": false
+  },
+  "operator_override": null,
+  "proposal_result": {
+    "options": [
+      {
+        "assumptions": [],
+        "blockers": [],
+        "constraints": [],
+        "feasibility": null,
+        "main_risks": [],
+        "option_index": 1,
+        "planning_needed": false,
+        "proposal_id": "proposal-1",
+        "proposal_type": "direct_action",
+        "reversibility": null,
+        "summary": "Execute the bounded validation immediately",
+        "support_refs": [],
+        "title": "Execute now",
+        "why_now": "Immediate bounded action remains available."
+      },
+      {
+        "assumptions": [],
+        "blockers": [
+          "Review the current validation basis first."
+        ],
+        "constraints": [
+          "Stay inside the current repo."
+        ],
+        "feasibility": null,
+        "main_risks": [
+          "A bounded validation run may fail and require replan."
+        ],
+        "option_index": 2,
+        "planning_needed": true,
+        "proposal_id": "proposal-2",
+        "proposal_type": "planning_insertion",
+        "reversibility": null,
+        "summary": "Prepare the bounded repo-local validation path",
+        "support_refs": [],
+        "title": "Plan first",
+        "why_now": "This bounded path should be decomposed before action."
+      }
+    ],
+    "request_id": "proposal-run-1",
+    "scarcity_reason": null,
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-1",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "record_class": "selection_review_support",
+  "recorded_at": "2026-04-20T18:48:28+00:00",
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "selection_result": {
+    "considered_proposal_ids": [
+      "proposal-1",
+      "proposal-2"
+    ],
+    "non_selection_outcome": null,
+    "rationale": "The planning insertion path is selected for bounded decomposition.",
+    "selected_proposal_id": "proposal-2",
+    "selection_id": "run-1:selection"
+  }
+}

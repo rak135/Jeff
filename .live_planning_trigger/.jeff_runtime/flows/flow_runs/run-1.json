@@ -1,0 +1,436 @@
+{
+  "events": [
+    {
+      "emitted_at": "2026-04-20T18:48:28+00:00",
+      "event_type": "flow_started",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 1,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-1",
+        "work_unit_id": "wu-1"
+      },
+      "stage": null,
+      "summary": "flow flow:run-1 started"
+    },
+    {
+      "emitted_at": "2026-04-20T18:48:28+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 2,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-1",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "context",
+      "summary": "entered context"
+    },
+    {
+      "emitted_at": "2026-04-20T18:48:28+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 3,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-1",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "context",
+      "summary": "exited context"
+    },
+    {
+      "emitted_at": "2026-04-20T18:48:28+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 4,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-1",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "proposal",
+      "summary": "entered proposal"
+    },
+    {
+      "emitted_at": "2026-04-20T18:48:28+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 5,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-1",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "proposal",
+      "summary": "exited proposal"
+    },
+    {
+      "emitted_at": "2026-04-20T18:48:28+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 6,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-1",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "entered selection via deterministic path"
+    },
+    {
+      "emitted_at": "2026-04-20T18:48:28+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 7,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-1",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "selection",
+      "summary": "exited selection via deterministic path"
+    },
+    {
+      "emitted_at": "2026-04-20T18:48:28+00:00",
+      "event_type": "stage_entered",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 8,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-1",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "planning",
+      "summary": "entered planning"
+    },
+    {
+      "emitted_at": "2026-04-20T18:48:28+00:00",
+      "event_type": "stage_exited",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 9,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-1",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "planning",
+      "summary": "exited planning"
+    },
+    {
+      "emitted_at": "2026-04-20T18:48:28+00:00",
+      "event_type": "routing_decision",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 10,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-1",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "planning",
+      "summary": "planning: Planning entered and produced a bounded plan artifact for proposal proposal-2 with 3 intended step(s). Planning remains support-only; no governance evaluation occurred, no action permission exists, no execution occurred, and no Action could be formed from the current plan output because The plan still exposes 3 open steps, so orchestration must not guess a single executable next action."
+    },
+    {
+      "emitted_at": "2026-04-20T18:48:28+00:00",
+      "event_type": "routing_decision",
+      "flow_family": "conditional_planning_execution",
+      "ordinal": 11,
+      "scope": {
+        "project_id": "project-1",
+        "run_id": "run-1",
+        "work_unit_id": "wu-1"
+      },
+      "stage": "planning",
+      "summary": "planning checkpoint recorded: continue_next_step"
+    }
+  ],
+  "lifecycle": {
+    "current_stage": "planning",
+    "flow_family": "conditional_planning_execution",
+    "flow_id": "flow:run-1",
+    "lifecycle_state": "waiting",
+    "reason_summary": "Planning entered and produced a bounded plan artifact for proposal proposal-2 with 3 intended step(s). Planning remains support-only; no governance evaluation occurred, no action permission exists, no execution occurred, and no Action could be formed from the current plan output because The plan still exposes 3 open steps, so orchestration must not guess a single executable next action.",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-1",
+      "work_unit_id": "wu-1"
+    }
+  },
+  "memory_handoff_attempted": false,
+  "memory_handoff_note": "automatic run memory handoff unavailable: no configured memory store",
+  "memory_handoff_result": null,
+  "objective_summary": "Plan the bounded validation path before execution.",
+  "outputs": {
+    "governance_approval": {
+      "kind": "approval",
+      "value": {
+        "action_binding_key": null,
+        "action_id": null,
+        "approval_verdict": "not_required",
+        "basis_state_version": null
+      }
+    },
+    "governance_policy": {
+      "kind": "policy",
+      "value": {
+        "action_forbidden": false,
+        "approval_required": false,
+        "destructive": false,
+        "direction_sensitive": false,
+        "freshness_sensitive": true,
+        "protected_surface": false,
+        "revalidation_required": false
+      }
+    },
+    "governance_truth": {
+      "kind": "current_truth_snapshot",
+      "value": {
+        "blocked_reasons": [],
+        "degraded_truth": false,
+        "direction_ok": true,
+        "requires_revalidation": false,
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-1",
+          "work_unit_id": "wu-1"
+        },
+        "state_version": 3,
+        "target_available": true,
+        "truth_mismatch": false
+      }
+    },
+    "planning": {
+      "kind": "plan_artifact",
+      "value": {
+        "active_step_id": "plan:run-1:proposal-2:step-2",
+        "assumptions": [],
+        "blockers": [
+          "Review the current validation basis first."
+        ],
+        "bounded_objective": "Prepare the bounded repo-local validation path",
+        "checkpoint_history": [
+          {
+            "checkpoint_id": "plan:run-1:proposal-2:checkpoint-1",
+            "decision": "continue_next_step",
+            "next_active_step_id": "plan:run-1:proposal-2:step-2",
+            "previous_plan_status": "active",
+            "resulting_plan_status": "active",
+            "step_id": "plan:run-1:proposal-2:step-1",
+            "summary": "operator recorded checkpoint decision continue_next_step"
+          }
+        ],
+        "checkpoints": [
+          "Confirm current scope and blockers before any downstream action.",
+          "Review the outcome after each bounded action step.",
+          "Explicitly revisit the main risks before continuing."
+        ],
+        "dependencies": [
+          "Stay inside the current repo.",
+          "Review the current validation basis first."
+        ],
+        "intended_steps": [
+          {
+            "assumptions": [],
+            "candidate_action_summary": "Review the selected proposal, active constraints, blockers, and smoke-validation intent before any downstream action.",
+            "checkpoint_required": true,
+            "dependencies": [
+              "Stay inside the current repo.",
+              "Review the current validation basis first."
+            ],
+            "entry_conditions": [
+              "A selected proposal exists."
+            ],
+            "revalidation_required_on_resume": true,
+            "review_required": true,
+            "risks": [
+              "A bounded validation run may fail and require replan."
+            ],
+            "step_id": "plan:run-1:proposal-2:step-1",
+            "step_inputs_summary": [
+              "Prepare the bounded repo-local validation path",
+              "Stay inside the current repo."
+            ],
+            "step_objective": "Confirm the selected path still fits current scope and bounded validation intent.",
+            "step_order": 1,
+            "step_status": "completed",
+            "step_type": "review",
+            "success_criteria": [
+              "The selected proposal remains within current scope.",
+              "Dependencies and blockers are explicitly acknowledged."
+            ],
+            "summary": "Review bounded scope, dependencies, and checkpoints before execution",
+            "support_refs": [],
+            "title": "Review plan basis"
+          },
+          {
+            "assumptions": [],
+            "candidate_action_summary": "Prepare the bounded repo-local validation path",
+            "checkpoint_required": true,
+            "dependencies": [
+              "Stay inside the current repo.",
+              "Review the current validation basis first."
+            ],
+            "entry_conditions": [
+              "Step 1 review checkpoint passed."
+            ],
+            "revalidation_required_on_resume": false,
+            "review_required": false,
+            "risks": [
+              "A bounded validation run may fail and require replan."
+            ],
+            "step_id": "plan:run-1:proposal-2:step-2",
+            "step_inputs_summary": [
+              "This bounded path should be decomposed before action."
+            ],
+            "step_objective": "Materialize one bounded action candidate for the selected implementation path.",
+            "step_order": 2,
+            "step_status": "active",
+            "step_type": "validation",
+            "success_criteria": [
+              "A single bounded action candidate is available for governance review."
+            ],
+            "summary": "Prepare the bounded repo-local validation path",
+            "support_refs": [],
+            "title": "Execute bounded validation step"
+          },
+          {
+            "assumptions": [],
+            "candidate_action_summary": "Inspect the last bounded result and record the next checkpoint decision.",
+            "checkpoint_required": true,
+            "dependencies": [
+              "Stay inside the current repo.",
+              "Review the current validation basis first."
+            ],
+            "entry_conditions": [
+              "The active bounded action candidate has been executed and evaluated."
+            ],
+            "revalidation_required_on_resume": true,
+            "review_required": true,
+            "risks": [
+              "A bounded validation run may fail and require replan."
+            ],
+            "step_id": "plan:run-1:proposal-2:step-3",
+            "step_inputs_summary": [
+              "Prepare the bounded repo-local validation path"
+            ],
+            "step_objective": "Judge the last bounded step without collapsing planning into truth or permission.",
+            "step_order": 3,
+            "step_status": "pending",
+            "step_type": "review",
+            "success_criteria": [
+              "A lawful checkpoint decision is recorded."
+            ],
+            "summary": "Review outcome and decide continue, revalidate, replan, escalate, or stop",
+            "support_refs": [],
+            "title": "Checkpoint outcome review"
+          }
+        ],
+        "invalidation_conditions": [
+          "Scope changes materially.",
+          "Dependencies or blockers change the lawful bounded path."
+        ],
+        "origin_basis": "deterministic_selection_boundaries",
+        "parent_plan_id": null,
+        "plan_id": "plan:run-1:proposal-2",
+        "plan_status": "active",
+        "revision_number": 1,
+        "risks": [
+          "A bounded validation run may fail and require replan."
+        ],
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-1",
+          "work_unit_id": "wu-1"
+        },
+        "selected_proposal_id": "proposal-2",
+        "stop_conditions": [
+          "The bounded objective is fully satisfied.",
+          "Governance or execution reveals the path should stop."
+        ],
+        "support_refs": []
+      }
+    },
+    "proposal": {
+      "kind": "proposal_result",
+      "value": {
+        "options": [
+          {
+            "assumptions": [],
+            "blockers": [],
+            "constraints": [],
+            "feasibility": null,
+            "main_risks": [],
+            "option_index": 1,
+            "planning_needed": false,
+            "proposal_id": "proposal-1",
+            "proposal_type": "direct_action",
+            "reversibility": null,
+            "summary": "Execute the bounded validation immediately",
+            "support_refs": [],
+            "title": "Execute now",
+            "why_now": "Immediate bounded action remains available."
+          },
+          {
+            "assumptions": [],
+            "blockers": [
+              "Review the current validation basis first."
+            ],
+            "constraints": [
+              "Stay inside the current repo."
+            ],
+            "feasibility": null,
+            "main_risks": [
+              "A bounded validation run may fail and require replan."
+            ],
+            "option_index": 2,
+            "planning_needed": true,
+            "proposal_id": "proposal-2",
+            "proposal_type": "planning_insertion",
+            "reversibility": null,
+            "summary": "Prepare the bounded repo-local validation path",
+            "support_refs": [],
+            "title": "Plan first",
+            "why_now": "This bounded path should be decomposed before action."
+          }
+        ],
+        "request_id": "proposal-run-1",
+        "scarcity_reason": null,
+        "scope": {
+          "project_id": "project-1",
+          "run_id": "run-1",
+          "work_unit_id": "wu-1"
+        }
+      }
+    },
+    "selection": {
+      "kind": "selection_result",
+      "value": {
+        "considered_proposal_ids": [
+          "proposal-1",
+          "proposal-2"
+        ],
+        "non_selection_outcome": null,
+        "rationale": "The planning insertion path is selected for bounded decomposition.",
+        "selected_proposal_id": "proposal-2",
+        "selection_id": "run-1:selection"
+      }
+    }
+  },
+  "record_class": "flow_run_support",
+  "recorded_at": "2026-04-20T18:48:28+00:00",
+  "routing_decision": {
+    "auto_execute": false,
+    "reason_summary": "Planning entered and produced a bounded plan artifact for proposal proposal-2 with 3 intended step(s). Planning remains support-only; no governance evaluation occurred, no action permission exists, no execution occurred, and no Action could be formed from the current plan output because The plan still exposes 3 open steps, so orchestration must not guess a single executable next action.",
+    "route_kind": "hold",
+    "routed_outcome": "planning",
+    "scope": {
+      "project_id": "project-1",
+      "run_id": "run-1",
+      "work_unit_id": "wu-1"
+    },
+    "source_stage": "planning"
+  },
+  "run_id": "run-1",
+  "schema_version": "1.0",
+  "selection_failure": null
+}

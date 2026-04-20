@@ -20,6 +20,7 @@ from jeff.infrastructure import (
 from ..context import ContextPackage
 from ..research.contracts import ResearchArtifact
 from ..types import normalized_identity, normalize_text_list, require_text
+from .input_bundle import ProposalInputBundle, build_proposal_input_bundle
 from .prompt_files import load_prompt_file, render_prompt
 
 if TYPE_CHECKING:
@@ -33,6 +34,8 @@ class ProposalGenerationRequest:
     context_package: ContextPackage
     research_artifacts: tuple[ResearchArtifact, ...] = ()
     visible_constraints: tuple[str, ...] = ()
+    current_execution_support: tuple[str, ...] = ()
+    proposal_input_bundle: ProposalInputBundle | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "objective", require_text(self.objective, field_name="objective"))
@@ -41,12 +44,34 @@ class ProposalGenerationRequest:
             "visible_constraints",
             normalize_text_list(self.visible_constraints, field_name="visible_constraints"),
         )
+        object.__setattr__(
+            self,
+            "current_execution_support",
+            normalize_text_list(self.current_execution_support, field_name="current_execution_support"),
+        )
         object.__setattr__(self, "research_artifacts", tuple(self.research_artifacts))
         if self.context_package.scope != self.scope:
             raise ValueError("proposal generation request scope must match the context-package scope")
         for artifact in self.research_artifacts:
             if not isinstance(artifact, ResearchArtifact):
                 raise TypeError("research_artifacts must contain ResearchArtifact instances")
+        bundle = self.proposal_input_bundle
+        if bundle is None:
+            bundle = build_proposal_input_bundle(
+                objective=self.objective,
+                scope=self.scope,
+                context_package=self.context_package,
+                visible_constraints=self.visible_constraints,
+                current_execution_support=self.current_execution_support,
+                research_artifacts=self.research_artifacts,
+            )
+        if bundle.scope_frame.project_id != str(self.scope.project_id):
+            raise ValueError("proposal input bundle project scope must match the proposal request scope")
+        if bundle.scope_frame.work_unit_id != (None if self.scope.work_unit_id is None else str(self.scope.work_unit_id)):
+            raise ValueError("proposal input bundle work-unit scope must match the proposal request scope")
+        if bundle.scope_frame.run_id != (None if self.scope.run_id is None else str(self.scope.run_id)):
+            raise ValueError("proposal input bundle run scope must match the proposal request scope")
+        object.__setattr__(self, "proposal_input_bundle", bundle)
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,10 +133,13 @@ def build_proposal_generation_prompt_bundle(
     system_instructions, template = load_prompt_file("STEP1_GENERATION.md")
     prompt = render_prompt(
         template,
-        OBJECTIVE=_format_objective_block(request),
-        SCOPE=_format_scope(request.scope),
-        TRUTH_SNAPSHOT=_format_truth_snapshot(request.context_package),
-        CURRENT_CONSTRAINTS=_format_constraints(request.visible_constraints),
+        REQUEST_FRAME=_format_request_frame(request),
+        SCOPE_FRAME=_format_scope_frame(request),
+        TRUTH_SNAPSHOT=_format_truth_snapshot(request),
+        GOVERNANCE_RELEVANT_SUPPORT=_format_governance_relevant_support(request),
+        CURRENT_EXECUTION_SUPPORT=_format_current_execution_support(request),
+        EVIDENCE_SUPPORT=_format_evidence_support(request),
+        MEMORY_SUPPORT=_format_memory_support(request),
         RESEARCH_SUPPORT=_format_research_support(request),
         OTHER_SUPPORT=_format_other_support(request.context_package),
         UNCERTAINTIES=_format_uncertainties(request.research_artifacts),
@@ -140,10 +168,13 @@ def build_proposal_generation_repair_prompt_bundle(
         FAILURE_REASON=failure_reason,
         VALIDATION_ISSUES=validation_issues_text,
         PRIOR_OUTPUT=prior_output,
-        OBJECTIVE=_format_objective_block(request),
-        SCOPE=_format_scope(request.scope),
-        TRUTH_SNAPSHOT=_format_truth_snapshot(request.context_package),
-        CURRENT_CONSTRAINTS=_format_constraints(request.visible_constraints),
+        REQUEST_FRAME=_format_request_frame(request),
+        SCOPE_FRAME=_format_scope_frame(request),
+        TRUTH_SNAPSHOT=_format_truth_snapshot(request),
+        GOVERNANCE_RELEVANT_SUPPORT=_format_governance_relevant_support(request),
+        CURRENT_EXECUTION_SUPPORT=_format_current_execution_support(request),
+        EVIDENCE_SUPPORT=_format_evidence_support(request),
+        MEMORY_SUPPORT=_format_memory_support(request),
         RESEARCH_SUPPORT=_format_research_support(request),
         OTHER_SUPPORT=_format_other_support(request.context_package),
         UNCERTAINTIES=_format_uncertainties(request.research_artifacts),
@@ -185,6 +216,24 @@ def _build_request_id(request: ProposalGenerationRequest) -> str:
     )
 
 
+def _format_request_frame(request: ProposalGenerationRequest) -> str:
+    bundle = request.proposal_input_bundle
+    assert bundle is not None
+    lines = [
+        f"objective={bundle.request_frame.objective}",
+        f"trigger={bundle.request_frame.trigger_summary}",
+        f"purpose={bundle.request_frame.purpose}",
+    ]
+    if bundle.request_frame.visible_constraints:
+        lines.extend(
+            f"visible_constraint_{index}={constraint}"
+            for index, constraint in enumerate(bundle.request_frame.visible_constraints, start=1)
+        )
+    else:
+        lines.append("visible_constraints=none")
+    return "\n".join(lines)
+
+
 def _format_objective_block(request: ProposalGenerationRequest) -> str:
     return "\n".join(
         [
@@ -195,28 +244,100 @@ def _format_objective_block(request: ProposalGenerationRequest) -> str:
     )
 
 
-def _format_scope(scope: Scope) -> str:
+def _format_scope_frame(request: ProposalGenerationRequest) -> str:
+    bundle = request.proposal_input_bundle
+    assert bundle is not None
     return (
-        f"project_id={scope.project_id}; "
-        f"work_unit_id={scope.work_unit_id or 'NONE'}; "
-        f"run_id={scope.run_id or 'NONE'}"
+        f"project_id={bundle.scope_frame.project_id}; "
+        f"work_unit_id={bundle.scope_frame.work_unit_id or 'NONE'}; "
+        f"run_id={bundle.scope_frame.run_id or 'NONE'}"
     )
 
 
-def _format_truth_snapshot(context_package: ContextPackage) -> str:
+def _format_truth_snapshot(request: ProposalGenerationRequest) -> str:
+    bundle = request.proposal_input_bundle
+    assert bundle is not None
     return "\n".join(
-        f"truth_record_{index}|family={truth_record.truth_family}|summary={truth_record.summary}"
-        for index, truth_record in enumerate(context_package.ordered_truth_records, start=1)
+        f"truth_record_{index}|source={item.source_label}|family={item.truth_family}|summary={item.summary}"
+        for index, item in enumerate(bundle.truth_snapshot.items, start=1)
     )
 
 
-def _format_constraints(visible_constraints: tuple[str, ...]) -> str:
-    if not visible_constraints:
+def _format_governance_relevant_support(request: ProposalGenerationRequest) -> str:
+    bundle = request.proposal_input_bundle
+    assert bundle is not None
+    if not bundle.governance_relevant_support.items:
         return "NONE"
     return "\n".join(
-        f"constraint_{index}|text={constraint}"
-        for index, constraint in enumerate(visible_constraints, start=1)
+        "governance_support_"
+        f"{index}|source={item.source_label}|family={item.source_family}|summary={item.summary}"
+        for index, item in enumerate(bundle.governance_relevant_support.items, start=1)
     )
+
+
+def _format_current_execution_support(request: ProposalGenerationRequest) -> str:
+    bundle = request.proposal_input_bundle
+    assert bundle is not None
+    if not bundle.current_execution_support.items:
+        return "NONE"
+    return "\n".join(
+        "current_execution_support_"
+        f"{index}|source={item.source_label}|family={item.source_family}|summary={item.summary}"
+        for index, item in enumerate(bundle.current_execution_support.items, start=1)
+    )
+
+
+def _format_evidence_support(request: ProposalGenerationRequest) -> str:
+    bundle = request.proposal_input_bundle
+    assert bundle is not None
+    lines: list[str] = []
+    for index, item in enumerate(bundle.evidence_support.evidence_summaries, start=1):
+        lines.append(
+            "evidence_summary_"
+            f"{index}|source={item.source_label}|family={item.source_family}|source_id={item.source_id or 'NONE'}|summary={item.summary}"
+        )
+    for index, item in enumerate(bundle.evidence_support.uncertainty_summaries, start=1):
+        lines.append(
+            "evidence_uncertainty_"
+            f"{index}|source={item.source_label}|family={item.source_family}|source_id={item.source_id or 'NONE'}|summary={item.summary}"
+        )
+    for index, item in enumerate(bundle.evidence_support.contradiction_summaries, start=1):
+        lines.append(
+            "evidence_contradiction_"
+            f"{index}|source={item.source_label}|family={item.source_family}|source_id={item.source_id or 'NONE'}|summary={item.summary}"
+        )
+    for index, artifact_ref in enumerate(bundle.evidence_support.artifact_refs, start=1):
+        lines.append(f"evidence_ref_{index}|ref={artifact_ref}")
+    return "\n".join(lines) if lines else "NONE"
+
+
+def _format_memory_support(request: ProposalGenerationRequest) -> str:
+    bundle = request.proposal_input_bundle
+    assert bundle is not None
+    lines: list[str] = []
+    for index, memory_id in enumerate(bundle.memory_support.memory_ids, start=1):
+        lines.append(f"memory_id_{index}={memory_id}")
+    for index, item in enumerate(bundle.memory_support.memory_summaries, start=1):
+        lines.append(
+            "memory_summary_"
+            f"{index}|source={item.source_label}|family={item.source_family}|source_id={item.source_id or 'NONE'}|summary={item.summary}"
+        )
+    for index, item in enumerate(bundle.memory_support.memory_lessons, start=1):
+        lines.append(
+            "memory_lesson_"
+            f"{index}|source={item.source_label}|source_id={item.source_id or 'NONE'}|summary={item.summary}"
+        )
+    for index, item in enumerate(bundle.memory_support.memory_risk_reminders, start=1):
+        lines.append(
+            "memory_risk_"
+            f"{index}|source={item.source_label}|source_id={item.source_id or 'NONE'}|summary={item.summary}"
+        )
+    for index, item in enumerate(bundle.memory_support.memory_precedents, start=1):
+        lines.append(
+            "memory_precedent_"
+            f"{index}|source={item.source_label}|source_id={item.source_id or 'NONE'}|summary={item.summary}"
+        )
+    return "\n".join(lines) if lines else "NONE"
 
 
 def _format_research_support(request: ProposalGenerationRequest) -> str:
@@ -250,7 +371,7 @@ def _format_other_support(context_package: ContextPackage) -> str:
     non_research_support = [
         support_input
         for support_input in context_package.ordered_support_inputs
-        if support_input.source_family not in {"research", "archive"}
+        if support_input.source_family not in {"research", "archive", "compiled_knowledge", "memory", "evidence"}
     ]
     if not non_research_support:
         return "NONE"

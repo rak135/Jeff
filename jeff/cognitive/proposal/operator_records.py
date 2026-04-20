@@ -3,20 +3,34 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Literal
 
 from jeff.cognitive.context import ContextPackage
+from jeff.cognitive.types import normalized_identity
 from jeff.core.schemas import Scope
 
 from .api import ProposalPipelineFailure, ProposalPipelineFailureStage, ProposalPipelineResult, ProposalPipelineSuccess
 from .contracts import ProposalResult
 from .generation import ProposalGenerationPromptBundle, ProposalGenerationRawResult, ProposalGenerationRequest
+from .input_bundle import ProposalInputBundle
 from .parsing import ParsedProposalGenerationResult
 from .validation import ProposalValidationIssue
 
 ProposalAttemptKind = Literal["initial", "repair"]
 ProposalRecordStatus = Literal["success", "failed"]
 ProposalValidationOutcome = Literal["passed", "failed", "not_reached"]
+
+
+def proposal_record_created_at_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="microseconds")
+
+
+def build_proposal_record_id(*, scope: Scope, objective: str, created_at: str) -> str:
+    scope_hint = str(scope.run_id or scope.work_unit_id or scope.project_id)
+    objective_hint = normalized_identity(objective).replace(" ", "-")[:32] or "objective"
+    timestamp_hint = created_at.replace(":", "").replace("-", "").replace("+00:00", "Z")
+    return f"proposal-record-{scope_hint}-{timestamp_hint}-{objective_hint}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +76,7 @@ class ProposalOperatorRecord:
     objective: str
     scope: Scope
     context_package: ContextPackage
+    proposal_input_bundle: ProposalInputBundle
     visible_constraints: tuple[str, ...] = ()
     source_proposal_id: str | None = None
     initial_attempt: ProposalPersistedAttempt | None = None
@@ -78,6 +93,14 @@ class ProposalOperatorRecord:
             raise ValueError("proposal operator records must preserve the initial attempt")
         if self.context_package.scope != self.scope:
             raise ValueError("proposal operator record scope must match the preserved context package scope")
+        if self.proposal_input_bundle.scope_frame.project_id != str(self.scope.project_id):
+            raise ValueError("proposal operator record bundle must match the preserved project scope")
+        if self.proposal_input_bundle.scope_frame.work_unit_id != (
+            None if self.scope.work_unit_id is None else str(self.scope.work_unit_id)
+        ):
+            raise ValueError("proposal operator record bundle must match the preserved work-unit scope")
+        if self.proposal_input_bundle.scope_frame.run_id != (None if self.scope.run_id is None else str(self.scope.run_id)):
+            raise ValueError("proposal operator record bundle must match the preserved run scope")
         if self.status == "success":
             if self.final_proposal_result is None:
                 raise ValueError("successful proposal operator records must preserve the final proposal result")
@@ -171,6 +194,7 @@ def build_operator_record_from_pipeline_result(
             objective=request.objective,
             scope=request.scope,
             context_package=request.context_package,
+            proposal_input_bundle=request.proposal_input_bundle,
             visible_constraints=request.visible_constraints,
             initial_attempt=initial_attempt,
             repair_attempt=repair_attempt,
@@ -220,6 +244,7 @@ def build_operator_record_from_pipeline_result(
         objective=request.objective,
         scope=request.scope,
         context_package=request.context_package,
+        proposal_input_bundle=request.proposal_input_bundle,
         visible_constraints=request.visible_constraints,
         initial_attempt=initial_attempt,
         repair_attempt=repair_attempt,

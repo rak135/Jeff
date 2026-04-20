@@ -76,6 +76,78 @@ def test_runtime_failure_surface_is_preserved_explicitly() -> None:
     assert result.parsed_result is None
 
 
+def test_pipeline_runtime_prompt_includes_current_execution_support_when_present() -> None:
+    request = _generation_request(
+        current_execution_support=(
+            "The active bounded action family is repo-local pytest validation.",
+        )
+    )
+    runtime = _TrackingContractRuntime(
+        response=_response(
+            request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state",
+            output_text=(
+                "PROPOSAL_COUNT: 1\n"
+                "SCARCITY_REASON: Only one serious path is currently grounded.\n"
+                "OPTION_1_TYPE: investigate\n"
+                "OPTION_1_TITLE: Confirm the blocker directly\n"
+                "OPTION_1_SUMMARY: Run one bounded investigation against the blocker.\n"
+                "OPTION_1_WHY_NOW: The blocker still prevents a stronger proposal set.\n"
+                "OPTION_1_ASSUMPTIONS: The blocker can be inspected quickly\n"
+                "OPTION_1_RISKS: Investigation may confirm no viable path\n"
+                "OPTION_1_CONSTRAINTS: Stay inside the current work unit\n"
+                "OPTION_1_BLOCKERS: Direct change remains blocked\n"
+                "OPTION_1_PLANNING_NEEDED: no\n"
+                "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
+                "OPTION_1_REVERSIBILITY: Fully reversible\n"
+                "OPTION_1_SUPPORT_REFS: ctx-1,research-2\n"
+            ),
+        )
+    )
+
+    result = run_proposal_generation_pipeline(
+        request,
+        infrastructure_services=_FakeServices(runtime),
+    )
+
+    assert isinstance(result, ProposalPipelineSuccess)
+    assert "CURRENT_EXECUTION_SUPPORT:\ncurrent_execution_support_1|source=current_execution_support:1|family=execution_support|summary=The active bounded action family is repo-local pytest validation." in runtime.invoke_calls[0].prompt
+
+
+def test_pipeline_runtime_prompt_includes_evidence_and_memory_support_when_present() -> None:
+    request = _generation_request(include_memory_support=True)
+    runtime = _TrackingContractRuntime(
+        response=_response(
+            request_id="proposal-generation:project-1:wu-1:run-1:frame-bounded-options-for-the-current-blocker-state",
+            output_text=(
+                "PROPOSAL_COUNT: 1\n"
+                "SCARCITY_REASON: Only one serious path is currently grounded.\n"
+                "OPTION_1_TYPE: investigate\n"
+                "OPTION_1_TITLE: Confirm the blocker directly\n"
+                "OPTION_1_SUMMARY: Run one bounded investigation against the blocker.\n"
+                "OPTION_1_WHY_NOW: The blocker still prevents a stronger proposal set.\n"
+                "OPTION_1_ASSUMPTIONS: The blocker can be inspected quickly\n"
+                "OPTION_1_RISKS: Investigation may confirm no viable path\n"
+                "OPTION_1_CONSTRAINTS: Stay inside the current work unit\n"
+                "OPTION_1_BLOCKERS: Direct change remains blocked\n"
+                "OPTION_1_PLANNING_NEEDED: no\n"
+                "OPTION_1_FEASIBILITY: Feasible with current evidence\n"
+                "OPTION_1_REVERSIBILITY: Fully reversible\n"
+                "OPTION_1_SUPPORT_REFS: ctx-1,research-2\n"
+            ),
+        )
+    )
+
+    result = run_proposal_generation_pipeline(
+        request,
+        infrastructure_services=_FakeServices(runtime),
+    )
+
+    assert isinstance(result, ProposalPipelineSuccess)
+    assert "EVIDENCE_SUPPORT:" in runtime.invoke_calls[0].prompt
+    assert "family=research_finding|source_id=NONE|summary=Dependency X remains unresolved." in runtime.invoke_calls[0].prompt
+    assert "MEMORY_SUPPORT:\nmemory_id_1=memory-1" in runtime.invoke_calls[0].prompt
+
+
 def test_parse_failure_surface_is_preserved_explicitly() -> None:
     request = _generation_request()
     runtime = _TrackingContractRuntime(
@@ -377,7 +449,11 @@ def _response(*, request_id: str, output_text: str) -> ModelResponse:
     )
 
 
-def _generation_request() -> ProposalGenerationRequest:
+def _generation_request(
+    *,
+    current_execution_support: tuple[str, ...] = (),
+    include_memory_support: bool = False,
+) -> ProposalGenerationRequest:
     scope = Scope(project_id="project-1", work_unit_id="wu-1", run_id="run-1")
     return ProposalGenerationRequest(
         objective="Frame bounded options for the current blocker state",
@@ -417,8 +493,21 @@ def _generation_request() -> ProposalGenerationRequest:
                     summary="Earlier research narrowed the issue but did not decide the path.",
                 ),
             ),
+            memory_support_inputs=(
+                ()
+                if not include_memory_support
+                else (
+                    SupportInput(
+                        source_family="memory",
+                        scope=scope,
+                        source_id="memory-1",
+                        summary="A prior similar investigation was eventually resolved by isolating the blocker first.",
+                    ),
+                )
+            ),
         ),
         visible_constraints=("Must stay inside current project scope.",),
+        current_execution_support=current_execution_support,
         research_artifacts=(
             ResearchArtifact(
                 question="What does the evidence support?",

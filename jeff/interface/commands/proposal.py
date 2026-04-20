@@ -2,21 +2,23 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from jeff.cognitive import (
     ProposalGenerationParseError,
     ProposalGenerationRequest,
     ProposalGenerationValidationError,
     ProposalOperatorRecord,
     ProposalPipelineFailure,
+    build_proposal_input_bundle,
+    build_proposal_record_id,
     build_operator_record_from_pipeline_result,
     parse_proposal_generation_result,
+    proposal_record_created_at_now,
+    resolve_committed_memory_support_records,
     run_proposal_generation_pipeline,
     run_proposal_repair_attempt,
     validate_proposal_generation_result,
 )
-from jeff.cognitive.types import normalized_identity, require_text
+from jeff.cognitive.types import require_text
 from jeff.core.schemas import Scope
 
 from ..json_views import proposal_raw_json, proposal_record_json, proposal_validation_json
@@ -69,25 +71,36 @@ def proposal_run_command(*, tokens: list[str], session: CliSession, context: Int
     live_context_package = assemble_live_context_package(
         context=context,
         trigger_summary=objective,
-        purpose=f"proposal support action preparation {objective}",
+        purpose=_direct_proposal_context_purpose(objective),
         scope=run_scope,
         knowledge_topic_query=objective,
         governance_truth=governance_truth,
         governance_policy=governance_policy,
         governance_approval=governance_approval,
     )
+    proposal_input_bundle = build_proposal_input_bundle(
+        objective=objective,
+        scope=run_scope,
+        context_package=live_context_package,
+        committed_memory_records=resolve_committed_memory_support_records(
+            project_id=str(run_scope.project_id),
+            context_package=live_context_package,
+            store=context.memory_store,
+        ),
+    )
     request = ProposalGenerationRequest(
         objective=objective,
         scope=run_scope,
         context_package=live_context_package,
+        proposal_input_bundle=proposal_input_bundle,
     )
     pipeline_result = run_proposal_generation_pipeline(
         request,
         infrastructure_services=context.infrastructure_services,
     )
-    created_at = _utc_timestamp()
+    created_at = proposal_record_created_at_now()
     record = build_operator_record_from_pipeline_result(
-        proposal_id=_build_proposal_id(scope=run_scope, objective=objective, created_at=created_at),
+        proposal_id=build_proposal_record_id(scope=run_scope, objective=objective, created_at=created_at),
         created_at=created_at,
         request=request,
         pipeline_result=pipeline_result,
@@ -202,6 +215,7 @@ def proposal_repair_command(*, tokens: list[str], session: CliSession, context: 
         scope=record.scope,
         context_package=record.context_package,
         visible_constraints=record.visible_constraints,
+        proposal_input_bundle=record.proposal_input_bundle,
     )
     repair_failure = ProposalPipelineFailure(
         request=request,
@@ -218,9 +232,9 @@ def proposal_repair_command(*, tokens: list[str], session: CliSession, context: 
         failure=repair_failure,
         infrastructure_services=context.infrastructure_services,
     )
-    created_at = _utc_timestamp()
+    created_at = proposal_record_created_at_now()
     repair_record = build_operator_record_from_pipeline_result(
-        proposal_id=_build_proposal_id(scope=record.scope, objective=record.objective, created_at=created_at),
+        proposal_id=build_proposal_record_id(scope=record.scope, objective=record.objective, created_at=created_at),
         created_at=created_at,
         request=request,
         pipeline_result=repair_result,
@@ -277,12 +291,5 @@ def _require_runtime_store(context: InterfaceContext):
     return context.runtime_store
 
 
-def _build_proposal_id(*, scope, objective: str, created_at: str) -> str:
-    scope_hint = str(scope.run_id or scope.work_unit_id or scope.project_id)
-    objective_hint = normalized_identity(objective).replace(" ", "-")[:32] or "objective"
-    timestamp_hint = created_at.replace(":", "").replace("-", "").replace("+00:00", "Z")
-    return f"proposal-record-{scope_hint}-{timestamp_hint}-{objective_hint}"
-
-
-def _utc_timestamp() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="microseconds")
+def _direct_proposal_context_purpose(objective: str) -> str:
+    return f"proposal support direct support action preparation {objective}"

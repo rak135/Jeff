@@ -1,0 +1,2 @@
+PROPOSAL_COUNT: 0
+SCARCITY_REASON: No operational objectives, specific blocker details, or actionable support were provided in the input to ground a serious candidate path.

@@ -62,7 +62,7 @@ def test_run_objective_launches_real_flow_and_calls_live_context_once(tmp_path: 
     assert payload["truth"]["last_outcome_state"] == "complete"
     assert payload["truth"]["last_evaluation_verdict"] == "acceptable"
     assert payload["derived"]["flow_visible"] is True
-    assert payload["derived"]["flow_family"] == "bounded_proposal_selection_execution"
+    assert payload["derived"]["flow_family"] == "conditional_planning_execution"
     assert payload["derived"]["execution_status"] == "completed"
     assert payload["derived"]["evaluation_verdict"] is not None
     assert payload["support"]["execution_summary"]["available"] is True
